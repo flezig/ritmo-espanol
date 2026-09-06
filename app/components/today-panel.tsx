@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Headphones, RotateCcw, Volume2 } from 'lucide-react';
 import { analyzeAnswer, normalizeText } from '../lib/learning-core';
+import { ReportExerciseButton } from './report-exercise-button';
 
 type Skill = 'Грамматика' | 'Чтение' | 'Аудирование' | 'Письмо';
 type PlacementQuestion = {
@@ -116,6 +117,13 @@ export default function TodayPanel({ due, weakTopic, go }: { due: number; weakTo
       )}
       {placementOpen && question && (
         <div className="placement-test">
+          <ReportExerciseButton
+            id={`placement:${question.id}`}
+            section={`Входной тест: ${question.skill}`}
+            prompt={question.prompt}
+            answer={question.answers[0]}
+            options={question.options}
+          />
           <header><span>{question.skill} · {question.level}</span><b>{index + 1} / {questions.length}</b></header>
           <div className="placement-progress"><i style={{ width: `${(index + 1) / questions.length * 100}%` }} /></div>
           {question.context && <blockquote lang="es">{question.context}</blockquote>}

@@ -5,6 +5,23 @@ export type PracticeSnapshot = {
   index: number;
 };
 
+/** Keep the current card by identity when earlier cards disappear. */
+export function reconcilePracticeCards<T extends { key: string; answer: string; es: string; ru: string }>(
+  saved: T[], index: number, current: T[],
+) {
+  const byKey = new Map(current.map((card) => [card.key, card]));
+  const session = saved.flatMap((card) => byKey.has(card.key) ? [byKey.get(card.key)!] : []);
+  const match = session.findIndex((card) => card.key === saved[index]?.key);
+  const nextIndex = match >= 0 ? match : Math.min(
+    saved.slice(0, index).filter((card) => byKey.has(card.key)).length,
+    Math.max(0, session.length - 1),
+  );
+  const before = saved[index], after = session[nextIndex];
+  const changed = !before || !after || before.key !== after.key ||
+    before.answer !== after.answer || before.es !== after.es || before.ru !== after.ru;
+  return { session, index: nextIndex, contentChanged: changed };
+}
+
 export const parsePracticeSnapshot = (value: string | null): PracticeSnapshot | null => {
   if (!value) return null;
   try {

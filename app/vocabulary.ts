@@ -3041,6 +3041,8 @@ const createTopic = (name: string, icon: string, text: string) => {
   const entries = parseWords(text)
     .filter((word) => {
       const key = normalizeWord(word.es);
+      const owner = releasedVocabularyTopic(word.es);
+      if (owner && owner !== name) return false;
       if (usedWords.has(key)) return false;
       usedWords.add(key);
       return true;
@@ -3096,6 +3098,8 @@ const deduplicatedLegacyTopics = legacyVocabularyTopics
     entries: topic.entries
       .filter((entry) => {
         const key = normalizeWord(entry.es);
+        const owner = releasedVocabularyTopic(entry.es);
+        if (owner && owner !== topic.name) return false;
         if (usedWords.has(key)) return false;
         usedWords.add(key);
         return true;
@@ -3164,13 +3168,16 @@ export const vocabularyTopics = mergedTopics.map((topic) => ({
   entries: topic.entries
     .filter((entry) => {
       const key = normalizeWord(entry.es);
+      const owner = releasedVocabularyTopic(entry.es);
+      if (owner && owner !== topic.name) return false;
       if (finalWords.has(key)) return false;
       finalWords.add(key);
       return true;
     })
-    .map((entry, index) => ({
+    .map((entry) => ({
       ...entry,
-      id: index + 1,
+      id: vocabularyId(topic.name, entry.es),
       ru: primaryRussianTranslation(entry.ru),
     })),
 }));
+import { vocabularyId, releasedVocabularyTopic } from './lib/vocabulary-identities.ts';

@@ -1,4 +1,4 @@
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
 
 export const BACKUP_KEYS = [
   'ritmo-device-profile', 'ritmo-srs', 'ritmo-word-progress', 'ritmo-word-history',
@@ -7,6 +7,10 @@ export const BACKUP_KEYS = [
   'ritmo-lesson-word-db', 'ritmo-home-favorites', 'ritmo-practice-session',
   'ritmo-detective-progress', 'ritmo-rush-records', 'ritmo-achievement-stats',
   'ritmo-achievements', 'ritmo-placement', 'ritmo-local-analytics',
+  'ritmo-exercise-reports',
+  'ritmo-report-outbox',
+  'ritmo-report-migration',
+  'ritmo-data-schema-version',
 ] as const;
 
 export type RitmoBackup = {
@@ -19,7 +23,7 @@ export type RitmoBackup = {
 export const isValidBackup = (value: unknown): value is RitmoBackup => {
   if (!value || typeof value !== 'object') return false;
   const backup = value as Partial<RitmoBackup>;
-  if (backup.app !== 'Ritmo Español' || ![1, BACKUP_VERSION].includes(Number(backup.version))) return false;
+  if (backup.app !== 'Ritmo Español' || ![1, 2, BACKUP_VERSION].includes(Number(backup.version))) return false;
   if (!backup.data || typeof backup.data !== 'object' || Array.isArray(backup.data)) return false;
   return Object.keys(backup.data).every((key) => (BACKUP_KEYS as readonly string[]).includes(key));
 };

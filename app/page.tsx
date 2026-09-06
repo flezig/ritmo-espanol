@@ -34,8 +34,10 @@ import {
 import { vocabularyTopics } from './vocabulary';
 import { courseLessons } from './lessons';
 import { YouTubeEmbed } from './components/youtube-embed';
+import { AccountProvider, useAccount } from './components/account-provider';
+import { ReportExerciseButton } from './components/report-exercise-button';
 import { trackLocalEvent } from './lib/local-analytics';
-import { parsePracticeSnapshot } from './lib/practice-session';
+import { parsePracticeSnapshot, reconcilePracticeCards } from './lib/practice-session';
 import { BACKUP_KEYS, BACKUP_VERSION, isValidBackup, type RitmoBackup } from './lib/backup';
 import {
   applyAchievementEvent,
@@ -479,7 +481,7 @@ const recordError = (category: string) => {
   } catch {}
 };
 function useCustomWords() {
-  const [words, setWords] = useState<CustomWord[]>([]);
+  const [words, setWords] = useState<CustomWord[]>([]), [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     const read = () => {
       try {
@@ -492,6 +494,7 @@ function useCustomWords() {
       }
     };
     read();
+    setHydrated(true);
     window.addEventListener('ritmo-custom-words', read);
     return () => window.removeEventListener('ritmo-custom-words', read);
   }, []);
@@ -512,9 +515,10 @@ function useCustomWords() {
       },
     ]);
   const remove = (id: string) => commit(words.filter((word) => word.id !== id));
-  return { words, add, remove };
+  return { words, add, remove, hydrated };
 }
 function useExampleReports() {
+  const account = useAccount();
   const [reports, setReports] = useState<ExampleReport[]>([]);
   useEffect(() => {
     const read = () => {
@@ -532,12 +536,24 @@ function useExampleReports() {
     return () => window.removeEventListener('ritmo-example-reports', read);
   }, []);
   const toggle = (report: Omit<ExampleReport, 'createdAt'>) => {
-    const next = reports.some((item) => item.id === report.id)
+    const wasReported = reports.some((item) => item.id === report.id),
+      next = wasReported
       ? reports.filter((item) => item.id !== report.id)
       : [...reports, { ...report, createdAt: new Date().toISOString() }];
     localStorage.setItem('ritmo-example-reports', JSON.stringify(next));
     setReports(next);
     window.dispatchEvent(new Event('ritmo-example-reports'));
+    void account.reportContent({
+      reportKey: report.id,
+      kind: 'example',
+      section: report.source,
+      content: {
+        word: report.word,
+        example: report.example,
+        translation: report.translation,
+      },
+      active: !wasReported,
+    });
   };
   return { reports, toggle };
 }
@@ -596,6 +612,7 @@ function ReportExampleButton({
   translation,
   source,
 }: Omit<ExampleReport, 'createdAt'>) {
+  const account = useAccount();
   const [reported, setReported] = useState(false);
   useEffect(() => {
     try {
@@ -615,7 +632,8 @@ function ReportExampleButton({
           localStorage.getItem('ritmo-example-reports') || '[]',
         ),
         reports: ExampleReport[] = Array.isArray(stored) ? stored : [],
-        next = reports.some((item) => item.id === id)
+        wasReported = reports.some((item) => item.id === id),
+        next = wasReported
           ? reports.filter((item) => item.id !== id)
           : [
               ...reports,
@@ -631,7 +649,14 @@ function ReportExampleButton({
       localStorage.setItem('ritmo-example-reports', JSON.stringify(next));
       setReported(next.some((item) => item.id === id));
       window.dispatchEvent(new Event('ritmo-example-reports'));
-      if (!reports.some((item) => item.id === id))
+      void account.reportContent({
+        reportKey: id,
+        kind: 'example',
+        section: source,
+        content: { word, example, translation },
+        active: !wasReported,
+      });
+      if (!wasReported)
         trackLocalEvent('example_reported', source);
     } catch {}
   };
@@ -646,6 +671,7 @@ function ReportExampleButton({
     </button>
   );
 }
+
 function SpellingDiff({ value, answer }: { value: string; answer: string }) {
   return (
     <div
@@ -1771,6 +1797,8 @@ type LessonState = {
   completed: boolean;
   correct: number;
   errors?: number[];
+  errorIds?: string[];
+  lastExerciseId?: string;
 };
 type LessonProgress = Record<string, LessonState>;
 function useLessonProgress() {
@@ -2209,7 +2237,7 @@ function HomeView({
             {greeting}, {profile.name || 'Maya'}
           </h1>
           <p>
-            Un poco cada día. Сегодняшний ритм уже сохранён на этом устройстве.
+            Un poco cada día. Сегодняшний ритм уже сохранён в вашем профиле.
           </p>
         </div>
         <div className="streak-pill">
@@ -2248,7 +2276,7 @@ function HomeView({
             <Sparkles />
           </span>
           <div>
-            <span className="mini-label">ЛОКАЛЬНЫЙ ПРОГРЕСС</span>
+            <span className="mini-label">МОЙ ПРОГРЕСС</span>
             <b>{profile.xp} XP</b>
             <p>{due} карточек пора повторить</p>
           </div>
@@ -2287,6 +2315,13 @@ function HomeView({
           </div>
         </article>
         <article className="challenge">
+          <ReportExerciseButton
+            id="home:daily:ir-de-rumba"
+            section="Главная: задание дня"
+            prompt="Esta noche vamos ___ rumba."
+            answer="de"
+            options={['a', 'de', 'por']}
+          />
           <div className="challenge-top">
             <span>
               <Zap fill="currentColor" />
@@ -2559,6 +2594,13 @@ function LearnView({ go }: { go: (section: Section) => void }) {
             </button>
           </div>
           <div className="learn-check">
+            <ReportExerciseButton
+              id={`quick-start:${lesson}:${normalizeText(check.prompt)}:${normalizeText(check.answer)}`}
+              section={`Быстрый старт: ${current.title}`}
+              prompt={check.prompt}
+              answer={check.answer}
+              options={[...check.options]}
+            />
             <small>БЫСТРАЯ ПРОВЕРКА</small>
             <h4>{check.prompt}</h4>
             <div>
@@ -2648,6 +2690,7 @@ function LessonsView() {
     },
     exerciseIndex = mistakeMode ? (mistakeQueue[question] ?? 0) : question,
     exercise = lesson.exercises[exerciseIndex],
+    exerciseId = `${normalizeText(exercise?.prompt || '')}::${normalizeText(exercise?.answer || '')}`,
     completedCount = courseLessons.filter(
       (item) => progress[item.id]?.completed,
     ).length,
@@ -2658,10 +2701,34 @@ function LessonsView() {
     orderedAnswer = selectedWords
       .map((index) => displayedOptions[index])
       .join(' '),
-    exerciseTotal = mistakeMode ? mistakeQueue.length : 50,
+    exerciseTotal = mistakeMode ? mistakeQueue.length : lesson.exercises.length,
+    savedErrorIndexes = [
+      ...(lessonState.errorIds || [])
+        .map((id) =>
+          lesson.exercises.findIndex(
+            (item) => `${normalizeText(item.prompt)}::${normalizeText(item.answer)}` === id,
+          ),
+        )
+        .filter((index) => index >= 0),
+      ...(lessonState.errorIds?.length ? [] : lessonState.errors || []),
+    ].filter((index, position, list) => list.indexOf(index) === position),
     lessonWordCount = learnedWordDb.filter(
       (word) => word.lessonId === lesson.id,
     ).length;
+  const resumeIndex = (targetLesson: (typeof courseLessons)[number], state?: LessonState) => {
+    if (state?.completed) return 0;
+    const stableIndex = state?.lastExerciseId
+      ? targetLesson.exercises.findIndex(
+          (item) =>
+            `${normalizeText(item.prompt)}::${normalizeText(item.answer)}` ===
+            state.lastExerciseId,
+        )
+      : -1;
+    return Math.min(
+      stableIndex >= 0 ? stableIndex + 1 : state?.done || 0,
+      targetLesson.exercises.length - 1,
+    );
+  };
   useEffect(() => {
     const started = courseLessons
       .filter((item) => (progress[item.id]?.done || 0) > 0)
@@ -2684,9 +2751,13 @@ function LessonsView() {
     answerLock.current = true;
     const correct = normalizeText(value) === normalizeText(exercise.answer),
       storedErrors = lessonState.errors || [],
+      storedErrorIds = lessonState.errorIds || [],
       nextErrors = correct
         ? storedErrors.filter((index) => index !== exerciseIndex)
-        : [...new Set([...storedErrors, exerciseIndex])];
+        : [...new Set([...storedErrors, exerciseIndex])],
+      nextErrorIds = correct
+        ? storedErrorIds.filter((id) => id !== exerciseId)
+        : [...new Set([...storedErrorIds, exerciseId])];
     setAnswer(value);
     playFeedbackSound(correct);
     setCatState(
@@ -2697,14 +2768,22 @@ function LessonsView() {
       done: mistakeMode
         ? lessonState.done
         : Math.max(lessonState.done, question + 1),
-      completed: lessonState.completed || (!mistakeMode && question === 49),
+      completed:
+        lessonState.completed ||
+        (!mistakeMode && question === lesson.exercises.length - 1),
       correct: mistakeMode
         ? lessonState.correct
         : lessonState.correct + (correct ? 1 : 0),
       errors: nextErrors,
+      errorIds: nextErrorIds,
+      lastExerciseId: mistakeMode ? lessonState.lastExerciseId : exerciseId,
     });
     recordLearningEvent(correct, correct ? 6 : 2);
-    if (!mistakeMode && question === 49 && !lessonState.completed) {
+    if (
+      !mistakeMode &&
+      question === lesson.exercises.length - 1 &&
+      !lessonState.completed
+    ) {
       playCelebrationSound('finish');
       recordAchievementEvent({ type: 'lesson-complete', lessonId: lesson.id });
     }
@@ -2721,7 +2800,7 @@ function LessonsView() {
     answerLock.current = false;
     const stored = progress[courseLessons[index].id];
     setLessonIndex(index);
-    setQuestion(stored?.completed ? 0 : Math.min(stored?.done || 0, 49));
+    setQuestion(resumeIndex(courseLessons[index], stored));
     setMode('theory');
     setMistakeMode(false);
     setMistakeQueue([]);
@@ -2736,14 +2815,14 @@ function LessonsView() {
     setMode('practice');
     setMistakeMode(false);
     setMistakeQueue([]);
-    setQuestion(lessonState.completed ? 0 : Math.min(lessonState.done, 49));
+    setQuestion(resumeIndex(lesson, lessonState));
     setAnswer('');
     setTypedAnswer('');
     setSelectedWords([]);
     setCatState('thinking');
   };
   const startMistakes = () => {
-    const queue = [...(lessonState.errors || [])];
+    const queue = savedErrorIndexes;
     if (!queue.length) return;
     answerLock.current = false;
     setMode('practice');
@@ -2786,7 +2865,7 @@ function LessonsView() {
     <div className="view-stack lessons-view">
       <div className="lessons-top">
         <ViewHead
-          over="КУРС С НУЛЯ · 5 УРОКОВ · 250 ЗАДАНИЙ"
+          over={`КУРС С НУЛЯ · ${courseLessons.length} УРОКОВ · ${courseLessons.reduce((sum, item) => sum + item.exercises.length, 0)} ЗАДАНИЙ`}
           title="Испанский вместе с котиками"
           copy="После теории — 50 смешанных заданий: свободный ввод, сборка фраз, верно/неверно и варианты в случайном порядке."
         />
@@ -2814,12 +2893,12 @@ function LessonsView() {
               <em>{item.icon}</em>
               <h3>{item.title}</h3>
               <p>{item.subtitle}</p>
-              <PawProgress done={state.done} />
+              <PawProgress done={state.done} total={item.exercises.length} />
               <footer>
                 <span>
                   {state.completed
                     ? 'Урок пройден'
-                    : `${state.done} / 50 заданий`}
+                    : `${state.done} / ${item.exercises.length} заданий`}
                 </span>
                 <b>{item.reward}</b>
               </footer>
@@ -2848,14 +2927,14 @@ function LessonsView() {
               className={mode === 'practice' && !mistakeMode ? 'active' : ''}
               onClick={startPractice}
             >
-              50 заданий
+              {lesson.exercises.length} заданий
             </button>
             <button
               className={mistakeMode ? 'active mistake-tab' : 'mistake-tab'}
               onClick={startMistakes}
-              disabled={!lessonState.errors?.length}
+              disabled={!savedErrorIndexes.length}
             >
-              Ошибки · {lessonState.errors?.length || 0}
+              Ошибки · {savedErrorIndexes.length}
             </button>
           </div>
         </header>
@@ -2943,6 +3022,13 @@ function LessonsView() {
               key={`${lesson.id}-${exerciseIndex}`}
             >
               <CatPeek state={catState} />
+              <ReportExerciseButton
+                id={`lesson:${lesson.id}:${normalizeText(exercise.prompt)}:${normalizeText(exercise.answer)}`}
+                section={`Урок ${lesson.number}: ${lesson.title}`}
+                prompt={exercise.prompt}
+                answer={exercise.answer}
+                options={exercise.options}
+              />
               <header>
                 <button
                   onClick={() => {
@@ -3197,7 +3283,7 @@ function CustomWordsPanel() {
           <p className="eyebrow">МОЙ СЛОВАРЬ · {words.length} СЛОВ</p>
           <h2>Добавьте собственные слова и примеры</h2>
           <p>
-            Они сохраняются на этом устройстве, входят в резервную копию и
+            Они сохраняются в вашем профиле, входят в резервную копию и
             появляются отдельной темой в Practice.
           </p>
         </div>
@@ -3339,7 +3425,7 @@ function VocabularyView() {
       <ViewHead
         over={`${vocabularyCount} СЛОВ · ${vocabularyTopics.length} ЖИВЫХ ТЕМ`}
         title="Слова, которые пригодятся."
-        copy="Статусы связаны с Practice и считаются одинаково во Vocabulary и Progress. Данные сохраняются только на этом устройстве."
+        copy="Статусы связаны с Practice и считаются одинаково во Vocabulary и Progress. После входа они синхронизируются с аккаунтом."
       />
       <section className="vocabulary-status-guide">
         <b>Как меняется статус</b>
@@ -4507,6 +4593,13 @@ function GrammarView() {
                   : 'thinking'
               }
             />
+            <ReportExerciseButton
+              id={`grammar:${normalizeText(topic.name)}:${normalizeText(test.prompt)}:${normalizeText(test.answer)}`}
+              section={`Грамматика: ${topic.name}`}
+              prompt={test.prompt}
+              answer={test.answer}
+              options={test.options}
+            />
             <div className="quiz-progress">
               <span
                 style={{
@@ -5573,6 +5666,13 @@ function MusicView() {
           <CatPeek
             state={choice ? (isCorrect ? 'happy' : 'wrong') : 'thinking'}
           />
+          <ReportExerciseButton
+            id={`music:${normalizeText(song.title)}:${normalizeText(round.prompt)}:${normalizeText(round.answer)}`}
+            section={`Музыка: ${song.artist} — ${song.title}`}
+            prompt={round.prompt}
+            answer={round.answer}
+            options={round.options}
+          />
           <small>{round.kind.toUpperCase()}</small>
           <h3>{round.prompt}</h3>
           {round.clip && song.videoId ? (
@@ -5952,7 +6052,7 @@ function _PracticeView() {
       <ViewHead
         over="АДАПТИВНОЕ ПОВТОРЕНИЕ · ACTIVE RECALL"
         title="Сегодня повторяем то, что почти забывается."
-        copy="Каждый навык хранится отдельно на этом устройстве. Ошибка сокращает интервал, уверенный ответ увеличивает его."
+        copy="Каждый навык хранится отдельно в профиле. Ошибка сокращает интервал, уверенный ответ увеличивает его."
       />
       <div className="srs-summary">
         <button
@@ -6729,6 +6829,13 @@ function DetectiveGame() {
             )}
           </article>
           <article className="detective-question">
+            <ReportExerciseButton
+              id={`detective:${level}:${normalizeText(currentCase.title)}:${normalizeText(question.prompt)}`}
+              section={`Детектив ${level}: ${currentCase.title}`}
+              prompt={question.prompt}
+              answer={question.answer}
+              options={question.options}
+            />
             <small>{question.kind}</small>
             <h3>{question.prompt}</h3>
             <div>
@@ -6916,6 +7023,13 @@ function SpanishRushGame() {
         </article>
       ) : (
         <article className="rush-task task-swap" key={round}>
+          <ReportExerciseButton
+            id={`rush:${isGrammar ? 'grammar' : normalizeText(wordCard.es)}:${normalizeText(prompt)}:${normalizeText(answer)}`}
+            section="Spanish Rush"
+            prompt={prompt}
+            answer={answer}
+            options={options}
+          />
           <header>
             <span>{isGrammar ? 'ГРАММАТИКА' : `${statusLabels[status]} · ${wordCard.topic}`}</span>
             {bonus && <b>{bonus}</b>}
@@ -6982,7 +7096,7 @@ function PracticeHub() {
 }
 
 function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
-  const { words: customWords } = useCustomWords(),
+  const { words: customWords, hydrated: customHydrated } = useCustomWords(),
     deck = makeStudyDeck(customWords),
     { records, rate, toggleFavorite, markNew, hydrated: srsHydrated } = useSRS();
   const { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices();
@@ -7005,6 +7119,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   const answerLock = useRef(false),
     gradeLock = useRef(false);
   useEffect(() => {
+    if (!customHydrated || sessionHydrated) return;
     try {
       const saved = parsePracticeSnapshot(localStorage.getItem('ritmo-practice-session')) as SavedPracticeSession | null;
       if (
@@ -7013,22 +7128,8 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         saved.session.length &&
         typeof saved.index === 'number'
       ) {
-        const currentCards = new Map(deck.map((card) => [card.key, card])),
-          synchronizedSession = saved.session
-            .map((card) => currentCards.get(card.key) || card)
-            .filter((card) => currentCards.has(card.key)),
-          safeIndex = Math.min(
-            Math.max(0, saved.index),
-            Math.max(0, synchronizedSession.length - 1),
-          ),
-          savedCard = saved.session[safeIndex],
-          synchronizedCard = synchronizedSession[safeIndex],
-          contentChanged =
-            !!savedCard &&
-            !!synchronizedCard &&
-            (savedCard.answer !== synchronizedCard.answer ||
-              savedCard.ru !== synchronizedCard.ru ||
-              savedCard.es !== synchronizedCard.es);
+        const { session: synchronizedSession, index: safeIndex, contentChanged } =
+          reconcilePracticeCards(saved.session, saved.index, deck);
         setMode(saved.mode);
         setTopic(saved.topic);
         setSession(synchronizedSession);
@@ -7047,7 +7148,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       }
     } catch {}
     setSessionHydrated(true);
-  }, []);
+  }, [customHydrated, sessionHydrated]);
   useEffect(() => {
     if (!sessionHydrated) return;
     const saved: SavedPracticeSession = {
@@ -7565,6 +7666,13 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           <CatPeek
             state={revealed ? (correct ? 'happy' : 'wrong') : 'thinking'}
           />
+          <ReportExerciseButton
+            id={`practice:${card.key}:${responseKind}:${normalizeText(taskPrompt)}`}
+            section={`Practice: ${card.topic}`}
+            prompt={taskPrompt}
+            answer={expectedAnswer}
+            options={responseKind === 'choice' ? options : undefined}
+          />
           <header>
             <div>
               <span>{skillLabels[card.skill]}</span>
@@ -8072,7 +8180,7 @@ function DictationView() {
           <p>
             {learned.length
               ? 'Нажмите «Начать диктант»: в сессию попадёт до 20 разных слов.'
-              : 'Основные слова урока сохранятся в локальную базу при переходе от теории к заданиям.'}
+              : 'Основные слова урока сохранятся в личную базу при переходе от теории к заданиям.'}
           </p>
         </article>
       ) : (
@@ -8082,6 +8190,12 @@ function DictationView() {
         >
           <CatPeek
             state={checked ? (correct ? 'happy' : 'wrong') : 'thinking'}
+          />
+          <ReportExerciseButton
+            id={`dictation:${card.key}:${audioTarget}`}
+            section={`Диктант: ${card.topic}`}
+            prompt={audioTarget === 'word' ? 'Запишите услышанное слово' : 'Запишите услышанное предложение'}
+            answer={expected}
           />
           <header>
             <span>{card.topic}</span>
@@ -8416,7 +8530,7 @@ function MemoryDashboard() {
           </span>
         </div>
         <small>
-          Все числа рассчитываются из тех же локальных записей, что и статусы во
+          Все числа рассчитываются из тех же записей профиля, что и статусы во
           Vocabulary. Ручная отметка не может сделать слово «выученным».
         </small>
       </section>
@@ -8426,7 +8540,7 @@ function MemoryDashboard() {
             <p className="eyebrow">ИСТОРИЯ АКТИВНОСТИ</p>
             <h3>Практика за 7 и 30 дней</h3>
           </div>
-          <small>учитываются реальные ответы на этом устройстве</small>
+          <small>учитываются реальные ответы в этом профиле</small>
         </header>
         <div>
           <article>
@@ -8461,7 +8575,7 @@ function MemoryDashboard() {
               <p className="eyebrow">ПОЛОСА НАВЫКОВ</p>
               <h3>Что уже закрепилось</h3>
             </div>
-            <small>данные этого устройства</small>
+            <small>данные текущего профиля</small>
           </header>
           <div className="skill-formula">
             <b>Как считается процент</b>
@@ -8600,7 +8714,8 @@ function ProgressView({ go }: { go: (s: Section) => void }) {
       (item) => progress[item.id]?.completed,
     ).length,
     totalDone = courseLessons.reduce(
-      (sum, item) => sum + Math.min(50, progress[item.id]?.done || 0),
+      (sum, item) =>
+        sum + Math.min(item.exercises.length, progress[item.id]?.done || 0),
       0,
     ),
     totalCorrect = courseLessons.reduce(
@@ -8617,13 +8732,16 @@ function ProgressView({ go }: { go: (s: Section) => void }) {
       : 0,
     nextLesson = courseLessons.find((item) => !progress[item.id]?.completed),
     lessonTotal = courseLessons.length,
-    totalTasks = lessonTotal * 50;
+    totalTasks = courseLessons.reduce(
+      (sum, item) => sum + item.exercises.length,
+      0,
+    );
   return (
     <div className="view-stack progress-view">
       <ViewHead
-        over="МОЙ КОШАЧИЙ ДОМ · ДАННЫЕ ЭТОГО УСТРОЙСТВА"
+        over="МОЙ КОШАЧИЙ ДОМ · ДАННЫЕ ПРОФИЛЯ"
         title="Прогресс, который хочется продолжать."
-        copy="Уроки, память, ошибки и кошачий дом сохраняются в этом браузере и остаются после перезапуска."
+        copy="Уроки, память, ошибки и кошачий дом сохраняются в профиле, а после входа доступны на других устройствах."
       />
       <div className="progress-metrics">
         <article>
@@ -8680,9 +8798,9 @@ function ProgressView({ go }: { go: (s: Section) => void }) {
           </h2>
           <p className="progress-copy">
             {completed === lessonTotal
-              ? 'Вы прошли всю стартовую дорожку из пяти уроков. Можно повторять задания и улучшать точность.'
+              ? `Вы прошли всю стартовую дорожку из ${lessonTotal} уроков. Можно повторять задания и улучшать точность.`
               : nextLesson
-                ? `Следующая награда — «${nextLesson.reward}». До неё осталось ${Math.max(0, 50 - (progress[nextLesson.id]?.done || 0))} заданий.`
+                ? `Следующая награда — «${nextLesson.reward}». До неё осталось ${Math.max(0, nextLesson.exercises.length - (progress[nextLesson.id]?.done || 0))} заданий.`
                 : ''}
           </p>
           <PawProgress done={totalDone} total={totalTasks} />
@@ -8717,12 +8835,15 @@ function ProgressView({ go }: { go: (s: Section) => void }) {
                     <div className="reward-track">
                       <i
                         style={{
-                          width: `${Math.min(100, itemProgress.done * 2)}%`,
+                          width: `${Math.min(100, (itemProgress.done / item.exercises.length) * 100)}%`,
                         }}
                       />
                     </div>
                   </div>
-                  <strong>{Math.min(50, itemProgress.done)}/50</strong>
+                  <strong>
+                    {Math.min(item.exercises.length, itemProgress.done)}/
+                    {item.exercises.length}
+                  </strong>
                 </article>
               );
             })}
@@ -8738,7 +8859,7 @@ function ProgressView({ go }: { go: (s: Section) => void }) {
             <div className="cats-together">
               <CatMascot state="love" />
               <p>
-                Все пять уроков завершены — оба котика сидят рядом в новом доме.
+                Все уроки завершены — оба котика сидят рядом в новом доме.
               </p>
             </div>
           )}
@@ -8767,7 +8888,7 @@ function AchievementsView({ go }: { go: (section: Section) => void }) {
     <div className="view-stack achievements-view">
       <header className="achievements-hero">
         <div>
-          <p className="eyebrow">НАГРАДЫ · СОХРАНЯЮТСЯ НА УСТРОЙСТВЕ</p>
+          <p className="eyebrow">НАГРАДЫ · СОХРАНЯЮТСЯ В ПРОФИЛЕ</p>
           <h1>Tu colección de historias</h1>
           <p>
             Здесь отмечаются реальные учебные события: завершённые сессии,
@@ -8857,10 +8978,13 @@ const arrayBackupKeys = new Set<string>([
   'ritmo-content-favorites',
   'ritmo-custom-words',
   'ritmo-example-reports',
+  'ritmo-exercise-reports',
+  'ritmo-local-analytics',
   'ritmo-lesson-word-db',
   'ritmo-home-favorites',
 ]);
-const backupFallback = (key: string) => (arrayBackupKeys.has(key) ? [] : {});
+const backupFallback = (key: string) => key === 'ritmo-data-schema-version' ? 1
+  : key === 'ritmo-report-migration' ? 0 : (arrayBackupKeys.has(key) ? [] : {});
 function BackupPanel() {
   const inputRef = useRef<HTMLInputElement>(null),
     [status, setStatus] = useState<{
@@ -9009,7 +9133,7 @@ function ReportedExamplesPanel() {
           <p className="eyebrow">ПРИМЕРЫ ДЛЯ ПРОВЕРКИ</p>
           <h2>Вы отметили {reports.length}</h2>
         </div>
-        <small>хранятся только на этом устройстве</small>
+        <small>после входа отправляются автору сайта</small>
       </header>
       <div>
         {reports.map((report) => (
@@ -9019,6 +9143,67 @@ function ReportedExamplesPanel() {
             <p>{report.example}</p>
             <small>{report.translation}</small>
             <button onClick={() => toggle(report)}>Снять отметку</button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+type ExerciseReport = {
+  id: string;
+  section: string;
+  prompt: string;
+  answer: string;
+  options?: string[];
+  createdAt: string;
+};
+
+function ReportedExercisesPanel() {
+  const account = useAccount(),
+    [reports, setReports] = useState<ExerciseReport[]>([]);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('ritmo-exercise-reports') || '[]');
+        setReports(Array.isArray(stored) ? stored : []);
+      } catch {
+        setReports([]);
+      }
+    };
+    read();
+    window.addEventListener('ritmo-exercise-reports', read);
+    return () => window.removeEventListener('ritmo-exercise-reports', read);
+  }, []);
+  if (!reports.length) return null;
+  const remove = (report: ExerciseReport) => {
+    const next = reports.filter((item) => item.id !== report.id);
+    localStorage.setItem('ritmo-exercise-reports', JSON.stringify(next));
+    setReports(next);
+    void account.reportContent({
+      reportKey: report.id,
+      kind: 'exercise',
+      section: report.section,
+      content: { prompt: report.prompt, answer: report.answer, options: report.options || [] },
+      active: false,
+    });
+  };
+  return (
+    <section className="reported-examples-panel reported-exercises-panel">
+      <header>
+        <div>
+          <p className="eyebrow">ЗАДАНИЯ ДЛЯ ПРОВЕРКИ</p>
+          <h2>Вы отметили {reports.length}</h2>
+        </div>
+        <small>в аккаунте отправляются автору сайта</small>
+      </header>
+      <div>
+        {reports.slice(0, 12).map((report) => (
+          <article key={report.id}>
+            <span>{report.section}</span>
+            <b>{report.prompt}</b>
+            <small>Ожидаемый ответ: {report.answer}</small>
+            <button onClick={() => remove(report)}>Снять отметку</button>
           </article>
         ))}
       </div>
@@ -9039,7 +9224,7 @@ function LearnedWordsPanel() {
     <section className="learned-db-panel">
       <header>
         <div>
-          <p className="eyebrow">ЛОКАЛЬНАЯ БАЗА СЛОВ</p>
+          <p className="eyebrow">ЛИЧНАЯ БАЗА СЛОВ</p>
           <h2>{words.length} основных слов из уроков</h2>
         </div>
         <small>используются для персонального диктанта</small>
@@ -9078,8 +9263,129 @@ function LearnedWordsPanel() {
   );
 }
 
+function AccountPanel({
+  profileName,
+  updateProfile,
+}: {
+  profileName: string;
+  updateProfile: (patch: Partial<DeviceProfile>) => void;
+}) {
+  const account = useAccount(),
+    [mode, setMode] = useState<'login' | 'register'>('register'),
+    [name, setName] = useState(profileName),
+    [email, setEmail] = useState(''),
+    [password, setPassword] = useState(''),
+    [busy, setBusy] = useState(false),
+    [notice, setNotice] = useState('');
+
+  if (!account.configured)
+    return (
+      <section className="account-panel account-unconfigured">
+        <div>
+          <p className="eyebrow">ОБЛАЧНЫЙ АККАУНТ</p>
+          <h2>Регистрация подготовлена</h2>
+          <p>
+            Добавьте публичные параметры Supabase в Cloudflare — после этого
+            здесь автоматически появится форма входа.
+          </p>
+        </div>
+        <ShieldCheck />
+      </section>
+    );
+
+  if (account.user)
+    return (
+      <section className="account-panel account-connected">
+        <div className="account-cloud-mark"><ShieldCheck /></div>
+        <div>
+          <p className="eyebrow">АККАУНТ · ОБЛАЧНОЕ СОХРАНЕНИЕ</p>
+          <h2>{account.user.email}</h2>
+          <p>{account.message}</p>
+          <small>
+            Уроки, словарь, SRS, достижения и незавершённая практика доступны
+            после входа на другом устройстве.
+          </small>
+        </div>
+        <div className="account-actions">
+          <button disabled={account.status === 'syncing'} onClick={() => void account.syncNow()}>
+            {account.status === 'syncing' ? 'Сохраняем…' : 'Сохранить сейчас'}
+          </button>
+          <button className="account-logout" onClick={() => void account.logout()}>
+            Выйти
+          </button>
+        </div>
+      </section>
+    );
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBusy(true);
+    setNotice('');
+    if (mode === 'register') updateProfile({ name: name.trim() || 'Maya' });
+    const result = mode === 'register'
+      ? await account.register(name.trim() || 'Maya', email, password)
+      : await account.login(email, password);
+    setBusy(false);
+    if (!result.ok) setNotice(result.message);
+    else if (result.confirmationRequired) {
+      setNotice('Проверьте почту и подтвердите регистрацию. Затем вернитесь и войдите.');
+      setMode('login');
+      setPassword('');
+    } else setNotice('Готово. Загружаем ваш прогресс…');
+  };
+
+  return (
+    <section className="account-panel account-auth">
+      <header>
+        <div>
+          <p className="eyebrow">АККАУНТ RITMO</p>
+          <h2>{mode === 'register' ? 'Сохраните прогресс в облаке' : 'С возвращением'}</h2>
+          <p>
+            {mode === 'register'
+              ? 'Текущий прогресс с этого устройства будет перенесён в новый аккаунт.'
+              : 'После входа сайт загрузит ваш прогресс и продолжит синхронизацию.'}
+          </p>
+        </div>
+        <div className="account-mode">
+          <button className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>
+            Регистрация
+          </button>
+          <button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>
+            Вход
+          </button>
+        </div>
+      </header>
+      <form onSubmit={submit}>
+        {mode === 'register' && (
+          <label>
+            <span>Имя</span>
+            <input autoComplete="name" maxLength={50} value={name} onChange={(event) => setName(event.target.value)} />
+          </label>
+        )}
+        <label>
+          <span>Электронная почта</span>
+          <input autoComplete="email" inputMode="email" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <label>
+          <span>Пароль</span>
+          <input autoComplete={mode === 'register' ? 'new-password' : 'current-password'} maxLength={128} minLength={8} required type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+          {mode === 'register' && <small>Минимум 8 символов.</small>}
+        </label>
+        <button className="primary-btn" disabled={busy} type="submit">
+          {busy ? 'Подождите…' : mode === 'register' ? 'Создать аккаунт' : 'Войти'}
+        </button>
+      </form>
+      {notice && <p className="account-notice" role="status">{notice}</p>}
+      <small className="account-privacy">
+        Пароль обрабатывает Supabase Auth; Ritmo Español его не сохраняет и не видит.
+      </small>
+    </section>
+  );
+}
+
 function ProfileView() {
   const { profile, update } = useDeviceProfile(),
+    account = useAccount(),
     { words: customWords } = useCustomWords(),
     { records } = useSRS(),
     { items: contentFavorites } = useContentFavorites(),
@@ -9104,7 +9410,9 @@ function ProfileView() {
           {(profile.name || 'M').slice(0, 1).toUpperCase()}
         </div>
         <div>
-          <p className="eyebrow">ЛОКАЛЬНЫЙ ПРОФИЛЬ · {profile.level}</p>
+          <p className="eyebrow">
+            {account.user ? 'ОБЛАЧНЫЙ ПРОФИЛЬ' : 'ПРОФИЛЬ НА УСТРОЙСТВЕ'} · {profile.level}
+          </p>
           {editing ? (
             <input
               className="profile-name-input"
@@ -9114,7 +9422,11 @@ function ProfileView() {
           ) : (
             <h1>{profile.name || 'Maya'}</h1>
           )}
-          <p>Все данные принадлежат этому браузеру и не требуют входа.</p>
+          <p>
+            {account.user
+              ? `Прогресс привязан к ${account.user.email} и синхронизируется между устройствами.`
+              : 'Без входа данные остаются только в этом браузере.'}
+          </p>
         </div>
         <button
           onClick={() => {
@@ -9125,6 +9437,7 @@ function ProfileView() {
           {editing ? 'Сохранить' : 'Изменить профиль'}
         </button>
       </header>
+      <AccountPanel profileName={profile.name} updateProfile={update} />
       <div className="profile-stats">
         <article>
           <Flame />
@@ -9138,7 +9451,7 @@ function ProfileView() {
           <Sparkles />
           <div>
             <b>{profile.xp}</b>
-            <span>локальных XP</span>
+            <span>XP</span>
           </div>
           <small>{profile.totalReviews} ответов</small>
         </article>
@@ -9196,6 +9509,7 @@ function ProfileView() {
       <LearnedWordsPanel />
       <BackupPanel />
       <ReportedExamplesPanel />
+      <ReportedExercisesPanel />
       <Suspense fallback={<section className="analytics-panel">Загружаем локальную аналитику…</section>}>
         <AnalyticsPanel />
       </Suspense>
@@ -9375,12 +9689,13 @@ function LoadingScreen() {
   );
 }
 
-export default function Page() {
+function RitmoApp() {
   const [section, setSection] = useState<Section>('Home'),
     [dark, setDark] = useState(true),
     [open, setOpen] = useState(false),
     [loading, setLoading] = useState(true);
   const { profile } = useDeviceProfile(true);
+  const account = useAccount();
   const navigate = (next: Section, replace = false) => {
     const hash = `#${next.toLowerCase()}`;
     if (window.location.hash !== hash)
@@ -9525,7 +9840,7 @@ export default function Page() {
             <span>{(profile.name || 'M').slice(0, 1).toUpperCase()}</span>
             <div>
               <b>{profile.name || 'Maya'}</b>
-              <small>{profile.level} · локально</small>
+              <small>{profile.level} · {account.user ? 'в облаке' : 'локально'}</small>
             </div>
             <ChevronRight />
           </button>
@@ -9589,5 +9904,13 @@ export default function Page() {
         </nav>
       </div>
     </>
+  );
+}
+
+export default function Page() {
+  return (
+    <AccountProvider>
+      <RitmoApp />
+    </AccountProvider>
   );
 }
