@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
+overrides:
+  esbuild: 0.28.1
+  vite: 8.0.16

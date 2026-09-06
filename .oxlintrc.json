@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "react/react-compiler": "off",
+    "react-hooks/exhaustive-deps": "off"
+  }
+}
