@@ -102,7 +102,11 @@ export const fetchCloudProgress = async (supabase: SupabaseClient, userId: strin
 };
 
 export class ProgressConflict extends Error {
-  constructor(public remote: CloudProgressRow) { super('Progress changed on another device'); }
+  remote: CloudProgressRow;
+  constructor(remote: CloudProgressRow) {
+    super('Progress changed on another device');
+    this.remote = remote;
+  }
 }
 
 export const pushCloudProgress = async (supabase: SupabaseClient, data: ProgressData, expectedRevision: number): Promise<CloudProgressRow> => {
