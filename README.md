@@ -85,7 +85,7 @@ pnpm dev
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://ВАШ_ПРОЕКТ.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=ВАШ_PUBLIC_ANON_KEY
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ВАШ_КЛЮЧ
 ```
 
 6. В настройках сборки Cloudflare добавьте эти же две переменные окружения и
