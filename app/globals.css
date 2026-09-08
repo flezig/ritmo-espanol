@@ -9039,3 +9039,147 @@ body {
     height: 28px;
   }
 }
+
+.intro-voice-setting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 2px 0 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+.intro-voice-setting > svg {
+  width: 16px;
+  height: 16px;
+}
+.intro-voice-setting select {
+  max-width: 260px;
+  height: 36px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 750;
+}
+
+@media (max-width: 680px) {
+  .main:has(.srs-view.active-exercise) .topbar {
+    height: 50px;
+  }
+  .main:has(.srs-view.active-exercise) .content {
+    padding: 8px 8px 88px;
+  }
+  .srs-view.active-exercise .srs-card,
+  .srs-view.active-exercise .word-introduction {
+    height: calc(100dvh - 146px);
+    border-radius: 20px;
+  }
+  .srs-view.active-exercise .word-introduction > section {
+    grid-template-rows: repeat(6, auto);
+    align-content: space-between;
+    overflow: hidden;
+  }
+  .srs-view.active-exercise .word-introduction .intro-examples {
+    overflow: visible;
+  }
+  .srs-view.active-exercise .word-introduction .intro-voice-setting {
+    width: 100%;
+    justify-content: flex-start;
+    margin: 0;
+  }
+  .srs-view.active-exercise .word-introduction .intro-voice-setting select {
+    width: 100%;
+    max-width: none;
+    height: 32px;
+  }
+  .srs-view.active-exercise .word-introduction .intro-audio-speeds {
+    margin: 2px 0;
+  }
+  .srs-view.active-exercise .word-introduction .intro-listen {
+    min-height: 34px;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+  .srs-view.active-exercise .word-introduction .intro-examples article {
+    padding: 7px 8px;
+  }
+  .srs-view.active-exercise .word-introduction .intro-examples b,
+  .srs-view.active-exercise .word-introduction .intro-examples p {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  .srs-view.active-exercise .word-introduction .example-audio {
+    min-height: 26px;
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+
+  .srs-view.active-exercise .srs-card > header {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 5px 8px;
+    min-height: 76px;
+    padding: 9px 98px 8px 12px;
+  }
+  .srs-view.active-exercise .srs-card > header > b {
+    margin-left: 0;
+    white-space: nowrap;
+  }
+  .srs-view.active-exercise .srs-card > header > .practice-exit,
+  .srs-view.active-exercise .srs-card > header > .mark-new {
+    min-height: 30px;
+    height: 30px;
+    padding: 0 7px;
+    font-size: 9px;
+  }
+  .srs-view.active-exercise .srs-card > header > .favorite {
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    z-index: 9;
+    width: 36px;
+    height: 36px;
+  }
+  .srs-view.active-exercise .srs-card > .exercise-report-wrap {
+    top: 12px;
+    right: 52px;
+  }
+}
+
+@media (max-width: 390px), (max-height: 700px) {
+  .srs-view.active-exercise .word-introduction h2 {
+    margin: 2px 0;
+    font-size: 25px;
+  }
+  .srs-view.active-exercise .word-introduction h3 {
+    margin-bottom: 3px;
+    font-size: 15px;
+  }
+  .srs-view.active-exercise .word-introduction .intro-examples {
+    gap: 5px;
+    margin-bottom: 4px;
+  }
+  .srs-view.active-exercise .word-introduction .intro-examples article:nth-child(n + 3) {
+    display: none;
+  }
+}
+
+.challenge .answers {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.challenge .answers button {
+  height: auto;
+  min-height: 42px;
+  padding: 7px 9px;
+  line-height: 1.25;
+}
+@media (max-width: 520px) {
+  .challenge .answers {
+    grid-template-columns: 1fr;
+  }
+}

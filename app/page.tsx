@@ -82,7 +82,6 @@ type Section =
   | 'Profile';
 
 const TodayPanel = lazy(() => import('./components/today-panel'));
-const AnalyticsPanel = lazy(() => import('./components/analytics-panel'));
 
 const nav: { name: Section; label: string; icon: typeof Home }[] = [
   { name: 'Home', label: 'Главная', icon: Home },
@@ -2177,6 +2176,99 @@ function ColombianWeek({ go }: { go: (section: Section) => void }) {
   );
 }
 
+type DailyChallenge = {
+  id: string;
+  instruction: string;
+  prompt: string;
+  answer: string;
+  options: string[];
+  explanation: string;
+};
+
+const dailyChallengeWords = vocabularyTopics.flatMap((topic) =>
+  topic.entries.map((entry) => ({ ...entry, topic: topic.name })),
+);
+
+const dailyOptionSet = (
+  targetIndex: number,
+  value: (entry: (typeof dailyChallengeWords)[number]) => string,
+) => {
+  const target = value(dailyChallengeWords[targetIndex]),
+    options = [target];
+  for (
+    let step = 1;
+    options.length < 4 && step < dailyChallengeWords.length;
+    step += 1
+  ) {
+    const candidate = value(
+      dailyChallengeWords[(targetIndex + step * 37) % dailyChallengeWords.length],
+    );
+    if (
+      candidate &&
+      !options.some((item) => normalizeText(item) === normalizeText(candidate))
+    )
+      options.push(candidate);
+  }
+  const offset = targetIndex % options.length;
+  return options.map((_, index) => options[(index + offset) % options.length]);
+};
+
+const dailyChallenges: DailyChallenge[] = dailyChallengeWords.map(
+  (entry, index) => {
+    const mode = index % 4,
+      exampleRu = entry.exampleRu || `Пример со словом «${entry.ru}».`,
+      spanishOptions = dailyOptionSet(index, (item) => item.es),
+      russianOptions = dailyOptionSet(index, (item) => item.ru),
+      explanation = `${entry.example} — ${exampleRu}`;
+    if (mode === 0)
+      return {
+        id: `${entry.topic}-${entry.id}-es-ru`,
+        instruction: 'Выберите точный перевод',
+        prompt: `Что означает «${entry.es}»?`,
+        answer: entry.ru,
+        options: russianOptions,
+        explanation,
+      };
+    if (mode === 1)
+      return {
+        id: `${entry.topic}-${entry.id}-ru-es`,
+        instruction: 'Вспомните слово по-испански',
+        prompt: `Как сказать «${entry.ru}»?`,
+        answer: entry.es,
+        options: spanishOptions,
+        explanation,
+      };
+    if (mode === 2)
+      return {
+        id: `${entry.topic}-${entry.id}-context-ru`,
+        instruction: 'Поймите ситуацию по полному переводу',
+        prompt: `${exampleRu} Какое ключевое слово использовано?`,
+        answer: entry.es,
+        options: spanishOptions,
+        explanation,
+      };
+    return {
+      id: `${entry.topic}-${entry.id}-context-es`,
+      instruction: 'Поймите испанскую фразу в контексте',
+      prompt: `${entry.example} Какое значение здесь подходит?`,
+      answer: entry.ru,
+      options: russianOptions,
+      explanation,
+    };
+  },
+);
+
+const dailyChallengeFor = (day: string) => {
+  const [year, month, date] = day.split('-').map(Number),
+    dayNumber = Number.isFinite(year + month + date)
+      ? Math.floor(Date.UTC(year, month - 1, date) / 86400000)
+      : 0;
+  return dailyChallenges[
+    ((dayNumber % dailyChallenges.length) + dailyChallenges.length) %
+      dailyChallenges.length
+  ];
+};
+
 function HomeView({
   go,
   profile,
@@ -2186,7 +2278,8 @@ function HomeView({
 }) {
   const [answer, setAnswer] = useState(''),
     [hour, setHour] = useState(12),
-    [currentTime, setCurrentTime] = useState(0);
+    [currentTime, setCurrentTime] = useState(0),
+    [dailyDay, setDailyDay] = useState('2000-01-01');
   const { records } = useSRS(),
     { progress: wordProgress } = useWordProgress(),
     errors = useErrorProfile(),
@@ -2211,11 +2304,34 @@ function HomeView({
       const date = new Date();
       setHour(date.getHours());
       setCurrentTime(date.getTime());
+      setDailyDay(localDateKey(date));
     };
     queueMicrotask(update);
     const timer = window.setInterval(update, 60000);
-    return () => window.clearInterval(timer);
+    let midnightTimer = 0;
+    const scheduleMidnight = () => {
+      const now = new Date(),
+        next = new Date(now);
+      next.setHours(24, 0, 0, 50);
+      midnightTimer = window.setTimeout(() => {
+        update();
+        scheduleMidnight();
+      }, next.getTime() - now.getTime());
+    };
+    scheduleMidnight();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') update();
+    };
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(midnightTimer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, []);
+  const dailyChallenge = dailyChallengeFor(dailyDay),
+    dailyCorrect = answer === dailyChallenge.answer;
+  useEffect(() => setAnswer(''), [dailyChallenge.id]);
   const period =
       hour >= 5 && hour < 12
         ? 'morning'
@@ -2316,11 +2432,11 @@ function HomeView({
         </article>
         <article className="challenge">
           <ReportExerciseButton
-            id="home:daily:ir-de-rumba"
+            id={`home:daily:${dailyDay}:${dailyChallenge.id}`}
             section="Главная: задание дня"
-            prompt="Esta noche vamos ___ rumba."
-            answer="de"
-            options={['a', 'de', 'por']}
+            prompt={dailyChallenge.prompt}
+            answer={dailyChallenge.answer}
+            options={dailyChallenge.options}
           />
           <div className="challenge-top">
             <span>
@@ -2329,32 +2445,44 @@ function HomeView({
             </span>
             <small>1 МИН</small>
           </div>
-          <p>Дополните фразу</p>
-          <h3>“Esta noche vamos ___ rumba.”</h3>
+          <p>{dailyChallenge.instruction}</p>
+          <h3>{dailyChallenge.prompt}</h3>
           <div className="answers">
-            {['a', 'de', 'por'].map((a) => (
+            {dailyChallenge.options.map((option) => (
               <button
-                key={a}
+                key={option}
                 className={
-                  answer === a ? (a === 'de' ? 'correct' : 'wrong') : ''
+                  answer === option
+                    ? option === dailyChallenge.answer
+                      ? 'correct'
+                      : 'wrong'
+                    : ''
                 }
                 onClick={() => {
-                  setAnswer(a);
-                  playFeedbackSound(a === 'de');
+                  setAnswer(option);
+                  playFeedbackSound(option === dailyChallenge.answer);
                   if (!answer)
-                    recordLearningEvent(a === 'de', a === 'de' ? 5 : 2);
+                    recordLearningEvent(
+                      option === dailyChallenge.answer,
+                      option === dailyChallenge.answer ? 5 : 2,
+                    );
                 }}
               >
-                {answer === a && a === 'de' ? <Check /> : null}
-                {a}
+                {answer === option && option === dailyChallenge.answer ? (
+                  <Check />
+                ) : null}
+                {option}
               </button>
             ))}
           </div>
           {answer && (
-            <div className={answer === 'de' ? 'feedback good' : 'feedback'}>
-              {answer === 'de'
-                ? '¡Perfecto! «Ir de rumba» — устойчивое выражение.'
-                : 'Почти! Здесь используется выражение «ir de rumba».'}
+            <div className={dailyCorrect ? 'feedback good' : 'feedback'}>
+              <b>
+                {dailyCorrect
+                  ? '¡Muy bien!'
+                  : `Правильный ответ: ${dailyChallenge.answer}.`}
+              </b>{' '}
+              {dailyChallenge.explanation}
             </div>
           )}
         </article>
@@ -7612,21 +7740,9 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             <button className="practice-exit" onClick={showModes}>Все режимы</button>
           </header>
           <section>
-            <div className="speech-settings">
-              <div>
-                <button
-                  className={audioTarget === 'word' ? 'active' : ''}
-                  onClick={() => setAudioTarget('word')}
-                >
-                  Слово
-                </button>
-                <button
-                  className={audioTarget === 'sentence' ? 'active' : ''}
-                  onClick={() => setAudioTarget('sentence')}
-                >
-                  Предложение
-                </button>
-              </div>
+            <div className="intro-voice-setting">
+              <Volume2 />
+              <span>Голос</span>
               {voices.length > 1 && (
                 <select
                   value={voiceIndex}
@@ -7644,10 +7760,10 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
               )}
             </div>
             <div className="intro-audio-speeds">
-              <button className="intro-listen" onClick={() => speak(1)}>
+              <button className="intro-listen" onClick={() => speak(1, 'word')}>
                 <Volume2 /> Обычная скорость
               </button>
-              <button className="intro-listen slow" onClick={() => speak(0.5)}>
+              <button className="intro-listen slow" onClick={() => speak(0.5, 'word')}>
                 <Volume2 /> Медленно · 0.5×
               </button>
             </div>
@@ -9538,9 +9654,6 @@ function ProfileView() {
       <BackupPanel />
       <ReportedExamplesPanel />
       <ReportedExercisesPanel />
-      <Suspense fallback={<section className="analytics-panel">Загружаем локальную аналитику…</section>}>
-        <AnalyticsPanel />
-      </Suspense>
       <section className="favorites-panel">
         <header>
           <div>
