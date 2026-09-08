@@ -8,6 +8,7 @@ export const BACKUP_KEYS = [
   'ritmo-detective-progress', 'ritmo-rush-records', 'ritmo-achievement-stats',
   'ritmo-achievements', 'ritmo-placement', 'ritmo-local-analytics',
   'ritmo-exercise-reports',
+  'ritmo-daily-challenges',
   'ritmo-report-outbox',
   'ritmo-report-migration',
   'ritmo-data-schema-version',

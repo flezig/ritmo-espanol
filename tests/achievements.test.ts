@@ -56,6 +56,7 @@ test('all explicit achievement events update their persistent counters', () => {
   );
   stats = applyAchievementEvent(stats, { type: 'listening-correct' }, 12);
   stats = applyAchievementEvent(stats, { type: 'pronunciation-correct' }, 12);
+  stats = applyAchievementEvent(stats, { type: 'placement-test-complete', level: 'B2' }, 12);
   stats = applyAchievementEvent(
     stats,
     { type: 'lesson-complete', lessonId: 'intro' },
@@ -69,7 +70,41 @@ test('all explicit achievement events update their persistent counters', () => {
   assert.equal(stats.songSessions, 1);
   assert.equal(stats.listeningCorrect, 1);
   assert.equal(stats.pronunciationCorrect, 1);
+  assert.equal(stats.placementTests, 1);
+  assert.deepEqual(stats.placementLevels, ['B2']);
   assert.deepEqual(stats.lessonIds, ['intro']);
+});
+
+test('daily achievements count calendar days once', () => {
+  let stats = applyAchievementEvent(
+    defaultAchievementStats,
+    { type: 'daily-challenge-complete', day: '2026-09-09' },
+    12,
+  );
+  stats = applyAchievementEvent(
+    stats,
+    { type: 'daily-challenge-complete', day: '2026-09-09' },
+    12,
+  );
+  stats = applyAchievementEvent(
+    stats,
+    { type: 'daily-plan-complete', day: '2026-09-09' },
+    12,
+  );
+  stats = applyAchievementEvent(
+    stats,
+    { type: 'daily-plan-complete', day: '2026-09-09' },
+    12,
+  );
+  assert.deepEqual(stats.dailyChallengeDays, ['2026-09-09']);
+  assert.deepEqual(stats.dailyPlanDays, ['2026-09-09']);
+
+  stats = applyAchievementEvent(
+    stats,
+    { type: 'daily-challenge-complete', day: '2026-09-10' },
+    12,
+  );
+  assert.equal(stats.dailyChallengeDays.length, 2);
 });
 
 test('every achievement has a unique id, positive target and progress rule', () => {
@@ -82,7 +117,7 @@ test('every achievement has a unique id, positive target and progress rule', () 
     targets = [...catalog.matchAll(/target: (\d+)/g)].map((match) =>
       Number(match[1]),
     );
-  assert.equal(ids.length, 68);
+  assert.equal(ids.length, 82);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal((catalog.match(/progress:/g) || []).length, ids.length);
   assert.equal(targets.length, ids.length);

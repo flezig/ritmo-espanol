@@ -24,6 +24,7 @@ const requiredProgressKeys = [
   'ritmo-achievement-stats',
   'ritmo-achievements',
   'ritmo-placement',
+  'ritmo-daily-challenges',
   'ritmo-data-schema-version',
 ] as const;
 

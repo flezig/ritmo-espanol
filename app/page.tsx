@@ -201,6 +201,7 @@ const defaultProfile: DeviceProfile = {
   xp: 0,
   dailyReviews: {},
 };
+const DAILY_PLAN_TARGET = 16;
 const russianDayWord = (count: number) => {
   const mod100 = count % 100,
     mod10 = count % 10;
@@ -251,7 +252,8 @@ function useDeviceProfile(trackVisit = false) {
 }
 const recordLearningEvent = (correct: boolean, xp = 5) => {
   const current = loadProfile(),
-    today = localDateKey();
+    today = localDateKey(),
+    dailyTotal = (current.dailyReviews[today] || 0) + 1;
   const isNewActiveDay = !current.activeDays.includes(today),
     streak = isNewActiveDay
       ? nextStreak(current.lastVisit, current.streak, current.activeDays)
@@ -267,10 +269,12 @@ const recordLearningEvent = (correct: boolean, xp = 5) => {
     xp: current.xp + xp,
     dailyReviews: {
       ...current.dailyReviews,
-      [today]: (current.dailyReviews[today] || 0) + 1,
+      [today]: dailyTotal,
     },
   });
-  window.setTimeout(() => evaluateAchievements(true), 0);
+  if (dailyTotal >= DAILY_PLAN_TARGET)
+    recordAchievementEvent({ type: 'daily-plan-complete', day: today });
+  else window.setTimeout(() => evaluateAchievements(true), 0);
 };
 
 type AchievementCategory =
@@ -303,6 +307,27 @@ const achievementStorage = {
   stats: 'ritmo-achievement-stats',
   unlocks: 'ritmo-achievements',
 };
+const savedPlacementCount = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem('ritmo-placement') || 'null');
+    if (Array.isArray(stored?.history)) return stored.history.length;
+    return stored?.skills ? 1 : 0;
+  } catch {
+    return 0;
+  }
+};
+const savedPlacementLevel = (): '' | 'A1' | 'A2' | 'B1' | 'B2' | 'C1' => {
+  try {
+    const stored = JSON.parse(localStorage.getItem('ritmo-placement') || 'null'),
+      result = stored?.latest || stored,
+      level = String(result?.level || '').slice(0, 2);
+    return ['A1', 'A2', 'B1', 'B2', 'C1'].includes(level)
+      ? (level as 'A1' | 'A2' | 'B1' | 'B2' | 'C1')
+      : '';
+  } catch {
+    return '';
+  }
+};
 const loadAchievementStats = (): AchievementStats => {
   try {
     const stored = JSON.parse(
@@ -316,6 +341,21 @@ const loadAchievementStats = (): AchievementStats => {
       ...defaultAchievementStats,
       ...stored,
       lessonIds: Array.isArray(stored.lessonIds) ? stored.lessonIds : [],
+      dailyChallengeDays: Array.isArray(stored.dailyChallengeDays)
+        ? stored.dailyChallengeDays
+        : [],
+      dailyPlanDays: Array.isArray(stored.dailyPlanDays)
+        ? stored.dailyPlanDays
+        : [],
+      placementTests: Math.max(
+        Number(stored.placementTests) || 0,
+        savedPlacementCount(),
+      ),
+      placementLevels: Array.isArray(stored.placementLevels)
+        ? stored.placementLevels
+        : savedPlacementLevel()
+          ? [savedPlacementLevel()]
+          : [],
       topicSessions,
       musicPracticeSessions: Math.max(
         Number(stored.musicPracticeSessions) || 0,
@@ -340,6 +380,12 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: 'hola', category: 'Старт', icon: '👋', name: '¡Hola!', lockedMotto: '«Todo empieza con una palabra.»', unlockedMotto: '«Ya has dado el primer paso.»', description: 'Завершить первый урок.', target: 1, progress: ({ stats }) => Number(stats.lessonIds.includes('intro')) },
   { id: 'primer-ritmo', category: 'Старт', icon: '🐾', name: 'Primer Ritmo', lockedMotto: '«Encuentra tu ritmo.»', unlockedMotto: '«Tu ritmo ya ha comenzado.»', description: 'Завершить первую сессию Practice.', target: 1, progress: ({ stats }) => stats.practiceSessions },
   { id: 'primera-cancion', category: 'Старт', icon: '🎧', name: 'Primera Canción', lockedMotto: '«Escucha con atención.»', unlockedMotto: '«La primera canción ya es tuya.»', description: 'Завершить один полный тест по песне.', target: 1, progress: ({ stats }) => stats.songSessions },
+  { id: 'prueba-inicial', category: 'Старт', icon: '🧭', name: 'Punto de Partida', lockedMotto: '«Primero descubre dónde estás.»', unlockedMotto: '«Ya conoces tu punto de partida.»', description: 'Полностью пройти входной тест.', target: 1, progress: ({ stats }) => stats.placementTests },
+  { id: 'placement-a1', category: 'Старт', icon: '🌱', name: 'Base A1', lockedMotto: '«Cada camino empieza por lo esencial.»', unlockedMotto: '«Tu base ya tiene un nombre.»', description: 'Получить уровень A1 во входном тесте.', target: 1, progress: ({ stats }) => Number(stats.placementLevels.includes('A1')) },
+  { id: 'placement-a2', category: 'Старт', icon: '🧳', name: 'Rumbo A2', lockedMotto: '«Ya puedes moverte por situaciones cotidianas.»', unlockedMotto: '«El camino cotidiano está abierto.»', description: 'Получить уровень A2 во входном тесте.', target: 1, progress: ({ stats }) => Number(stats.placementLevels.includes('A2')) },
+  { id: 'placement-b1', category: 'Мастерство', icon: '🗣️', name: 'Voz B1', lockedMotto: '«Las ideas esperan su voz.»', unlockedMotto: '«Ya puedes contar, explicar y opinar.»', description: 'Получить уровень B1 во входном тесте.', target: 1, progress: ({ stats }) => Number(stats.placementLevels.includes('B1')) },
+  { id: 'placement-b2', category: 'Мастерство', icon: '🧠', name: 'Mirada B2', lockedMotto: '«Los matices están cada vez más cerca.»', unlockedMotto: '«Lees entre líneas y argumentas con soltura.»', description: 'Получить уровень B2 во входном тесте.', target: 1, progress: ({ stats }) => Number(stats.placementLevels.includes('B2')) },
+  { id: 'placement-c1', category: 'Мастерство', icon: '🏛️', name: 'Dominio C1', lockedMotto: '«La precisión es el último horizonte.»', unlockedMotto: '«El español ya es una herramienta precisa.»', description: 'Получить уровень C1 во входном тесте.', target: 1, progress: ({ stats }) => Number(stats.placementLevels.includes('C1')) },
   { id: 'racha-3', category: 'Регулярность', icon: '🔥', name: 'Tres Días', lockedMotto: '«La constancia empieza aquí.»', unlockedMotto: '«Tres días, un solo ritmo.»', description: 'Заниматься 3 дня подряд.', target: 3, progress: ({ profile }) => profile.streak },
   { id: 'racha-7', category: 'Регулярность', icon: '🌶️', name: 'Semana Picante', lockedMotto: '«Una semana puede cambiar mucho.»', unlockedMotto: '«Siete días sin perder el sabor.»', description: 'Заниматься 7 дней подряд.', target: 7, progress: ({ profile }) => profile.streak },
   { id: 'racha-14', category: 'Регулярность', icon: '🌉', name: 'Dos Semanas', lockedMotto: '«Un puente se construye paso a paso.»', unlockedMotto: '«Catorce días ya forman un camino.»', description: 'Заниматься 14 дней подряд.', target: 14, progress: ({ profile }) => profile.streak },
@@ -349,6 +395,14 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: 'active-10', category: 'Регулярность', icon: '📅', name: 'Diez Encuentros', lockedMotto: '«Cada regreso cuenta.»', unlockedMotto: '«Has vuelto diez veces al español.»', description: 'Заниматься в 10 разных календарных дней.', target: 10, progress: ({ profile }) => profile.activeDays.length },
   { id: 'active-30', category: 'Регулярность', icon: '🗓️', name: 'Treinta Encuentros', lockedMotto: '«No hace falta correr para avanzar.»', unlockedMotto: '«Treinta días activos quedaron en tu historia.»', description: 'Заниматься в 30 разных календарных дней.', target: 30, progress: ({ profile }) => profile.activeDays.length },
   { id: 'active-100', category: 'Регулярность', icon: '🏮', name: 'Siempre Vuelves', lockedMotto: '«La puerta seguirá abierta.»', unlockedMotto: '«Has regresado cien días distintos.»', description: 'Заниматься в 100 разных календарных дней.', target: 100, progress: ({ profile }) => profile.activeDays.length },
+  { id: 'daily-challenge-1', category: 'Регулярность', icon: '⚡', name: 'Primer Reto', lockedMotto: '«Un pequeño reto te espera.»', unlockedMotto: '«El primer reto del día está completo.»', description: 'Выполнить первое задание дня.', target: 1, progress: ({ stats }) => stats.dailyChallengeDays.length },
+  { id: 'daily-challenge-7', category: 'Регулярность', icon: '🗓️', name: 'Semana de Retos', lockedMotto: '«Cada día guarda una pregunta.»', unlockedMotto: '«Siete retos ya forman una semana.»', description: 'Выполнить задание дня 7 раз.', target: 7, progress: ({ stats }) => stats.dailyChallengeDays.length },
+  { id: 'daily-challenge-30', category: 'Регулярность', icon: '🧩', name: 'Treinta Retos', lockedMotto: '«La colección todavía tiene huecos.»', unlockedMotto: '«Treinta retos encontraron su respuesta.»', description: 'Выполнить задание дня 30 раз.', target: 30, progress: ({ stats }) => stats.dailyChallengeDays.length },
+  { id: 'daily-challenge-100', category: 'Регулярность', icon: '🏅', name: 'Cien Retos', lockedMotto: '«Una pregunta cada vez.»', unlockedMotto: '«Cien días, cien retos resueltos.»', description: 'Выполнить задание дня 100 раз.', target: 100, progress: ({ stats }) => stats.dailyChallengeDays.length },
+  { id: 'daily-plan-1', category: 'Прогресс', icon: '✅', name: 'Plan Cumplido', lockedMotto: '«El día todavía tiene casillas vacías.»', unlockedMotto: '«Hoy cumpliste todo lo que te propusiste.»', description: 'Впервые выполнить план: дать 16 ответов за день.', target: 1, progress: ({ stats }) => stats.dailyPlanDays.length },
+  { id: 'daily-plan-7', category: 'Прогресс', icon: '📋', name: 'Siete Planes', lockedMotto: '«Paso a paso, casilla a casilla.»', unlockedMotto: '«Siete planes diarios completados.»', description: 'Выполнить дневной план 7 раз.', target: 7, progress: ({ stats }) => stats.dailyPlanDays.length },
+  { id: 'daily-plan-30', category: 'Прогресс', icon: '🌞', name: 'Mes en Marcha', lockedMotto: '«Cada día puede sumar.»', unlockedMotto: '«Treinta planes completos iluminan el camino.»', description: 'Выполнить дневной план 30 раз.', target: 30, progress: ({ stats }) => stats.dailyPlanDays.length },
+  { id: 'daily-plan-100', category: 'Прогресс', icon: '🏆', name: 'Constancia Total', lockedMotto: '«La constancia se construye hoy.»', unlockedMotto: '«Cien planes diarios completados.»', description: 'Выполнить дневной план 100 раз.', target: 100, progress: ({ stats }) => stats.dailyPlanDays.length },
   { id: 'palabras-10', category: 'Прогресс', icon: '🌱', name: 'Primer Brote', lockedMotto: '«Todo jardín empieza pequeño.»', unlockedMotto: '«Tus primeras diez palabras ya crecen.»', description: 'Надёжно выучить 10 слов.', target: 10, progress: ({ learnedWords }) => learnedWords },
   { id: 'palabras-25', category: 'Прогресс', icon: '🪴', name: 'Jardín de Palabras', lockedMotto: '«Cuida cada palabra.»', unlockedMotto: '«Veinticinco palabras echaron raíces.»', description: 'Надёжно выучить 25 слов.', target: 25, progress: ({ learnedWords }) => learnedWords },
   { id: 'palabras-50', category: 'Прогресс', icon: '🌹', name: 'Romántico', lockedMotto: '«Las palabras acercan.»', unlockedMotto: '«Cincuenta palabras ya florecen.»', description: 'Надёжно выучить 50 слов.', target: 50, progress: ({ learnedWords }) => learnedWords },
@@ -2119,6 +2173,17 @@ function useAchievements() {
   }));
 }
 
+function useAchievementStats() {
+  const [stats, setStats] = useState<AchievementStats>(defaultAchievementStats);
+  useEffect(() => {
+    const refresh = () => setStats(loadAchievementStats());
+    refresh();
+    window.addEventListener('ritmo-achievement-stats', refresh);
+    return () => window.removeEventListener('ritmo-achievement-stats', refresh);
+  }, []);
+  return stats;
+}
+
 function ColombianWeek({ go }: { go: (section: Section) => void }) {
   const achievement = useAchievements().find(
       (item) => item.id === 'ritmo-colombiano',
@@ -2189,6 +2254,26 @@ type DailyChallenge = {
   answer: string;
   options: string[];
   explanation: string;
+};
+
+type DailyChallengeCompletion = {
+  challenge: DailyChallenge;
+  answer: string;
+  correct: boolean;
+  completedAt: string;
+};
+
+const dailyChallengeStorage = 'ritmo-daily-challenges';
+const loadDailyChallengeCompletions = (): Record<
+  string,
+  DailyChallengeCompletion
+> => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(dailyChallengeStorage) || '{}');
+    return stored && typeof stored === 'object' ? stored : {};
+  } catch {
+    return {};
+  }
 };
 
 const dailyChallengeWords = vocabularyTopics.flatMap((topic) =>
@@ -2306,15 +2391,18 @@ function HomeView({
   profile: DeviceProfile;
 }) {
   const [answer, setAnswer] = useState(''),
+    [dailyCompletion, setDailyCompletion] =
+      useState<DailyChallengeCompletion | null>(null),
     [hour, setHour] = useState(12),
     [currentTime, setCurrentTime] = useState(0),
     [dailyDay, setDailyDay] = useState('2000-01-01');
   const { records } = useSRS(),
+    achievementStats = useAchievementStats(),
     { progress: wordProgress } = useWordProgress(),
     { progress: lessonProgress } = useLessonProgress(),
     errors = useErrorProfile(),
     todayDone = profile.dailyReviews?.[localDateKey()] || 0,
-    dailyTarget = 16,
+    dailyTarget = DAILY_PLAN_TARGET,
     studyDeck = makeStudyDeck(),
     recognitionDeck = studyDeck.filter(
       (card) => card.skill === 'recognition',
@@ -2376,9 +2464,49 @@ function HomeView({
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, []);
-  const dailyChallenge = dailyChallengeFor(dailyDay),
+  const generatedDailyChallenge = dailyChallengeFor(dailyDay),
+    dailyChallenge = dailyCompletion?.challenge || generatedDailyChallenge,
     dailyCorrect = answer === dailyChallenge.answer;
-  useEffect(() => setAnswer(''), [dailyChallenge.id]);
+  useEffect(() => {
+    const saved = loadDailyChallengeCompletions()[dailyDay];
+    if (saved?.challenge?.id && typeof saved.answer === 'string') {
+      setDailyCompletion(saved);
+      setAnswer(saved.answer);
+    } else {
+      setDailyCompletion(null);
+      setAnswer('');
+    }
+  }, [dailyDay, generatedDailyChallenge.id]);
+  useEffect(() => {
+    if (dailyDay !== '2000-01-01' && todayDone >= DAILY_PLAN_TARGET)
+      recordAchievementEvent({ type: 'daily-plan-complete', day: dailyDay });
+  }, [dailyDay, todayDone]);
+  const completeDailyChallenge = (option: string) => {
+    if (answer) return;
+    const correct = option === generatedDailyChallenge.answer,
+      completion: DailyChallengeCompletion = {
+        challenge: generatedDailyChallenge,
+        answer: option,
+        correct,
+        completedAt: new Date().toISOString(),
+      },
+      updated = {
+        ...loadDailyChallengeCompletions(),
+        [dailyDay]: completion,
+      },
+      trimmed = Object.fromEntries(
+        Object.entries(updated)
+          .sort(([first], [second]) => first.localeCompare(second))
+          .slice(-400),
+      );
+    localStorage.setItem(dailyChallengeStorage, JSON.stringify(trimmed));
+    window.dispatchEvent(new Event('ritmo-daily-challenges'));
+    setDailyCompletion(completion);
+    setAnswer(option);
+    playFeedbackSound(correct);
+    recordLearningEvent(correct, correct ? 5 : 2);
+    recordAchievementEvent({ type: 'daily-challenge-complete', day: dailyDay });
+  };
   const period =
       hour >= 5 && hour < 12
         ? 'morning'
@@ -2421,6 +2549,9 @@ function HomeView({
           lessonTitle={nextLesson?.title || ''}
           lessonDone={nextLessonDone}
           go={go}
+          onPlacementComplete={(level) =>
+            recordAchievementEvent({ type: 'placement-test-complete', level })
+          }
         />
       </Suspense>
       <section className="stats-row">
@@ -2486,7 +2617,7 @@ function HomeView({
             </button>
           </div>
         </article>
-        <article className="challenge">
+        <article className={`challenge ${answer ? 'completed' : ''}`}>
           <ReportExerciseButton
             id={`home:daily:${dailyChallenge.id}`}
             section="Главная: задание дня"
@@ -2499,7 +2630,7 @@ function HomeView({
               <Zap fill="currentColor" />
               ЗАДАНИЕ ДНЯ
             </span>
-            <small>1 МИН</small>
+            <small>{answer ? '✓ ВЫПОЛНЕНО' : '1 МИН'}</small>
           </div>
           <p>{dailyChallenge.instruction}</p>
           <h3>{dailyChallenge.prompt}</h3>
@@ -2517,15 +2648,7 @@ function HomeView({
                     : ''
                 }
                 disabled={!!answer}
-                onClick={() => {
-                  setAnswer(option);
-                  playFeedbackSound(option === dailyChallenge.answer);
-                  if (!answer)
-                    recordLearningEvent(
-                      option === dailyChallenge.answer,
-                      option === dailyChallenge.answer ? 5 : 2,
-                    );
-                }}
+                onClick={() => completeDailyChallenge(option)}
               >
                 {answer === option && option === dailyChallenge.answer ? (
                   <Check />
@@ -2543,6 +2666,14 @@ function HomeView({
               </b>{' '}
               {dailyChallenge.explanation}
             </div>
+          )}
+          <small className="daily-challenge-count">
+            Выполнено заданий дня: {achievementStats.dailyChallengeDays.length}
+          </small>
+          {answer && (
+            <small className="challenge-complete-note">
+              Результат сохранён. Новое задание появится завтра в 00:00.
+            </small>
           )}
         </article>
       </section>
@@ -3470,6 +3601,18 @@ const topicPlaces: Record<string, number> = {
   'Знакомства и отношения': 1,
   'Переписка и интернет': 8,
 };
+const a2TopicPlaces: Record<string, number> = {
+  'Время, даты и планы': 0,
+  'Услуги и документы': 1,
+  'Биография и события жизни': 2,
+  'Эмоции и мнение': 3,
+  'Праздники и встречи': 4,
+  'Быт и район': 5,
+  'Проблемы и экстренные ситуации': 6,
+  'Техника и устройства': 7,
+  'Культура и медиа': 8,
+  'Связующие слова и полезные конструкции': 9,
+};
 const emptyCustomWord = {
   es: '',
   ru: '',
@@ -3717,7 +3860,8 @@ function VocabularyView() {
       </label>
       <div className="vocab-topic-tabs">
         {vocabularyTopics.map((item, index) => {
-          const scene = topicPlaces[item.name] ?? index % 12;
+          const scene = topicPlaces[item.name] ?? index % 12,
+            a2Scene = a2TopicPlaces[item.name];
           return (
             <button
               className={`${selected === item.name && !normalized ? 'active' : ''} place-topic`}
@@ -3735,7 +3879,13 @@ function VocabularyView() {
               }}
               key={item.name}
             >
-              <span className={`topic-scene scene-${scene}`} />
+              <span
+                className={
+                  a2Scene === undefined
+                    ? `topic-scene scene-${scene}`
+                    : `topic-scene a2-topic-scene a2-scene-${a2Scene}`
+                }
+              />
               <span>{item.icon}</span>
               <b>{item.name}</b>
               <small>{item.entries.length} слов</small>

@@ -7289,6 +7289,34 @@ body {
 .topic-scene.scene-11 {
   background-position: 100% 100%;
 }
+.topic-scene.a2-topic-scene {
+  background-image: url('/scenes/a2-vocabulary-topics-atlas.jpg');
+  background-size: 500% auto;
+}
+.topic-scene.a2-scene-0 { background-position: 0 0; }
+.topic-scene.a2-scene-1 { background-position: 25% 0; }
+.topic-scene.a2-scene-2 { background-position: 50% 0; }
+.topic-scene.a2-scene-3 { background-position: 75% 0; }
+.topic-scene.a2-scene-4 { background-position: 100% 0; }
+.topic-scene.a2-scene-5 { background-position: 0 100%; }
+.topic-scene.a2-scene-6 { background-position: 25% 100%; }
+.topic-scene.a2-scene-7 { background-position: 50% 100%; }
+.topic-scene.a2-scene-8 { background-position: 75% 100%; }
+.topic-scene.a2-scene-9 { background-position: 100% 100%; }
+
+.challenge.completed {
+  border-color: color-mix(in srgb, #35d8bd 55%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(53, 216, 189, .13);
+}
+.challenge-top small { white-space: nowrap; }
+.daily-challenge-count,
+.challenge-complete-note {
+  display: block;
+  margin-top: 10px;
+  line-height: 1.45;
+}
+.daily-challenge-count { color: var(--muted); }
+.challenge-complete-note { color: #62e6c9; font-weight: 800; }
 .place-topic > span:not(.topic-scene),
 .place-topic > b,
 .place-topic > small {
@@ -9217,20 +9245,26 @@ body {
 
 /* Give profile and memory figures enough vertical breathing room. */
 .profile-stats article {
-  min-height: 116px;
-  padding: 21px 19px;
-  row-gap: 8px;
+  min-height: 132px;
+  padding: 23px 20px;
+  row-gap: 10px;
 }
 .profile-stats article div {
-  gap: 4px;
+  gap: 6px;
 }
 .profile-stats b {
-  font-size: 28px;
-  line-height: 1.05;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 .profile-stats span,
 .profile-stats small {
-  line-height: 1.4;
+  line-height: 1.5;
 }
 .profile-stats small {
   margin-top: 2px;
@@ -9264,11 +9298,13 @@ body {
 
 @media (max-width: 680px) {
   .profile-stats article {
-    min-height: 124px;
-    padding: 19px 15px;
+    min-height: 138px;
+    padding: 20px 15px;
   }
   .profile-stats b {
-    font-size: 27px;
+    min-height: 39px;
+    font-size: 32px;
+    line-height: 1.2;
   }
   .memory-numbers article {
     min-height: 138px;
