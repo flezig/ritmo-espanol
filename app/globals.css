@@ -8829,3 +8829,213 @@ body {
 .account-gate input { padding: 12px; border: 1px solid #8b829c; border-radius: 10px; color: #171423; background: #fff; }
 .account-gate button { padding: 12px 18px; border-radius: 12px; color: #20162b; background: #ffc883; font-weight: 700; }
 @media (max-width: 700px) { .account-gate { margin: 30px 16px; } }
+
+/* Selected learning content stays reachable and readable on small screens. */
+.lesson-workspace,
+.vocab-library {
+  scroll-margin-top: 18px;
+}
+.lesson-practice-tab {
+  color: var(--purple) !important;
+  font-weight: 950 !important;
+}
+.lesson-practice-tab:not(.active) {
+  background: color-mix(in srgb, var(--purple) 10%, var(--panel)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--purple) 28%, transparent);
+}
+.lesson-practice-cta {
+  width: 100%;
+  min-height: 50px;
+  justify-content: center;
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--purple) 30%, transparent);
+}
+.intro-continue {
+  width: min(520px, 100%);
+  min-height: 48px;
+  justify-content: center;
+}
+
+.dictation-toolbar > div,
+.progress-history article,
+.progress-metrics article,
+.memory-numbers article,
+.profile-stats article,
+.srs-summary article {
+  min-width: 0;
+}
+.dictation-toolbar > div b,
+.progress-history b,
+.progress-metrics b,
+.memory-numbers b,
+.profile-stats b,
+.srs-summary b {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.dictation-toolbar > div span,
+.progress-history span {
+  min-width: 0;
+  line-height: 1.3;
+}
+
+@media (max-width: 700px) {
+  .main,
+  .view-stack,
+  .lesson-workspace,
+  .vocab-library {
+    min-width: 0;
+  }
+  .lesson-workspace,
+  .vocab-library {
+    scroll-margin-top: 10px;
+  }
+  .lesson-mode {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(70px, .72fr) minmax(150px, 1.55fr) minmax(86px, .9fr);
+    gap: 4px;
+  }
+  .lesson-mode button {
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+    padding: 7px 8px;
+    white-space: normal;
+    line-height: 1.18;
+  }
+  .lesson-practice-cta {
+    min-height: 54px;
+    font-size: 14px;
+  }
+
+  .srs-view.active-exercise .word-introduction > section {
+    display: grid;
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+    align-content: stretch;
+    overflow: hidden;
+    padding: 8px 12px 10px;
+  }
+  .srs-view.active-exercise .word-introduction .intro-examples {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .srs-view.active-exercise .word-introduction .intro-continue {
+    position: relative;
+    z-index: 3;
+    flex: none;
+    margin-top: 3px;
+  }
+  .srs-view.active-exercise .word-introduction h2 {
+    font-size: clamp(27px, 9vw, 38px);
+  }
+  .srs-view.active-exercise .word-introduction h3 {
+    font-size: 17px;
+  }
+  .srs-view.active-exercise .srs-card > section.answered {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .dictation-toolbar > div {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 9px;
+    text-align: left;
+  }
+  .dictation-toolbar > div b {
+    font-size: 23px;
+  }
+  .dictation-toolbar > div span {
+    font-size: 12px;
+  }
+  .progress-history > header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .progress-history article {
+    display: grid;
+    grid-template-columns: minmax(34px, auto) minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+  }
+  .progress-history span {
+    margin-top: 0;
+    font-size: 11px;
+  }
+
+  .youtube-embed.compact .youtube-fallback {
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 2px 7px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 9px;
+    line-height: 1.15;
+  }
+  .youtube-embed.compact .youtube-fallback a {
+    font-size: 9px;
+  }
+  .youtube-embed.compact .youtube-fallback small {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .progress-history > div {
+    grid-template-columns: 1fr;
+  }
+  .lesson-mode {
+    grid-template-columns: 1fr 1.45fr;
+  }
+  .lesson-mode .mistake-tab {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .view-stack :where(h1, h2, h3, h4, p, b, strong, span, small, blockquote, button, a, label),
+  .sidebar :where(b, span, small, button) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+  .view-stack button,
+  .view-stack a {
+    white-space: normal;
+  }
+  .city-stop b,
+  .city-stop small {
+    display: block !important;
+    visibility: visible;
+    max-width: 86px;
+    padding: 3px 5px;
+    font-size: 8px;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+  .city-stop small {
+    color: #ffe18b;
+  }
+  .city-stop i {
+    flex: none;
+  }
+  .spain-map-section > header > span {
+    flex: none;
+    white-space: nowrap;
+  }
+  .avatar-btn > svg,
+  .profile-mini > span > svg {
+    width: 17px;
+    height: 17px;
+  }
+  .profile-avatar > svg {
+    width: 28px;
+    height: 28px;
+  }
+}

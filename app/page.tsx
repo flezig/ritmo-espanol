@@ -190,7 +190,7 @@ const skillLabels: Record<SkillType, string> = {
   dictation: 'Диктант',
 };
 const defaultProfile: DeviceProfile = {
-  name: 'Maya',
+  name: '',
   level: 'A1',
   dailyGoal: 15,
   streak: 0,
@@ -2234,7 +2234,7 @@ function HomeView({
         <div>
           <p className="eyebrow">СЕГОДНЯ · УРОВЕНЬ {profile.level}</p>
           <h1>
-            {greeting}, {profile.name || 'Maya'}
+            {greeting}{profile.name ? `, ${profile.name}` : ''}
           </h1>
           <p>
             Un poco cada día. Сегодняшний ритм уже сохранён в вашем профиле.
@@ -2676,7 +2676,8 @@ function LessonsView() {
     [mistakeMode, setMistakeMode] = useState(false),
     [mistakeQueue, setMistakeQueue] = useState<number[]>([]);
   const { leaving, move } = useTaskMotion(),
-    answerLock = useRef(false);
+    answerLock = useRef(false),
+    lessonWorkspaceRef = useRef<HTMLDivElement>(null);
   const { progress, save } = useLessonProgress(),
     { words: learnedWordDb, studyLesson, studyLessons } = useLearnedWordsDb(),
     { items: contentFavorites, toggle: toggleContentFavorite } =
@@ -2808,6 +2809,14 @@ function LessonsView() {
     setTypedAnswer('');
     setSelectedWords([]);
     setCatState('neutral');
+    window.requestAnimationFrame(() =>
+      lessonWorkspaceRef.current?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'start',
+      }),
+    );
   };
   const startPractice = () => {
     answerLock.current = false;
@@ -2820,6 +2829,14 @@ function LessonsView() {
     setTypedAnswer('');
     setSelectedWords([]);
     setCatState('thinking');
+    window.requestAnimationFrame(() =>
+      lessonWorkspaceRef.current?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'start',
+      }),
+    );
   };
   const startMistakes = () => {
     const queue = savedErrorIndexes;
@@ -2906,7 +2923,7 @@ function LessonsView() {
           );
         })}
       </div>
-      <div className="lesson-workspace">
+      <div className="lesson-workspace" ref={lessonWorkspaceRef}>
         <header>
           <div>
             <span className="eyebrow">УРОК {lesson.number}</span>
@@ -2924,10 +2941,12 @@ function LessonsView() {
               Теория
             </button>
             <button
-              className={mode === 'practice' && !mistakeMode ? 'active' : ''}
+              className={`lesson-practice-tab ${mode === 'practice' && !mistakeMode ? 'active' : ''}`}
               onClick={startPractice}
             >
-              {lesson.exercises.length} заданий
+              {mode === 'theory'
+                ? `Перейти к заданиям · ${lesson.exercises.length}`
+                : `${lesson.exercises.length} заданий`}
             </button>
             <button
               className={mistakeMode ? 'active mistake-tab' : 'mistake-tab'}
@@ -3010,8 +3029,8 @@ function LessonsView() {
                   слова из примеров.
                 </small>
               </div>
-              <button className="primary-btn" onClick={startPractice}>
-                Начать 50 заданий <ArrowRight />
+              <button className="primary-btn lesson-practice-cta" onClick={startPractice}>
+                Перейти к 50 заданиям <ArrowRight />
               </button>
             </aside>
           </div>
@@ -3378,6 +3397,7 @@ function VocabularyView() {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(vocabularyTopics[0].name);
   const [filter, setFilter] = useState<'all' | WordStatus>('all');
+  const vocabularyLibraryRef = useRef<HTMLElement>(null);
   const { progress, update } = useWordProgress();
   const history = useWordHistory();
   const { records, markNew } = useSRS();
@@ -3495,6 +3515,14 @@ function VocabularyView() {
               onClick={() => {
                 setSelected(item.name);
                 setQuery('');
+                window.requestAnimationFrame(() =>
+                  vocabularyLibraryRef.current?.scrollIntoView({
+                    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                      ? 'auto'
+                      : 'smooth',
+                    block: 'start',
+                  }),
+                );
               }}
               key={item.name}
             >
@@ -3526,7 +3554,7 @@ function VocabularyView() {
           ),
         )}
       </div>
-      <section className="vocab-library">
+      <section className="vocab-library" ref={vocabularyLibraryRef}>
         <header>
           <div>
             <p className="eyebrow">
@@ -7649,7 +7677,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
               ))}
             </div>
             <button
-              className="primary-btn"
+              className="primary-btn intro-continue"
               onClick={() =>
                 setIntroduced((current) => ({ ...current, [cardBase]: true }))
               }
@@ -9321,9 +9349,9 @@ function AccountPanel({
     event.preventDefault();
     setBusy(true);
     setNotice('');
-    if (mode === 'register') updateProfile({ name: name.trim() || 'Maya' });
+    if (mode === 'register') updateProfile({ name: name.trim() });
     const result = mode === 'register'
-      ? await account.register(name.trim() || 'Maya', email, password)
+      ? await account.register(name.trim(), email, password)
       : await account.login(email, password);
     setBusy(false);
     if (!result.ok) setNotice(result.message);
@@ -9407,7 +9435,7 @@ function ProfileView() {
     <div className="view-stack profile-view">
       <header className="profile-hero">
         <div className="profile-avatar">
-          {(profile.name || 'M').slice(0, 1).toUpperCase()}
+          {profile.name ? profile.name.slice(0, 1).toUpperCase() : <UserRound />}
         </div>
         <div>
           <p className="eyebrow">
@@ -9420,7 +9448,7 @@ function ProfileView() {
               onChange={(event) => setDraftName(event.target.value)}
             />
           ) : (
-            <h1>{profile.name || 'Maya'}</h1>
+            <h1>{profile.name || 'Без имени'}</h1>
           )}
           <p>
             {account.user
@@ -9430,7 +9458,7 @@ function ProfileView() {
         </div>
         <button
           onClick={() => {
-            if (editing) update({ name: draftName.trim() || 'Maya' });
+            if (editing) update({ name: draftName.trim() });
             setEditing(!editing);
           }}
         >
@@ -9837,9 +9865,11 @@ function RitmoApp() {
             className="profile-mini"
             onClick={() => navigate('Profile')}
           >
-            <span>{(profile.name || 'M').slice(0, 1).toUpperCase()}</span>
+            <span>
+              {profile.name ? profile.name.slice(0, 1).toUpperCase() : <UserRound />}
+            </span>
             <div>
-              <b>{profile.name || 'Maya'}</b>
+              <b>{profile.name || 'Без имени'}</b>
               <small>{profile.level} · {account.user ? 'в облаке' : 'локально'}</small>
             </div>
             <ChevronRight />
@@ -9868,7 +9898,7 @@ function RitmoApp() {
                 aria-label="Открыть профиль"
                 onClick={() => navigate('Profile')}
               >
-                {(profile.name || 'M').slice(0, 1).toUpperCase()}
+                {profile.name ? profile.name.slice(0, 1).toUpperCase() : <UserRound />}
                 <span />
               </button>
             </div>

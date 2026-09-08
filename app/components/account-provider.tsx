@@ -238,7 +238,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       cloudSyncMeta.setPendingEmail(normalizedEmail);
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail, password,
-        options: { data: { name: name.trim() || 'Maya' }, emailRedirectTo: window.location.origin },
+        options: { data: { name: name.trim() }, emailRedirectTo: window.location.origin },
       });
       if (error) { cloudSyncMeta.clearPendingEmail(); return { ok: false, message: authMessage(error) }; }
       return { ok: true, confirmationRequired: !data.session };
