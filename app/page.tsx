@@ -1962,7 +1962,13 @@ function Hero({
           Начните с короткого урока, повторите слова или включите любимую песню.
         </p>
         <div className="hero-actions">
-          <button className="primary-btn" onClick={() => go('Lessons')}>
+          <button
+            className="primary-btn"
+            onClick={() => {
+              sessionStorage.setItem('ritmo-focus-first-lesson', 'true');
+              go('Lessons');
+            }}
+          >
             <Play fill="currentColor" />
             Начать урок
             <ArrowRight />
@@ -2193,22 +2199,45 @@ const dailyOptionSet = (
   targetIndex: number,
   value: (entry: (typeof dailyChallengeWords)[number]) => string,
 ) => {
-  const target = value(dailyChallengeWords[targetIndex]),
-    options = [target];
-  for (
-    let step = 1;
-    options.length < 4 && step < dailyChallengeWords.length;
-    step += 1
-  ) {
-    const candidate = value(
-      dailyChallengeWords[(targetIndex + step * 37) % dailyChallengeWords.length],
-    );
-    if (
-      candidate &&
-      !options.some((item) => normalizeText(item) === normalizeText(candidate))
-    )
-      options.push(candidate);
-  }
+  const targetEntry = dailyChallengeWords[targetIndex],
+    target = value(targetEntry),
+    options = [target],
+    wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length,
+    targetLength = wordCount(target),
+    targetIsSentence = targetLength > 4 || /[.!?¿¡]/.test(target),
+    hasMatchingShape = (candidate: string) => {
+      const candidateLength = wordCount(candidate),
+        candidateIsSentence = candidateLength > 4 || /[.!?¿¡]/.test(candidate);
+      if (targetIsSentence !== candidateIsSentence) return false;
+      if (targetLength === 1) return candidateLength === 1;
+      if (targetLength <= 3) return candidateLength <= 3;
+      return Math.abs(candidateLength - targetLength) <= 3;
+    },
+    addCandidates = (matchShape: boolean, matchTopic: boolean) => {
+      for (
+        let step = 1;
+        options.length < 4 && step < dailyChallengeWords.length;
+        step += 1
+      ) {
+        const candidateEntry =
+            dailyChallengeWords[
+              (targetIndex + step * 37) % dailyChallengeWords.length
+            ],
+          candidate = value(candidateEntry);
+        if (
+          candidate &&
+          (!matchShape || hasMatchingShape(candidate)) &&
+          (!matchTopic || candidateEntry.topic === targetEntry.topic) &&
+          !options.some(
+            (item) => normalizeText(item) === normalizeText(candidate),
+          )
+        )
+          options.push(candidate);
+      }
+    };
+  addCandidates(true, true);
+  addCandidates(true, false);
+  addCandidates(false, false);
   const offset = targetIndex % options.length;
   return options.map((_, index) => options[(index + offset) % options.length]);
 };
@@ -2282,15 +2311,18 @@ function HomeView({
     [dailyDay, setDailyDay] = useState('2000-01-01');
   const { records } = useSRS(),
     { progress: wordProgress } = useWordProgress(),
+    { progress: lessonProgress } = useLessonProgress(),
     errors = useErrorProfile(),
     todayDone = profile.dailyReviews?.[localDateKey()] || 0,
     dailyTarget = 16,
+    studyDeck = makeStudyDeck(),
+    recognitionDeck = studyDeck.filter(
+      (card) => card.skill === 'recognition',
+    ),
     due = Object.values(records).filter(
       (item) => item.reviews && item.nextReview <= currentTime,
     ).length,
-    learnedWords = makeStudyDeck()
-      .filter((card) => card.skill === 'recognition')
-      .filter(
+    learnedWords = recognitionDeck.filter(
         (card) =>
           derivedWordStatus(
             baseCardKey(card.key),
@@ -2298,7 +2330,22 @@ function HomeView({
             wordProgress[baseCardKey(card.key)] || 'new',
           ) === 'learned',
       ).length,
-    weakTopic = Object.entries(errors).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Артикли и род';
+    newWords = recognitionDeck.filter(
+      (card) =>
+        derivedWordStatus(
+          baseCardKey(card.key),
+          records,
+          wordProgress[baseCardKey(card.key)] || 'new',
+        ) === 'new',
+    ).length,
+    weakTopicEntry = Object.entries(errors)
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])[0],
+    weakTopic = weakTopicEntry?.[0] || '',
+    weakTopicErrors = weakTopicEntry?.[1] || 0,
+    nextLesson =
+      courseLessons.find((item) => !lessonProgress[item.id]?.completed) || null,
+    nextLessonDone = nextLesson ? lessonProgress[nextLesson.id]?.done || 0 : 0;
   useEffect(() => {
     const update = () => {
       const date = new Date();
@@ -2365,7 +2412,16 @@ function HomeView({
       <Hero go={go} period={period} />
       <MotivationCard />
       <Suspense fallback={<section className="today-panel loading">Готовим персональный план…</section>}>
-        <TodayPanel due={due} weakTopic={weakTopic} go={go} />
+        <TodayPanel
+          due={due}
+          newWords={newWords}
+          weakTopic={weakTopic}
+          weakTopicErrors={weakTopicErrors}
+          lessonId={nextLesson?.id || ''}
+          lessonTitle={nextLesson?.title || ''}
+          lessonDone={nextLessonDone}
+          go={go}
+        />
       </Suspense>
       <section className="stats-row">
         <article>
@@ -2432,7 +2488,7 @@ function HomeView({
         </article>
         <article className="challenge">
           <ReportExerciseButton
-            id={`home:daily:${dailyDay}:${dailyChallenge.id}`}
+            id={`home:daily:${dailyChallenge.id}`}
             section="Главная: задание дня"
             prompt={dailyChallenge.prompt}
             answer={dailyChallenge.answer}
@@ -2452,12 +2508,15 @@ function HomeView({
               <button
                 key={option}
                 className={
-                  answer === option
+                  answer
                     ? option === dailyChallenge.answer
                       ? 'correct'
-                      : 'wrong'
+                      : answer === option
+                        ? 'wrong'
+                        : ''
                     : ''
                 }
+                disabled={!!answer}
                 onClick={() => {
                   setAnswer(option);
                   playFeedbackSound(option === dailyChallenge.answer);
@@ -2844,6 +2903,28 @@ function LessonsView() {
     lessonWordCount = learnedWordDb.filter(
       (word) => word.lessonId === lesson.id,
     ).length;
+  useEffect(() => {
+    const requestedLessonId = sessionStorage.getItem('ritmo-focus-lesson-id'),
+      requestedIndex = requestedLessonId
+        ? courseLessons.findIndex((item) => item.id === requestedLessonId)
+        : -1,
+      shouldFocusFirst =
+        sessionStorage.getItem('ritmo-focus-first-lesson') === 'true';
+    if (requestedIndex < 0 && !shouldFocusFirst) return;
+    if (requestedIndex >= 0) setLessonIndex(requestedIndex);
+    sessionStorage.removeItem('ritmo-focus-lesson-id');
+    sessionStorage.removeItem('ritmo-focus-first-lesson');
+    window.requestAnimationFrame(() =>
+      window.requestAnimationFrame(() =>
+        lessonWorkspaceRef.current?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? 'auto'
+            : 'smooth',
+          block: 'start',
+        }),
+      ),
+    );
+  }, []);
   const resumeIndex = (targetLesson: (typeof courseLessons)[number], state?: LessonState) => {
     if (state?.completed) return 0;
     const stableIndex = state?.lastExerciseId
@@ -3700,7 +3781,7 @@ function VocabularyView() {
           </span>
         </header>
         <div className="vocab-table">
-          {visible.map((entry) => {
+          {visible.map((entry, entryIndex) => {
             const key = `${entry.topic}-${entry.id}`,
               status = derivedWordStatus(key, records, progress[key] || 'new'),
               statusDate =
@@ -3710,7 +3791,7 @@ function VocabularyView() {
             return (
               <article key={key}>
                 <span className="word-index">
-                  {String(entry.id).padStart(2, '0')}
+                  {String(entryIndex + 1).padStart(2, '0')}
                 </span>
                 <div className="word-main">
                   <b>{entry.es}</b>
@@ -8041,9 +8122,9 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                         : responseKind === 'correction'
                           ? 'Введите одно исправленное слово…'
                           : responseKind === 'audioWord'
-                            ? 'Введите перевод услышанного слова…'
+                            ? 'Введите перевод…'
                             : responseKind === 'audioSentence'
-                              ? 'Запишите всё услышанное…'
+                              ? 'Введите услышанное…'
                       : card.skill === 'article'
                         ? 'Введите артикль…'
                         : 'Введите точный ответ…'

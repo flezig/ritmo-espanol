@@ -24,6 +24,36 @@ test('every vocabulary card has a translated, word-specific example', () => {
   }
 });
 
+test('A2 topics stay complete and follow the learning route', () => {
+  const names = vocabularyTopics.map((topic) => topic.name);
+  const required = [
+    'Время, даты и планы',
+    'Биография и события жизни',
+    'Быт и район',
+    'Услуги и документы',
+    'Проблемы и экстренные ситуации',
+    'Эмоции и мнение',
+    'Праздники и встречи',
+    'Культура и медиа',
+    'Техника и устройства',
+    'Связующие слова и полезные конструкции',
+  ];
+  for (const name of required) {
+    const topic = vocabularyTopics.find((item) => item.name === name);
+    assert.ok(topic, `${name} is missing`);
+    assert.ok(topic.entries.length >= 20, `${name} is too small`);
+  }
+  assert.ok(
+    vocabularyTopics.find((topic) => topic.name === 'Эмоции и мнение')!
+      .entries.length >= 35,
+    'emotions need a wider active vocabulary',
+  );
+  assert.deepEqual(
+    names.filter((name) => required.includes(name)),
+    required,
+  );
+});
+
 test('known editorial defects never reach the learner', () => {
   const rendered = JSON.stringify(entries);
   assert.equal(rendered.includes('El no está aquí ahora'), false);

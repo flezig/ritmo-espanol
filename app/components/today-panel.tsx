@@ -68,7 +68,25 @@ function scorePlacement(responses: Record<string, string>): PlacementResult {
   };
 }
 
-export default function TodayPanel({ due, weakTopic, go }: { due: number; weakTopic: string; go: (section: 'Practice' | 'Lessons' | 'Grammar') => void }) {
+export default function TodayPanel({
+  due,
+  newWords,
+  weakTopic,
+  weakTopicErrors,
+  lessonId,
+  lessonTitle,
+  lessonDone,
+  go,
+}: {
+  due: number;
+  newWords: number;
+  weakTopic: string;
+  weakTopicErrors: number;
+  lessonId: string;
+  lessonTitle: string;
+  lessonDone: number;
+  go: (section: 'Practice' | 'Lessons' | 'Grammar') => void;
+}) {
   const [placementOpen, setPlacementOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -96,7 +114,19 @@ export default function TodayPanel({ due, weakTopic, go }: { due: number; weakTo
     setResult(null); setResponses({}); setIndex(0); setPlacementOpen(true);
     localStorage.removeItem('ritmo-placement');
   };
-  const route = result?.level.startsWith('A2') ? 'Маршрут A2: дом → еда → реальные диалоги' : result?.level.includes('уверенно') ? 'Маршрут A1+: мой день → дом → еда' : 'Маршрут A1: знакомство → семья → мой день';
+  const practiceRecommendation = due
+    ? `${due} карточек уже пора повторить`
+    : newWords
+      ? `Новых слов в сессии: ${Math.min(4, newWords)} · доступно ${newWords}`
+      : 'Закрепить изученные слова без добавления новых';
+  const lessonRecommendation = lessonTitle
+    ? lessonDone
+      ? `Продолжить «${lessonTitle}» · ${lessonDone}/50`
+      : `Начать «${lessonTitle}»`
+    : 'Все доступные уроки завершены';
+  const grammarRecommendation = weakTopic
+    ? `${weakTopic} · ${weakTopicErrors} ${weakTopicErrors === 1 ? 'ошибка' : weakTopicErrors < 5 ? 'ошибки' : 'ошибок'}`
+    : 'Ошибок пока нет — повторить базовые правила';
   return (
     <section className="today-panel">
       <header>
@@ -104,9 +134,12 @@ export default function TodayPanel({ due, weakTopic, go }: { due: number; weakTo
         <button onClick={() => setPlacementOpen((value) => !value)}>Входной тест (по желанию)</button>
       </header>
       <div className="today-actions">
-        <button onClick={() => go('Practice')}><b>1 · Повторить</b><span>{due ? `${due} карточек уже пора повторить` : '4 новых слова и смешанная тренировка'}</span></button>
-        <button onClick={() => go('Lessons')}><b>2 · Один урок</b><span>{route}</span></button>
-        <button onClick={() => go('Grammar')}><b>3 · Слабая тема</b><span>{weakTopic || 'Артикли и род'}</span></button>
+        <button onClick={() => go('Practice')}><b>1 · Практика</b><span>{practiceRecommendation}</span></button>
+        <button onClick={() => {
+          if (lessonId) sessionStorage.setItem('ritmo-focus-lesson-id', lessonId);
+          go('Lessons');
+        }}><b>2 · Следующий урок</b><span>{lessonRecommendation}</span></button>
+        <button onClick={() => go('Grammar')}><b>3 · Грамматика</b><span>{grammarRecommendation}</span></button>
       </div>
       {result && (
         <div className="placement-result-card">

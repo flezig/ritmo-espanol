@@ -10,6 +10,7 @@ export type VocabularyEntry = {
 
 import { corpusExamples } from './vocabulary-corpus.ts';
 import { legacyExampleTranslations } from './legacy-translations.ts';
+import { a2VocabularyTopics } from './a2-vocabulary.ts';
 
 const legacyVocabularyTopics = [
   {
@@ -3150,7 +3151,11 @@ const expandHeadword = (entry: VocabularyEntry): VocabularyEntry[] => {
     };
   });
 };
-const mergedTopics = [...coreTopics, ...deduplicatedLegacyTopics].reduce<
+const mergedTopics = [
+  ...coreTopics,
+  ...a2VocabularyTopics,
+  ...deduplicatedLegacyTopics,
+].reduce<
   Array<{ name: string; icon: string; entries: VocabularyEntry[] }>
 >((topics, topic) => {
   const existing = topics.find((item) => item.name === topic.name),
@@ -3160,10 +3165,45 @@ const mergedTopics = [...coreTopics, ...deduplicatedLegacyTopics].reduce<
   return topics;
 }, []);
 
+const preferredTopicOrder = [
+  'Знакомство и о себе',
+  'Семья и люди',
+  'Мой день и рутина',
+  'Время, даты и планы',
+  'Биография и события жизни',
+  'Дом и жильё',
+  'Быт и район',
+  'Еда и ресторан',
+  'Город и транспорт',
+  'Покупки и одежда',
+  'Путешествия',
+  'Услуги и документы',
+  'Работа и учёба',
+  'Здоровье',
+  'Проблемы и экстренные ситуации',
+  'Эмоции и мнение',
+  'Праздники и встречи',
+  'Досуг и хобби',
+  'Культура и медиа',
+  'Техника и устройства',
+  'Погода и природа',
+  'Связующие слова и полезные конструкции',
+  'Знакомства и отношения',
+  'Переписка и интернет',
+  'Музыка',
+  'Ночная жизнь',
+  'Живой сленг',
+];
+const orderedTopics = [...mergedTopics].sort(
+  (first, second) =>
+    preferredTopicOrder.indexOf(first.name) -
+    preferredTopicOrder.indexOf(second.name),
+);
+
 const finalWords = new Set<string>();
 const primaryRussianTranslation = (value: string) =>
   value.split(/\s+\/\s+/)[0].trim();
-export const vocabularyTopics = mergedTopics.map((topic) => ({
+export const vocabularyTopics = orderedTopics.map((topic) => ({
   ...topic,
   entries: topic.entries
     .filter((entry) => {
