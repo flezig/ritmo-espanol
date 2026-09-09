@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -356,6 +356,10 @@ const loadAchievementStats = (): AchievementStats => {
         : savedPlacementLevel()
           ? [savedPlacementLevel()]
           : [],
+      rushSessions: Math.max(0, Number(stored.rushSessions) || 0),
+      rushSeconds: Math.max(0, Number(stored.rushSeconds) || 0),
+      rushTotalScore: Math.max(0, Number(stored.rushTotalScore) || 0),
+      rushBestScore: Math.max(0, Number(stored.rushBestScore) || 0),
       topicSessions,
       musicPracticeSessions: Math.max(
         Number(stored.musicPracticeSessions) || 0,
@@ -441,6 +445,17 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: 'maestro-250', category: 'Мастерство', icon: '🏹', name: 'Pulso Firme', lockedMotto: '«Mantén firme el pulso.»', unlockedMotto: '«Doscientos cincuenta aciertos sin soltar el ritmo.»', description: 'Дать 250 правильных ответов на сайте.', target: 250, progress: ({ profile }) => profile.totalCorrect },
   { id: 'maestro-500', category: 'Мастерство', icon: '🏆', name: 'Maestro del Ritmo', lockedMotto: '«La práctica todavía tiene música.»', unlockedMotto: '«Quinientos aciertos ya marcan tu ritmo.»', description: 'Дать 500 правильных ответов на сайте.', target: 500, progress: ({ profile }) => profile.totalCorrect },
   { id: 'maestro-1000', category: 'Мастерство', icon: '🌟', name: 'Leyenda', lockedMotto: '«Las leyendas también practican.»', unlockedMotto: '«Mil respuestas correctas. Ya eres parte de la historia.»', description: 'Дать 1000 правильных ответов на сайте.', target: 1000, progress: ({ profile }) => profile.totalCorrect },
+  { id: 'rush-first', category: 'Мастерство', icon: '🏁', name: 'Primera Carrera', lockedMotto: '«El reloj todavía no corre.»', unlockedMotto: '«Tu primera carrera ya está en la historia.»', description: 'Полностью завершить первый забег Spanish Rush.', target: 1, progress: ({ stats }) => stats.rushSessions },
+  { id: 'rush-runs-10', category: 'Мастерство', icon: '🎮', name: 'Diez Carreras', lockedMotto: '«La velocidad también se entrena.»', unlockedMotto: '«Diez carreras y cada vez más rápido.»', description: 'Полностью завершить 10 забегов Spanish Rush.', target: 10, progress: ({ stats }) => stats.rushSessions },
+  { id: 'rush-runs-50', category: 'Мастерство', icon: '🏎️', name: 'Piloto del Español', lockedMotto: '«Cada carrera afina tus reflejos.»', unlockedMotto: '«Cincuenta carreras a toda velocidad.»', description: 'Полностью завершить 50 забегов Spanish Rush.', target: 50, progress: ({ stats }) => stats.rushSessions },
+  { id: 'rush-score-10', category: 'Мастерство', icon: '⚡', name: 'Chispa', lockedMotto: '«Enciende el marcador.»', unlockedMotto: '«Diez puntos encendieron la primera chispa.»', description: 'Набрать не менее 10 очков за один Spanish Rush.', target: 10, progress: ({ rushBest }) => rushBest },
+  { id: 'rush-score-50', category: 'Мастерство', icon: '🚀', name: 'Sin Frenos', lockedMotto: '«El marcador todavía puede subir.»', unlockedMotto: '«Cincuenta puntos sin perder el ritmo.»', description: 'Набрать не менее 50 очков за один Spanish Rush.', target: 50, progress: ({ rushBest }) => rushBest },
+  { id: 'rush-score-100', category: 'Мастерство', icon: '💯', name: 'Velocidad Máxima', lockedMotto: '«Hay una cifra que parece imposible.»', unlockedMotto: '«Cien puntos: ya no existe el límite.»', description: 'Набрать не менее 100 очков за один Spanish Rush.', target: 100, progress: ({ rushBest }) => rushBest },
+  { id: 'rush-total-250', category: 'Прогресс', icon: '🔥', name: 'Motor Caliente', lockedMotto: '«Cada punto mueve el motor.»', unlockedMotto: '«Doscientos cincuenta puntos acumulados.»', description: 'Заработать суммарно 250 очков в Spanish Rush.', target: 250, progress: ({ stats }) => stats.rushTotalScore },
+  { id: 'rush-total-1000', category: 'Прогресс', icon: '🏆', name: 'Mil a Toda Velocidad', lockedMotto: '«Sigue sumando sin mirar atrás.»', unlockedMotto: '«Mil puntos acumulados en Spanish Rush.»', description: 'Заработать суммарно 1000 очков в Spanish Rush.', target: 1000, progress: ({ stats }) => stats.rushTotalScore },
+  { id: 'rush-time-10', category: 'Регулярность', icon: '⏱️', name: 'Diez Minutos de Ritmo', lockedMotto: '«Un minuto siempre cuenta.»', unlockedMotto: '«Diez minutos pensando en español.»', description: 'Провести суммарно 10 минут в завершённых Spanish Rush.', target: 10, progress: ({ stats }) => Math.floor(stats.rushSeconds / 60) },
+  { id: 'rush-time-30', category: 'Регулярность', icon: '⌛', name: 'Media Hora Sin Pausa', lockedMotto: '«El tiempo corre contigo.»', unlockedMotto: '«Media hora de reflejos en español.»', description: 'Провести суммарно 30 минут в завершённых Spanish Rush.', target: 30, progress: ({ stats }) => Math.floor(stats.rushSeconds / 60) },
+  { id: 'rush-time-120', category: 'Регулярность', icon: '🕰️', name: 'Dos Horas de Vuelo', lockedMotto: '«Cada segundo deja una huella.»', unlockedMotto: '«Dos horas completas a toda velocidad.»', description: 'Провести суммарно 120 минут в завершённых Spanish Rush.', target: 120, progress: ({ stats }) => Math.floor(stats.rushSeconds / 60) },
   { id: 'ritmo-colombiano', category: 'Культура', icon: '🎵', name: 'Ritmo Colombiano', lockedMotto: '«La música ya está dentro de ti.»', unlockedMotto: '«Has encontrado el ritmo.»', description: 'Завершить 5 сессий Practice по теме «Музыка».', target: 5, progress: ({ stats }) => stats.musicPracticeSessions },
   { id: 'bogota', category: 'Культура', icon: '🇨🇴', name: 'Un Día en Bogotá', lockedMotto: '«Cuatro rutas llevan a la capital.»', unlockedMotto: '«Bogotá ya habla contigo.»', description: 'Завершить практику по темам: еда, музыка, город и путешествия.', target: 4, progress: ({ stats }) => ['Еда и ресторан', 'Музыка', 'Город и транспорт', 'Путешествия'].filter((topic) => (stats.topicSessions[topic] || 0) > 0).length },
   { id: 'madrid', category: 'Культура', icon: '🇪🇸', name: 'Fin de Semana en Madrid', lockedMotto: '«La ciudad nunca termina.»', unlockedMotto: '«Madrid ya conoce tus pasos.»', description: 'Завершить практику по городу, еде, досугу и путешествиям.', target: 4, progress: ({ stats }) => ['Город и транспорт', 'Еда и ресторан', 'Досуг и хобби', 'Путешествия'].filter((topic) => (stats.topicSessions[topic] || 0) > 0).length },
@@ -480,7 +495,10 @@ const achievementContext = (stats = loadAchievementStats()): AchievementContext 
     learnedWords = makeStudyDeck()
       .filter((card) => card.skill === 'recognition')
       .filter((card) => derivedWordStatus(baseCardKey(card.key), records, wordProgress[baseCardKey(card.key)] || 'new') === 'learned').length;
-    rushBest = Number(JSON.parse(localStorage.getItem('ritmo-rush-records') || '{}').best) || 0;
+    rushBest = Math.max(
+      stats.rushBestScore,
+      Number(JSON.parse(localStorage.getItem('ritmo-rush-records') || '{}').best) || 0,
+    );
   } catch {}
   return { stats, profile: loadProfile(), learnedWords, rushBest };
 };
@@ -928,7 +946,7 @@ function AccentKeys({
     const field = input();
     if (!field) return;
     const syncCaret = () => {
-      const position = field.selectionStart ?? value.length;
+      const position = field.selectionStart ?? field.value.length;
       caretRef.current = position;
       setCaret(position);
     };
@@ -943,7 +961,7 @@ function AccentKeys({
       field.removeEventListener('click', syncCaret);
       field.removeEventListener('select', syncCaret);
     };
-  }, [value]);
+  }, []);
   const lastCharacter = caret > 0 ? value.slice(caret - 1, caret) : '';
   const replacements =
     spanishLetterReplacements[lastCharacter.toLocaleLowerCase('es')] || [];
@@ -7260,10 +7278,48 @@ const rushGrammar = [
   { prompt: '___ problema es difícil.', options: ['El', 'La', 'Una'], answer: 'El' },
   { prompt: 'No ___ pan en casa.', options: ['hay', 'está', 'son'], answer: 'hay' },
   { prompt: '¿___ cuesta?', options: ['Cuánto', 'Quién', 'Dónde'], answer: 'Cuánto' },
+  { prompt: 'Tú ___ muy bien.', options: ['cocinas', 'cocina', 'cocino'], answer: 'cocinas' },
+  { prompt: 'Mi hermana ___ médica.', options: ['es', 'está', 'hay'], answer: 'es' },
+  { prompt: 'Madrid ___ en España.', options: ['está', 'es', 'hay'], answer: 'está' },
+  { prompt: 'En mi barrio ___ dos parques.', options: ['hay', 'están', 'son'], answer: 'hay' },
+  { prompt: 'Quiero ___ un café.', options: ['tomar', 'tomo', 'tomando'], answer: 'tomar' },
+  { prompt: 'María ___ una hermana.', options: ['tiene', 'tienes', 'tengo'], answer: 'tiene' },
+  { prompt: 'Nos gusta ___ música.', options: ['la', 'el', 'los'], answer: 'la' },
+  { prompt: 'Voy ___ trabajo en metro.', options: ['al', 'a el', 'del'], answer: 'al' },
+  { prompt: 'Vengo ___ supermercado.', options: ['del', 'de el', 'al'], answer: 'del' },
+  { prompt: 'Ayer ___ una película.', options: ['vi', 'veo', 'veré'], answer: 'vi' },
+  { prompt: 'El lunes pasado ___ al médico.', options: ['fui', 'voy', 'iba siempre'], answer: 'fui' },
+  { prompt: 'De pequeño ___ cerca del mar.', options: ['vivía', 'viví una vez', 'viviré'], answer: 'vivía' },
+  { prompt: 'Todavía no ___ terminado.', options: ['he', 'ha', 'has'], answer: 'he' },
+  { prompt: 'Este libro es ___ interesante que aquel.', options: ['más', 'muy', 'mucho'], answer: 'más' },
+  { prompt: '¿Has estado ___ en México?', options: ['alguna vez', 'nadie', 'tampoco'], answer: 'alguna vez' },
+  { prompt: 'No tengo ___ pregunta.', options: ['ninguna', 'alguna', 'nadie'], answer: 'ninguna' },
+  { prompt: 'Te llamo ___ confirmar la hora.', options: ['para', 'por', 'desde'], answer: 'para' },
+  { prompt: 'Gracias ___ ayudarme.', options: ['por', 'para', 'sin'], answer: 'por' },
+  { prompt: 'Cuando llegue, te ___.', options: ['escribiré', 'escribo ayer', 'escribía'], answer: 'escribiré' },
+  { prompt: 'Espero que ___ bien.', options: ['estés', 'estás', 'estarás'], answer: 'estés' },
+  { prompt: 'Si tengo tiempo, ___ contigo.', options: ['iré', 'fuera', 'habría ido'], answer: 'iré' },
+  { prompt: 'Busco un piso que ___ balcón.', options: ['tenga', 'tiene', 'tuvo'], answer: 'tenga' },
+  { prompt: 'Llevo dos años ___ español.', options: ['estudiando', 'estudiado', 'estudio'], answer: 'estudiando' },
+  { prompt: 'Aunque ___ cansado, salió.', options: ['estaba', 'esté mañana', 'estaría ayer'], answer: 'estaba' },
 ];
 
+const randomOrder = (length: number) => {
+  const values = Array.from({ length }, (_, index) => index);
+  for (let index = values.length - 1; index > 0; index -= 1) {
+    const random = new Uint32Array(1);
+    crypto.getRandomValues(random);
+    const swapWith = random[0] % (index + 1);
+    [values[index], values[swapWith]] = [values[swapWith], values[index]];
+  }
+  return values;
+};
+
 function SpanishRushGame() {
-  const deck = makeStudyDeck().filter((card) => card.skill === 'recognition'),
+  const deck = useMemo(
+      () => makeStudyDeck().filter((card) => card.skill === 'recognition'),
+      [],
+    ),
     { records } = useSRS(),
     { progress } = useWordProgress(),
     [running, setRunning] = useState(false),
@@ -7276,7 +7332,11 @@ function SpanishRushGame() {
     [bonus, setBonus] = useState(''),
     [praise, setPraise] = useState(''),
     [best, setBest] = useState(0),
+    [sessionKey, setSessionKey] = useState('initial'),
+    [wordOrder, setWordOrder] = useState<number[]>([]),
+    [grammarOrder, setGrammarOrder] = useState<number[]>([]),
     answerLock = useRef(false),
+    startedAt = useRef(0),
     transitionTimer = useRef<number | null>(null);
   useEffect(() => {
     try {
@@ -7309,22 +7369,50 @@ function SpanishRushGame() {
       localStorage.setItem('ritmo-rush-records', JSON.stringify({ best: nextBest, daily }));
       setBest(nextBest);
       playCelebrationSound('finish');
-      evaluateAchievements(true);
+      recordAchievementEvent({
+        type: 'rush-session',
+        score,
+        seconds: Math.max(
+          1,
+          Math.round((Date.now() - startedAt.current) / 1000),
+        ),
+      });
     }
   }, [running, timeLeft, score]);
-  const wordCard = deck[(round * 37 + 11) % deck.length],
-    grammarTask = rushGrammar[round % rushGrammar.length],
+  const wordIndex = wordOrder[round % Math.max(1, wordOrder.length)] ?? 0,
+    wordCard = deck[wordIndex] || deck[0],
+    grammarRound = Math.floor(round / 3),
+    grammarIndex =
+      grammarOrder[grammarRound % Math.max(1, grammarOrder.length)] ?? 0,
+    grammarTask = rushGrammar[grammarIndex],
     isGrammar = round % 3 === 2,
-    distractors = deck
-      .filter((item) => item.key !== wordCard.key)
-      .slice((round * 13) % Math.max(1, deck.length - 4), (round * 13) % Math.max(1, deck.length - 4) + 3),
-    prompt = isGrammar ? grammarTask.prompt : round % 3 === 0 ? wordCard.es : wordCard.example.replace(new RegExp(wordCard.es.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '___'),
-    answer = isGrammar ? grammarTask.answer : round % 3 === 0 ? wordCard.ru : wordCard.es,
+    distractors = [1, 2, 3]
+      .map(
+        (offset) =>
+          wordOrder[(round + offset) % Math.max(1, wordOrder.length)],
+      )
+      .map((itemIndex) => deck[itemIndex])
+      .filter((item): item is StudyCard => !!item && item.key !== wordCard.key),
+    maskedExample = maskExactTerm(wordCard.example, wordCard.es),
+    wantsContext = round % 3 === 1,
+    hasRealBlank = wantsContext && maskedExample !== wordCard.example,
+    prompt = isGrammar
+      ? grammarTask.prompt
+      : round % 3 === 0
+        ? `Как переводится «${wordCard.es}»?`
+        : hasRealBlank
+          ? `Какое слово пропущено? ${maskedExample}`
+          : `Как по-испански «${wordCard.ru}»?`,
+    answer = isGrammar
+      ? grammarTask.answer
+      : round % 3 === 0
+        ? wordCard.ru
+        : wordCard.es,
     options = isGrammar
-      ? shuffledOptions(grammarTask.options, `rush-g-${round}`)
+      ? shuffledOptions(grammarTask.options, `${sessionKey}-rush-g-${round}`)
       : shuffledOptions(
           [answer, ...distractors.map((item) => (round % 3 === 0 ? item.ru : item.es))].slice(0, 4),
-          `rush-v-${round}`,
+          `${sessionKey}-rush-v-${round}`,
         ),
     base = baseCardKey(wordCard.key),
     status = derivedWordStatus(base, records, progress[base] || 'new'),
@@ -7341,8 +7429,16 @@ function SpanishRushGame() {
             : 'очков';
   const start = () => {
     answerLock.current = false;
+    startedAt.current = Date.now();
     if (transitionTimer.current !== null)
       window.clearTimeout(transitionTimer.current);
+    setSessionKey(
+      typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`,
+    );
+    setWordOrder(randomOrder(deck.length));
+    setGrammarOrder(randomOrder(rushGrammar.length));
     setRunning(true);
     setTimeLeft(60);
     setScore(0);
@@ -7406,6 +7502,7 @@ function SpanishRushGame() {
           <p className="eyebrow">ЕЖЕДНЕВНЫЙ CHALLENGE</p>
           <h2>{timeLeft === 0 ? `Время вышло: ${score} ${pointsWord}` : '60 секунд испанского драйва'}</h2>
           <p>Короткие задания, реальные слова словаря, combo, бонусы времени и личный рекорд.</p>
+          <strong className="rush-current-record">🏆 Текущий рекорд: {best} {best === 1 ? 'очко' : best >= 2 && best <= 4 ? 'очка' : 'очков'}</strong>
           <button className="primary-btn" onClick={start}>{timeLeft === 0 ? 'Ещё раз' : 'Начать игру'} <Zap /></button>
         </article>
       ) : (
@@ -7435,7 +7532,7 @@ function SpanishRushGame() {
               </button>
             ))}
           </div>
-          {!isGrammar && (
+          {!isGrammar && choice && (
             <footer>
               <span>
                 {attempts
@@ -7484,7 +7581,7 @@ function PracticeHub() {
 
 function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   const { words: customWords, hydrated: customHydrated } = useCustomWords(),
-    deck = makeStudyDeck(customWords),
+    deck = useMemo(() => makeStudyDeck(customWords), [customWords]),
     { records, rate, toggleFavorite, markNew, hydrated: srsHydrated } = useSRS();
   const { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices();
   const { leaving, move } = useTaskMotion();
@@ -7554,7 +7651,12 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       introduced,
       sessionErrors,
     };
-    localStorage.setItem('ritmo-practice-session', JSON.stringify(saved));
+    const saveTimer = window.setTimeout(
+      () =>
+        localStorage.setItem('ritmo-practice-session', JSON.stringify(saved)),
+      typed ? 180 : 0,
+    );
+    return () => window.clearTimeout(saveTimer);
   }, [
     sessionHydrated,
     mode,
@@ -7594,7 +7696,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     sessionHydrated,
     srsHydrated,
   ]);
-  const scopedDeck = topicDeck(deck, topic),
+  const scopedDeck = useMemo(() => topicDeck(deck, topic), [deck, topic]),
     card = session[index],
     cardBase = card ? baseCardKey(card.key) : '',
     isIntroduction =
@@ -7648,28 +7750,38 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             `${card.key}-${index}-order`,
           )
         : [],
-    options = card
-      ? shuffledOptions(choicesFor(card, scopedDeck), `${card.key}-${index}`)
-      : [],
-    due = scopedDeck.filter(
-      (item) =>
-        records[item.key]?.reviews && records[item.key].nextReview <= now,
-    ).length,
-    weak = scopedDeck.filter(
-      (item) =>
-        records[item.key]?.reviews && records[item.key].difficulty >= 6.2,
-    ).length,
-    allErrors = scopedDeck.filter(
+    options = useMemo(
+      () =>
+        card
+          ? shuffledOptions(choicesFor(card, scopedDeck), `${card.key}-${index}`)
+          : [],
+      [card, scopedDeck, index],
+    );
+  const { due, weak, errorCount, waitingErrors, favorites } = useMemo(() => {
+    const allErrors = scopedDeck.filter(
       (item) =>
         records[item.key]?.reviews &&
         (records[item.key].lapses > 0 ||
           records[item.key].lastGrade === 'again'),
-    ),
-    errorCount = allErrors.filter(
+    );
+    const readyErrors = allErrors.filter(
       (item) => records[item.key].nextReview <= now,
-    ).length,
-    waitingErrors = allErrors.length - errorCount,
-    favorites = scopedDeck.filter((item) => records[item.key]?.favorite).length;
+    ).length;
+    return {
+      due: scopedDeck.filter(
+        (item) =>
+          records[item.key]?.reviews && records[item.key].nextReview <= now,
+      ).length,
+      weak: scopedDeck.filter(
+        (item) =>
+          records[item.key]?.reviews && records[item.key].difficulty >= 6.2,
+      ).length,
+      errorCount: readyErrors,
+      waitingErrors: allErrors.length - readyErrors,
+      favorites: scopedDeck.filter((item) => records[item.key]?.favorite)
+        .length,
+    };
+  }, [scopedDeck, records, now]);
   const start = (nextMode: SessionMode, nextTopic = topic) => {
     answerLock.current = false;
     gradeLock.current = false;

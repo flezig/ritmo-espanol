@@ -75,6 +75,23 @@ test('all explicit achievement events update their persistent counters', () => {
   assert.deepEqual(stats.lessonIds, ['intro']);
 });
 
+test('completed Spanish Rush sessions track runs, score and real play time', () => {
+  const first = applyAchievementEvent(
+    defaultAchievementStats,
+    { type: 'rush-session', score: 18, seconds: 57 },
+    12,
+  );
+  const second = applyAchievementEvent(
+    first,
+    { type: 'rush-session', score: 12, seconds: 64 },
+    12,
+  );
+  assert.equal(second.rushSessions, 2);
+  assert.equal(second.rushTotalScore, 30);
+  assert.equal(second.rushBestScore, 18);
+  assert.equal(second.rushSeconds, 121);
+});
+
 test('daily achievements count calendar days once', () => {
   let stats = applyAchievementEvent(
     defaultAchievementStats,
@@ -117,7 +134,7 @@ test('every achievement has a unique id, positive target and progress rule', () 
     targets = [...catalog.matchAll(/target: (\d+)/g)].map((match) =>
       Number(match[1]),
     );
-  assert.equal(ids.length, 82);
+  assert.equal(ids.length, 93);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal((catalog.match(/progress:/g) || []).length, ids.length);
   assert.equal(targets.length, ids.length);
@@ -126,4 +143,6 @@ test('every achievement has a unique id, positive target and progress rule', () 
     catalog,
     /id: 'ritmo-colombiano'[\s\S]*?stats\.musicPracticeSessions/,
   );
+  assert.match(catalog, /id: 'rush-time-120'[\s\S]*?stats\.rushSeconds/);
+  assert.match(catalog, /id: 'rush-total-1000'[\s\S]*?stats\.rushTotalScore/);
 });

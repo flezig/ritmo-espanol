@@ -9,6 +9,10 @@ export type AchievementStats = {
   morningSessions: number;
   placementTests: number;
   placementLevels: Array<'A1' | 'A2' | 'B1' | 'B2' | 'C1'>;
+  rushSessions: number;
+  rushSeconds: number;
+  rushTotalScore: number;
+  rushBestScore: number;
   dailyChallengeDays: string[];
   dailyPlanDays: string[];
   lessonIds: string[];
@@ -21,6 +25,7 @@ export type AchievementEvent =
   | { type: 'lesson-complete'; lessonId: string }
   | { type: 'listening-correct' }
   | { type: 'pronunciation-correct' }
+  | { type: 'rush-session'; score: number; seconds: number }
   | { type: 'placement-test-complete'; level: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' }
   | { type: 'daily-challenge-complete'; day: string }
   | { type: 'daily-plan-complete'; day: string };
@@ -36,6 +41,10 @@ export const defaultAchievementStats: AchievementStats = {
   morningSessions: 0,
   placementTests: 0,
   placementLevels: [],
+  rushSessions: 0,
+  rushSeconds: 0,
+  rushTotalScore: 0,
+  rushBestScore: 0,
   dailyChallengeDays: [],
   dailyPlanDays: [],
   lessonIds: [],
@@ -70,6 +79,18 @@ export const applyAchievementEvent = (
   else if (event.type === 'listening-correct') next.listeningCorrect += 1;
   else if (event.type === 'pronunciation-correct')
     next.pronunciationCorrect += 1;
+  else if (event.type === 'rush-session') {
+    const score = Number.isFinite(event.score)
+        ? Math.max(0, Math.floor(event.score))
+        : 0,
+      seconds = Number.isFinite(event.seconds)
+        ? Math.max(0, Math.floor(event.seconds))
+        : 0;
+    next.rushSessions += 1;
+    next.rushSeconds += seconds;
+    next.rushTotalScore += score;
+    next.rushBestScore = Math.max(next.rushBestScore, score);
+  }
   else if (event.type === 'placement-test-complete') {
     next.placementTests += 1;
     next.placementLevels = [...new Set([...next.placementLevels, event.level])];

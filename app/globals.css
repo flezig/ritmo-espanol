@@ -8264,6 +8264,16 @@ body {
 .story-ending p,
 .detective-finish p,
 .rush-start p { max-width: 620px; color: var(--muted); }
+.rush-current-record {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--text);
+}
 .rush-scoreboard { display: grid; grid-template-columns: repeat(4, 1fr); }
 .rush-scoreboard > span { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .rush-scoreboard .clock-badge { transform: scale(.72); margin: -9px; }
