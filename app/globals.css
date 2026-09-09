@@ -2435,6 +2435,22 @@ input {
   font-size: 12px;
   color: var(--muted);
 }
+.core-word-badge {
+  width: max-content;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 3px 7px;
+  border: 1px solid #e8b72f66;
+  border-radius: 999px;
+  background: #ffd84a20;
+  color: #9b6b05;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+.dark .core-word-badge {
+  color: #ffda67;
+}
 .vocab-table article > p {
   font-size: 13px;
   line-height: 1.45;
@@ -3386,13 +3402,41 @@ input {
   }
   .vocab-table article {
     grid-template-columns: 32px 1fr 34px;
+    align-items: start;
+    gap: 10px;
+    padding: 14px 12px;
+  }
+  .vocab-table article > .word-index {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .vocab-table article > .word-main {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    padding-right: 4px;
+  }
+  .vocab-table article > .vocab-example-wrap {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    min-width: 0;
+  }
+  .vocab-table article > .word-status-control {
+    grid-column: 2 / 4;
+    grid-row: 3;
+    width: 100%;
+  }
+  .vocab-table article > button {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
   }
   .vocab-table .word-status {
-    grid-column: 2/3;
-    width: max-content;
+    width: 100%;
   }
-  .vocab-table article > p {
-    grid-column: 2/4;
+  .vocab-table .report-example {
+    white-space: normal;
+    text-align: left;
   }
 }
 
@@ -3695,6 +3739,7 @@ input {
 .theory-block h3 {
   font: 700 21px var(--font-syne);
   margin: 0 0 14px;
+  padding-right: 104px;
 }
 .theory-block > p {
   font-size: 16px;
@@ -3786,6 +3831,7 @@ input {
   display: flex;
   align-items: center;
   gap: 13px;
+  padding-right: 38px;
   margin-bottom: 14px;
 }
 .lesson-exercise > header button {
@@ -7458,6 +7504,17 @@ body {
   font-size: 12px;
   line-height: 1.45;
 }
+.vocabulary-status-guide > .core-guide {
+  grid-column: 1 / -1;
+  border: 1px solid #e8b72f55;
+  background: linear-gradient(110deg, #ffd84a22, var(--soft));
+}
+.vocabulary-status-guide > .core-guide i {
+  color: #9b6b05;
+}
+.dark .vocabulary-status-guide > .core-guide i {
+  color: #ffda67;
+}
 .vocabulary-status-guide i,
 .memory-rules b {
   display: block;
@@ -9352,5 +9409,110 @@ body {
   }
   .vocab-topic-tabs small {
     font-size: 9px;
+  }
+}
+
+/* Keep report/favorite actions in a dedicated corner instead of covering copy. */
+.srs-card > header {
+  padding-right: 66px;
+}
+.challenge-top,
+.learn-check > h4,
+.music-question > h3,
+.detective-question > h3,
+.placement-test > h3,
+.quiz.cat-card > p {
+  padding-right: 44px;
+}
+.rush-task > header,
+.dictation-card > header {
+  padding-right: 42px;
+}
+.exercise-report-wrap > small {
+  z-index: 12;
+  overflow-wrap: anywhere;
+}
+
+/* The next-step controls must stay reachable after a Practice answer. */
+.srs-view.active-exercise .srs-card > section.answered {
+  position: relative;
+}
+.srs-view.active-exercise .srs-card > section.answered .recall-result {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 66px;
+}
+.srs-view.active-exercise .srs-card > section.answered .grade-grid {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  left: 10px;
+  z-index: 10;
+  margin: 0;
+  padding-top: 6px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 680px) {
+  .theory-block h3 {
+    padding-right: 82px;
+    overflow-wrap: anywhere;
+  }
+  .save-rule {
+    right: 54px;
+    top: 12px;
+    width: 34px;
+    height: 34px;
+  }
+  .theory-block > span {
+    right: 12px;
+    font-size: 36px;
+  }
+  .srs-view.active-exercise .srs-card > header {
+    padding-right: 98px;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .recall-result {
+    padding: 7px 8px 58px;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .spelling-diff {
+    display: none;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .answer-examples {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .answer-examples > div {
+    padding: 5px 7px;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .answer-examples > div:nth-child(n + 2) {
+    display: none;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .answer-analysis {
+    padding: 5px 7px;
+    line-height: 1.25;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .grade-grid {
+    right: 6px;
+    bottom: 5px;
+    left: 6px;
+  }
+  .exercise-report-wrap {
+    top: 8px;
+    right: 8px;
+  }
+  .lesson-exercise > header {
+    min-height: 38px;
+    padding-right: 36px;
+  }
+  .challenge-top,
+  .learn-check > h4,
+  .music-question > h3,
+  .detective-question > h3,
+  .placement-test > h3,
+  .quiz.cat-card > p {
+    padding-right: 38px;
   }
 }

@@ -122,6 +122,7 @@ type SkillType =
 type StudyCard = {
   key: string;
   topic: string;
+  core?: boolean;
   es: string;
   ru: string;
   example: string;
@@ -1504,6 +1505,7 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
         contextPrompt = maskExactTerm(entry.example, contextWord),
         hasClearBlank = contextPrompt !== entry.example,
         examples = {
+          core: !!entry.core,
           exampleRu: entry.exampleRu,
           extraExample: entry.extraExample,
           extraExampleRu: entry.extraExampleRu,
@@ -1585,6 +1587,7 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
     const base = `Мои слова-${entry.id}`,
       common = {
         topic: 'Мои слова',
+        core: false,
         es: entry.es,
         ru: entry.ru,
         example: entry.example,
@@ -3398,7 +3401,6 @@ function LessonsView() {
               className={`lesson-exercise task-swap ${leaving ? 'leaving' : ''}`}
               key={`${lesson.id}-${exerciseIndex}`}
             >
-              <CatPeek state={catState} />
               <ReportExerciseButton
                 id={`lesson:${lesson.id}:${normalizeText(exercise.prompt)}:${normalizeText(exercise.answer)}`}
                 section={`Урок ${lesson.number}: ${lesson.title}`}
@@ -3766,7 +3768,7 @@ function CustomWordsPanel() {
 function VocabularyView() {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(vocabularyTopics[0].name);
-  const [filter, setFilter] = useState<'all' | WordStatus>('all');
+  const [filter, setFilter] = useState<'all' | 'core' | WordStatus>('all');
   const vocabularyLibraryRef = useRef<HTMLElement>(null);
   const { progress, update } = useWordProgress();
   const history = useWordHistory();
@@ -3801,15 +3803,18 @@ function VocabularyView() {
       }));
   const visible = base.filter((entry) => {
     const key = `${entry.topic}-${entry.id}`;
-    return (
-      filter === 'all' ||
-      derivedWordStatus(key, records, progress[key] || 'new') === filter
-    );
+    if (filter === 'all') return true;
+    if (filter === 'core') return !!entry.core;
+    return derivedWordStatus(key, records, progress[key] || 'new') === filter;
   });
   const vocabularyCount = vocabularyTopics.reduce(
     (sum, item) => sum + item.entries.length,
     0,
-  );
+  ),
+    coreCount = vocabularyTopics.reduce(
+      (sum, item) => sum + item.entries.filter((entry) => entry.core).length,
+      0,
+    );
   return (
     <div className="view-stack vocabulary-view">
       <ViewHead
@@ -3819,6 +3824,10 @@ function VocabularyView() {
       />
       <section className="vocabulary-status-guide">
         <b>Как меняется статус</b>
+        <span className="core-guide">
+          <i>Ядро A1–A2</i> — {coreCount} наиболее нужных слов и выражений для
+          повседневного общения. Начинайте с них.
+        </span>
         <span>
           <i>Новое</i> — ещё не было ответов.
         </span>
@@ -3906,7 +3915,10 @@ function VocabularyView() {
               />
               <span>{item.icon}</span>
               <b>{item.name}</b>
-              <small>{item.entries.length} слов</small>
+              <small>
+                {item.entries.length} слов ·{' '}
+                {item.entries.filter((entry) => entry.core).length} в ядре
+              </small>
               <i
                 className={
                   ['sunset', 'purple', 'cyan', 'pink', 'orange', 'blue'][
@@ -3919,14 +3931,18 @@ function VocabularyView() {
         })}
       </div>
       <div className="status-filters">
-        {(['all', 'new', 'learning', 'learned', 'difficult'] as const).map(
+        {(['all', 'core', 'new', 'learning', 'learned', 'difficult'] as const).map(
           (value) => (
             <button
               className={filter === value ? 'active' : ''}
               onClick={() => setFilter(value)}
               key={value}
             >
-              {value === 'all' ? 'Все' : statusLabels[value]}
+              {value === 'all'
+                ? 'Все'
+                : value === 'core'
+                  ? '⭐ Ядро A1–A2'
+                  : statusLabels[value]}
             </button>
           ),
         )}
@@ -3964,6 +3980,9 @@ function VocabularyView() {
                 <div className="word-main">
                   <b>{entry.es}</b>
                   <span>{entry.ru}</span>
+                  {entry.core && (
+                    <small className="core-word-badge">⭐ Ядро A1–A2</small>
+                  )}
                   {['gato', 'cafe'].includes(normalizeText(entry.es)) && (
                     <i
                       className={`living-word ${normalizeText(entry.es)}`}
@@ -6284,11 +6303,25 @@ const buildSession = (
           unreviewed = group.filter((card) => !records[card.key]?.reviews).length;
         return reviewed > 0 && unreviewed > 0;
       }),
-      freshBases = wordBases.filter((base) =>
-        deck
-          .filter((card) => baseCardKey(card.key) === base)
-          .every((card) => !records[card.key]?.reviews),
-      ),
+      freshBases = wordBases
+        .filter((base) =>
+          deck
+            .filter((card) => baseCardKey(card.key) === base)
+            .every((card) => !records[card.key]?.reviews),
+        )
+        .sort(
+          (first, second) =>
+            Number(
+              deck.some(
+                (card) => baseCardKey(card.key) === second && card.core,
+              ),
+            ) -
+            Number(
+              deck.some(
+                (card) => baseCardKey(card.key) === first && card.core,
+              ),
+            ),
+        ),
       skillOrder: SkillType[] = [
         'recognition',
         'production',
@@ -6346,7 +6379,7 @@ const buildSession = (
           !records[card.key]?.reviews &&
           !wordBases.includes(baseCardKey(card.key)) &&
           !selected.some((item) => item.key === card.key),
-      );
+      ).sort((first, second) => Number(second.core) - Number(first.core));
     pool = [
       ...selected,
       ...standaloneFresh.slice(0, Math.max(0, count - selected.length)),
@@ -6548,7 +6581,7 @@ function _PracticeView() {
           <header>
             <div>
               <span>{skillLabels[card.skill]}</span>
-              <small>{card.topic}</small>
+              <small>{card.core ? '⭐ Ядро A1–A2 · ' : ''}{card.topic}</small>
             </div>
             <b>
               {index + 1} / {session.length}
@@ -8164,7 +8197,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             <div>
               <span>{skillLabels[card.skill]}</span>
               <small>
-                {card.topic} ·{' '}
+                {card.core ? '⭐ Ядро A1–A2 · ' : ''}{card.topic} ·{' '}
                 {responseKind === 'choice'
                   ? 'выбор ответа'
                   : responseKind === 'order'

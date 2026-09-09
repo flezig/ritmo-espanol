@@ -73,10 +73,13 @@ const truth = (
   explanation,
 });
 
-const diversifyExercises = (items: LessonExercise[]) => {
+const diversifyExercises = (
+  items: LessonExercise[],
+  convertChoicesToInput = true,
+) => {
   let choiceNumber = 0;
   const varied = items.map((item) => {
-    if (item.mode !== 'choice') return item;
+    if (item.mode !== 'choice' || !convertChoicesToInput) return item;
     const convertToInput = choiceNumber++ % 3 === 1;
     return convertToInput
       ? {
@@ -1682,7 +1685,9 @@ export const courseLessons = [
         note: 'Лучший способ учить род — карточкой целиком: не casa, а la casa; не problema, а el problema.',
       },
     ] as TheoryBlock[],
-    exercises: diversifyExercises(lesson1),
+    // Agreement and country/nationality prompts need their supplied choices:
+    // without them the sentence does not determine one particular adjective.
+    exercises: diversifyExercises(lesson1, false),
   },
   {
     id: 'family',

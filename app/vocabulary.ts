@@ -2,6 +2,7 @@ export type VocabularyEntry = {
   id: number;
   ru: string;
   es: string;
+  core?: boolean;
   example: string;
   exampleRu?: string;
   extraExample?: string;
@@ -2977,23 +2978,23 @@ const naturalExamplesFor = (
     return {
       example: `Quiero ${afterQuiero} antes de salir.`,
       exampleRu: `Я хочу ${word.ru} перед выходом.`,
-      extraExample: `Necesito tiempo para ${word.es}.`,
-      extraExampleRu: `Мне нужно время, чтобы ${word.ru}.`,
+      extraExample: '',
+      extraExampleRu: '',
     };
   }
   if (looksLikeAdjective(word.ru))
     return {
       example: `Él es ${word.es}, pero muy amable.`,
       exampleRu: `Он ${word.ru}, но очень добрый.`,
-      extraExample: `Mi nuevo compañero es ${word.es}.`,
-      extraExampleRu: `Мой новый коллега ${word.ru}.`,
+      extraExample: '',
+      extraExampleRu: '',
     };
   const article = articleFor(word.es);
   return {
     example: `Necesito información sobre ${article} ${word.es}.`,
     exampleRu: `Мне нужна информация по теме «${word.ru}».`,
-    extraExample: `Hoy hablamos de ${article} ${word.es}.`,
-    extraExampleRu: `Сегодня мы говорим о теме «${word.ru}».`,
+    extraExample: '',
+    extraExampleRu: '',
   };
 };
 
@@ -3035,6 +3036,300 @@ const editorialExamples: Record<string, NaturalExample> = {
     exampleRu: 'У меня мало времени до занятия.',
     extraExample: 'Hablo un poco de español.',
     extraExampleRu: 'Я немного говорю по-испански.',
+  },
+  mañana: {
+    example: 'Mañana tengo una cita con el médico.',
+    exampleRu: 'Завтра у меня приём у врача.',
+    extraExample: 'Mañana te llamo después del trabajo.',
+    extraExampleRu: 'Завтра я позвоню тебе после работы.',
+  },
+  carta: {
+    example: '¿Nos trae la carta, por favor?',
+    exampleRu: 'Принесите нам меню, пожалуйста.',
+    extraExample: 'La carta incluye varios platos vegetarianos.',
+    extraExampleRu: 'В меню есть несколько вегетарианских блюд.',
+  },
+  dependiente: {
+    example: 'El dependiente me ayudó a encontrar mi talla.',
+    exampleRu: 'Продавец помог мне найти мой размер.',
+    extraExample: 'Pregúntale al dependiente si tienen esta camisa en azul.',
+    extraExampleRu: 'Спроси у продавца, есть ли у них эта рубашка синего цвета.',
+  },
+  'atracción turística': {
+    example: 'La Alhambra es una atracción turística muy conocida.',
+    exampleRu: 'Альгамбра — очень известная достопримечательность.',
+    extraExample: 'Esta atracción turística abre todos los días.',
+    extraExampleRu: 'Эта достопримечательность открыта каждый день.',
+  },
+  ex: {
+    example: 'Mi ex vive ahora en otra ciudad.',
+    exampleRu: 'Мой бывший парень теперь живёт в другом городе.',
+    extraExample: 'Ayer vi a mi ex en una cafetería.',
+    extraExampleRu: 'Вчера я увидела своего бывшего парня в кафе.',
+  },
+  conectado: {
+    example: 'Ahora estoy conectado y puedo leer tus mensajes.',
+    exampleRu: 'Сейчас я онлайн и могу прочитать твои сообщения.',
+    extraExample: 'Pablo aparece conectado, pero no responde.',
+    extraExampleRu: 'Пабло отображается онлайн, но не отвечает.',
+  },
+  disyóquey: {
+    example: 'El disyóquey puso nuestra canción favorita.',
+    exampleRu: 'Диджей поставил нашу любимую песню.',
+    extraExample: 'La disyóquey empieza a trabajar a medianoche.',
+    extraExampleRu: 'Диджей начинает работать в полночь.',
+  },
+  'personal de seguridad': {
+    example: 'El personal de seguridad revisó nuestras entradas.',
+    exampleRu: 'Сотрудники службы охраны проверили наши билеты.',
+    extraExample: 'Pregunta al personal de seguridad dónde está la salida.',
+    extraExampleRu: 'Спроси у сотрудников службы охраны, где находится выход.',
+  },
+  'documento de identidad': {
+    example: 'Muestre su documento de identidad en la entrada.',
+    exampleRu: 'Покажите документ, удостоверяющий личность, при входе.',
+    extraExample: 'Guardo el documento de identidad en la cartera.',
+    extraExampleRu: 'Я храню документ, удостоверяющий личность, в кошельке.',
+  },
+  harta: {
+    example: 'Estoy harta de esperar el autobús.',
+    exampleRu: 'Мне надоело ждать автобус.',
+    extraExample: 'Ella está harta de recibir llamadas tan tarde.',
+    extraExampleRu: 'Ей надоело получать звонки так поздно.',
+  },
+  tonta: {
+    example: 'No seas tonta: puedes pedir ayuda.',
+    exampleRu: 'Не глупи: ты можешь попросить помощи.',
+    extraExample: 'Me sentí tonta por olvidar otra vez las llaves.',
+    extraExampleRu: 'Я почувствовала себя глупо, потому что снова забыла ключи.',
+  },
+  reñir: {
+    example: 'No quiero reñir contigo por una tontería.',
+    exampleRu: 'Я не хочу ссориться с тобой из-за пустяка.',
+    extraExample: 'Los hermanos riñeron, pero después hicieron las paces.',
+    extraExampleRu: 'Братья поссорились, но потом помирились.',
+  },
+  mandar: {
+    example: 'Mándame la dirección por mensaje.',
+    exampleRu: 'Пришли мне адрес в сообщении.',
+    extraExample: 'Voy a mandar una foto al grupo.',
+    extraExampleRu: 'Я отправлю фотографию в группу.',
+  },
+  contestar: {
+    example: 'No pude contestar porque estaba en clase.',
+    exampleRu: 'Я не смог ответить, потому что был на занятии.',
+    extraExample: 'Te contestaré después de la reunión.',
+    extraExampleRu: 'Я отвечу тебе после встречи.',
+  },
+  eliminar: {
+    example: 'Puedes eliminar el mensaje antes de enviarlo.',
+    exampleRu: 'Ты можешь удалить сообщение перед отправкой.',
+    extraExample: 'He eliminado una foto por error.',
+    extraExampleRu: 'Я по ошибке удалил фотографию.',
+  },
+  'hacer el check-in': {
+    example: 'Podemos hacer el check-in en el hotel a partir de las tres.',
+    exampleRu: 'Мы можем заселиться в отель начиная с трёх часов.',
+    extraExample: 'Hice el check-in del vuelo desde el móvil.',
+    extraExampleRu: 'Я зарегистрировался на рейс с телефона.',
+  },
+  'hacer el check-out': {
+    example: 'Tenemos que hacer el check-out antes de las doce.',
+    exampleRu: 'Нам нужно выселиться до двенадцати.',
+    extraExample: 'Después de hacer el check-out, dejamos las maletas en recepción.',
+    extraExampleRu: 'После выселения мы оставили чемоданы у администратора.',
+  },
+  novio: {
+    example: 'Mi novio trabaja cerca de aquí.',
+    exampleRu: 'Мой парень работает недалеко отсюда.',
+    extraExample: 'El sábado voy al cine con mi novio.',
+    extraExampleRu: 'В субботу я иду в кино со своим парнем.',
+  },
+  'por la noche': {
+    example: 'Por la noche suelo leer antes de dormir.',
+    exampleRu: 'По вечерам я обычно читаю перед сном.',
+    extraExample: 'Esta calle está muy tranquila por la noche.',
+    extraExampleRu: 'По ночам эта улица очень тихая.',
+  },
+  monumento: {
+    example: 'Este monumento está en el centro de la plaza.',
+    exampleRu: 'Этот памятник находится в центре площади.',
+    extraExample: 'Muchos turistas hacen fotos delante del monumento.',
+    extraExampleRu: 'Многие туристы фотографируются перед памятником.',
+  },
+  barco: {
+    example: 'El barco sale del puerto a las diez.',
+    exampleRu: 'Корабль выходит из порта в десять часов.',
+    extraExample: 'Fuimos a la isla en barco.',
+    extraExampleRu: 'Мы добрались до острова на корабле.',
+  },
+  nuestra: {
+    example: 'Esta es nuestra habitación.',
+    exampleRu: 'Это наша комната.',
+    extraExample: 'Nuestra profesora vive en Valencia.',
+    extraExampleRu: 'Наша преподавательница живёт в Валенсии.',
+  },
+  pastilla: {
+    example: 'Tome esta pastilla después de comer.',
+    exampleRu: 'Примите эту таблетку после еды.',
+    extraExample: 'Necesito una pastilla para el dolor de cabeza.',
+    extraExampleRu: 'Мне нужна таблетка от головной боли.',
+  },
+  empezar: {
+    example: 'La clase empieza a las nueve.',
+    exampleRu: 'Занятие начинается в девять.',
+    extraExample: '¿Cuándo podemos empezar?',
+    extraExampleRu: 'Когда мы можем начать?',
+  },
+  lento: {
+    example: 'El autobús es lento, pero llega al centro.',
+    exampleRu: 'Автобус медленный, но доезжает до центра.',
+    extraExample: '¿Puedes hablar un poco más lento?',
+    extraExampleRu: 'Ты можешь говорить немного медленнее?',
+  },
+  señora: {
+    example: 'La señora García vive en el piso de arriba.',
+    exampleRu: 'Госпожа Гарсия живёт этажом выше.',
+    extraExample: 'Esa señora trabaja en la oficina de correos.',
+    extraExampleRu: 'Та госпожа работает в почтовом отделении.',
+  },
+  pueblo: {
+    example: 'Vivo en un pueblo pequeño cerca de Toledo.',
+    exampleRu: 'Я живу в небольшом городке недалеко от Толедо.',
+    extraExample: 'El pueblo tiene una plaza y dos cafeterías.',
+    extraExampleRu: 'В городке есть площадь и два кафе.',
+  },
+  compañero: {
+    example: 'Mi compañero trabaja en la mesa de al lado.',
+    exampleRu: 'Мой коллега работает за соседним столом.',
+    extraExample: 'Voy a preparar el informe con un compañero.',
+    extraExampleRu: 'Я подготовлю отчёт вместе с коллегой.',
+  },
+  querer: {
+    example: 'Quiero mucho a mi familia.',
+    exampleRu: 'Я очень люблю свою семью.',
+    extraExample: 'Ana quiere mucho a sus abuelos.',
+    extraExampleRu: 'Ана очень любит своих бабушку и дедушку.',
+  },
+  lavarse: {
+    example: 'Me lavo la cara después de levantarme.',
+    exampleRu: 'Я умываюсь после того, как встаю.',
+    extraExample: 'Los niños se lavan las manos antes de comer.',
+    extraExampleRu: 'Дети моют руки перед едой.',
+  },
+  habitación: {
+    example: 'Mi habitación tiene una ventana grande.',
+    exampleRu: 'В моей комнате есть большое окно.',
+    extraExample: 'La habitación está al lado del baño.',
+    extraExampleRu: 'Комната находится рядом с ванной.',
+  },
+  techo: {
+    example: 'La lámpara cuelga del techo.',
+    exampleRu: 'Лампа свисает с потолка.',
+    extraExample: 'El techo de la habitación es muy alto.',
+    extraExampleRu: 'Потолок в комнате очень высокий.',
+  },
+  naranja: {
+    example: 'He comprado una naranja para el desayuno.',
+    exampleRu: 'Я купил апельсин на завтрак.',
+    extraExample: '¿Quieres una naranja o una manzana?',
+    extraExampleRu: 'Ты хочешь апельсин или яблоко?',
+  },
+  tomar: {
+    example: 'Tomo el metro para ir al trabajo.',
+    exampleRu: 'Я езжу на работу на метро.',
+    extraExample: 'Puedes tomar el autobús número diez.',
+    extraExampleRu: 'Ты можешь сесть на автобус номер десять.',
+  },
+  girar: {
+    example: 'Tienes que girar a la derecha después del banco.',
+    exampleRu: 'Тебе нужно повернуть направо после банка.',
+    extraExample: 'Gira a la izquierda en el próximo cruce.',
+    extraExampleRu: 'Поверни налево на следующем перекрёстке.',
+  },
+  salida: {
+    example: 'La salida está a la derecha.',
+    exampleRu: 'Выход находится справа.',
+    extraExample: 'Buscamos la salida de la estación.',
+    extraExampleRu: 'Мы ищем выход со станции.',
+  },
+  zapato: {
+    example: 'Este zapato negro me queda bien.',
+    exampleRu: 'Эта чёрная туфля мне подходит.',
+    extraExample: 'Necesito otro zapato de la misma talla.',
+    extraExampleRu: 'Мне нужна другая туфля того же размера.',
+  },
+  morado: {
+    example: 'Busco un jersey morado para mi hermana.',
+    exampleRu: 'Я ищу фиолетовый свитер для сестры.',
+    extraExample: 'La mochila morada está en oferta.',
+    extraExampleRu: 'Фиолетовая сумка продаётся со скидкой.',
+  },
+  oferta: {
+    example: 'Esta semana el café está de oferta.',
+    exampleRu: 'На этой неделе кофе продаётся по акции.',
+    extraExample: 'Compré la chaqueta porque estaba de oferta.',
+    extraExampleRu: 'Я купил куртку, потому что она продавалась по акции.',
+  },
+  recuerdo: {
+    example: 'Compré un recuerdo para mi familia.',
+    exampleRu: 'Я купил сувенир для своей семьи.',
+    extraExample: 'Esta taza es un recuerdo de nuestro viaje.',
+    extraExampleRu: 'Эта чашка — сувенир из нашей поездки.',
+  },
+  local: {
+    example: 'El guía nos recomendó un restaurante local.',
+    exampleRu: 'Гид порекомендовал нам местный ресторан.',
+    extraExample: 'Probamos un plato local en Sevilla.',
+    extraExampleRu: 'Мы попробовали местное блюдо в Севилье.',
+  },
+  cita: {
+    example: 'Tengo una cita con el médico a las cuatro.',
+    exampleRu: 'У меня приём у врача в четыре часа.',
+    extraExample: 'Puede pedir una cita por teléfono.',
+    extraExampleRu: 'Вы можете записаться на приём по телефону.',
+  },
+  entrenar: {
+    example: 'Entreno en el gimnasio tres veces por semana.',
+    exampleRu: 'Я тренируюсь в спортзале три раза в неделю.',
+    extraExample: 'Mañana vamos a entrenar en el parque.',
+    extraExampleRu: 'Завтра мы будем тренироваться в парке.',
+  },
+  grado: {
+    example: 'Hoy hace veinte grados.',
+    exampleRu: 'Сегодня двадцать градусов.',
+    extraExample: 'La temperatura bajará dos grados por la noche.',
+    extraExampleRu: 'Ночью температура понизится на два градуса.',
+  },
+  chupito: {
+    example: 'Pidieron un chupito después de cenar.',
+    exampleRu: 'После ужина они заказали по шоту.',
+    extraExample: 'El camarero trajo tres chupitos a la mesa.',
+    extraExampleRu: 'Официант принёс к столу три шота.',
+  },
+  copa: {
+    example: 'Tomé una copa de vino con la cena.',
+    exampleRu: 'За ужином я выпил бокал вина.',
+    extraExample: 'Hay dos copas limpias sobre la mesa.',
+    extraExampleRu: 'На столе стоят два чистых бокала.',
+  },
+  portero: {
+    example: 'El portero del club nos pidió las entradas.',
+    exampleRu: 'Охранник клуба попросил показать билеты.',
+    extraExample: 'Pregunta al portero a qué hora cierra el local.',
+    extraExampleRu: 'Спроси у охранника, во сколько закрывается заведение.',
+  },
+  pie: {
+    example: 'Me duele el pie después de caminar tanto.',
+    exampleRu: 'У меня болит ступня после такой долгой прогулки.',
+    extraExample: 'El zapato derecho me aprieta el pie.',
+    extraExampleRu: 'Правый ботинок жмёт мне ступню.',
+  },
+  seguro: {
+    example: 'Tengo un seguro médico para el viaje.',
+    exampleRu: 'У меня есть медицинская страховка для поездки.',
+    extraExample: '¿Este seguro cubre una visita al médico?',
+    extraExampleRu: 'Эта страховка покрывает визит к врачу?',
   },
 };
 const usedWords = new Set<string>();
@@ -3109,45 +3404,44 @@ const deduplicatedLegacyTopics = legacyVocabularyTopics
         const existing = entry as VocabularyEntry,
           fallback = naturalExamplesFor(entry, topic.name),
           key = normalizeWord(entry.es),
+          editorial = editorialExamples[key],
           translatedExample = legacyExampleTranslations[key];
         return {
           ...entry,
           id: index + 1,
-          example: existing.example || fallback.example,
+          example: editorial?.example || existing.example || fallback.example,
           exampleRu:
-            existing.exampleRu || translatedExample || fallback.exampleRu,
-          extraExample: existing.extraExample || fallback.extraExample,
-          extraExampleRu: existing.extraExampleRu || fallback.extraExampleRu,
+            editorial?.exampleRu ||
+            existing.exampleRu ||
+            translatedExample ||
+            fallback.exampleRu,
+          extraExample:
+            editorial?.extraExample ||
+            existing.extraExample ||
+            fallback.extraExample,
+          extraExampleRu:
+            editorial?.extraExampleRu ||
+            existing.extraExampleRu ||
+            fallback.extraExampleRu,
         };
       }),
   }))
   .filter((topic) => topic.entries.length);
-
-const distinctionNotes: Record<string, string> = {
-  'viaje': 'viaje — любая поездка; excursión — короткая организованная поездка или экскурсия.',
-  'excursión': 'excursión — экскурсия или короткая поездка; viaje — более общее «путешествие/поездка».',
-  'enviar': 'enviar нейтрально означает «отправлять»; mandar также разговорно значит «посылать» и «приказывать».',
-  'mandar': 'mandar часто употребляется в разговорной речи; enviar нейтральнее и однозначно означает «отправлять».',
-  'responder': 'responder — нейтральное «ответить»; contestar особенно часто употребляется об ответе на вопрос, звонок или сообщение.',
-  'contestar': 'contestar — ответить на вопрос, звонок или сообщение; responder — более общее нейтральное слово.',
-  'camarero': 'camarero — официант; camarera — официантка. Род указывается отдельной формой.',
-  'camarera': 'camarera — официантка; camarero — официант. Род указывается отдельной формой.',
-};
 
 const expandHeadword = (entry: VocabularyEntry): VocabularyEntry[] => {
   const slashVariants = entry.es.replace(/\/a\b/g, '').split(/\s+\/\s+/).map((item) => item.trim());
   if (slashVariants.length === 1) return [{ ...entry, es: slashVariants[0] }];
   return slashVariants.map((es, index) => {
     const examples = naturalExamplesFor({ es, ru: entry.ru }, '');
-    const note = distinctionNotes[normalizeWord(es)];
     return {
       ...entry,
       id: entry.id * 10 + index,
       es,
       example: index === 0 ? entry.example || examples.example : examples.example,
       exampleRu: index === 0 ? entry.exampleRu || examples.exampleRu : examples.exampleRu,
-      extraExample: note || examples.extraExample,
-      extraExampleRu: note ? `Различие: ${note}` : examples.extraExampleRu,
+      extraExample: examples.extraExample || (index === 0 ? entry.extraExample : ''),
+      extraExampleRu:
+        examples.extraExampleRu || (index === 0 ? entry.extraExampleRu : ''),
     };
   });
 };
@@ -3203,6 +3497,44 @@ const orderedTopics = [...mergedTopics].sort(
 const finalWords = new Set<string>();
 const primaryRussianTranslation = (value: string) =>
   value.split(/\s+\/\s+/)[0].trim();
+const translationOverrides: Record<string, string> = {
+  mañana: 'завтра',
+  pie: 'ступня',
+  tomar: 'ехать на транспорте',
+  mano: 'рука',
+  chupito: 'шот',
+  harta: 'мне надоело',
+  tonta: 'глупая',
+  'personal de seguridad': 'служба охраны',
+};
+const coreLimitByTopic: Record<string, number> = {
+  'Знакомство и о себе': 70,
+  'Семья и люди': 55,
+  'Мой день и рутина': 55,
+  'Время, даты и планы': 30,
+  'Биография и события жизни': 12,
+  'Дом и жильё': 45,
+  'Быт и район': 15,
+  'Еда и ресторан': 60,
+  'Город и транспорт': 45,
+  'Покупки и одежда': 40,
+  'Путешествия': 45,
+  'Услуги и документы': 25,
+  'Работа и учёба': 40,
+  'Здоровье': 40,
+  'Проблемы и экстренные ситуации': 25,
+  'Эмоции и мнение': 30,
+  'Праздники и встречи': 12,
+  'Досуг и хобби': 25,
+  'Культура и медиа': 12,
+  'Техника и устройства': 12,
+  'Погода и природа': 30,
+  'Связующие слова и полезные конструкции': 25,
+  'Знакомства и отношения': 15,
+  'Переписка и интернет': 15,
+  'Музыка': 10,
+  'Ночная жизнь': 5,
+};
 export const vocabularyTopics = orderedTopics.map((topic) => ({
   ...topic,
   entries: topic.entries
@@ -3214,10 +3546,13 @@ export const vocabularyTopics = orderedTopics.map((topic) => ({
       finalWords.add(key);
       return true;
     })
-    .map((entry) => ({
+    .map((entry, index) => ({
       ...entry,
       id: vocabularyId(topic.name, entry.es),
-      ru: primaryRussianTranslation(entry.ru),
+      ru:
+        translationOverrides[normalizeWord(entry.es)] ||
+        primaryRussianTranslation(entry.ru),
+      core: index < (coreLimitByTopic[topic.name] || 0),
     })),
 }));
 import { vocabularyId, releasedVocabularyTopic } from './lib/vocabulary-identities.ts';

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { vocabularyTopics } from '../app/vocabulary.ts';
+import { courseLessons } from '../app/lessons.ts';
 
 const entries = vocabularyTopics.flatMap((topic) => topic.entries.map((entry) => ({ ...entry, topic: topic.name })));
 
@@ -21,7 +22,24 @@ test('every vocabulary card has a translated, word-specific example', () => {
   for (const entry of entries) {
     assert.ok(entry.example.trim(), `${entry.topic}: ${entry.es} has no example`);
     assert.ok(entry.exampleRu?.trim(), `${entry.topic}: ${entry.es} has no translation`);
+    if (entry.extraExample?.trim())
+      assert.ok(
+        entry.extraExampleRu?.trim(),
+        `${entry.topic}: ${entry.es} has an untranslated second example`,
+      );
   }
+});
+
+test('A1-A2 core is explicit, substantial and smaller than the full dictionary', () => {
+  const core = entries.filter((entry) => entry.core);
+  assert.ok(core.length >= 750, `core is too small: ${core.length}`);
+  assert.ok(core.length <= 850, `core is no longer focused: ${core.length}`);
+  assert.ok(core.length < entries.length);
+  for (const topic of vocabularyTopics.slice(0, 16))
+    assert.ok(
+      topic.entries.some((entry) => entry.core),
+      `${topic.name} has no core vocabulary`,
+    );
 });
 
 test('A2 topics stay complete and follow the learning route', () => {
@@ -48,6 +66,16 @@ test('A2 topics stay complete and follow the learning route', () => {
       .entries.length >= 35,
     'emotions need a wider active vocabulary',
   );
+  for (const name of [
+    'Время, даты и планы',
+    'Услуги и документы',
+    'Проблемы и экстренные ситуации',
+  ])
+    assert.ok(
+      vocabularyTopics.find((topic) => topic.name === name)!.entries.length >=
+        40,
+      `${name} needs at least 40 useful items`,
+    );
   assert.deepEqual(
     names.filter((name) => required.includes(name)),
     required,
@@ -59,6 +87,31 @@ test('known editorial defects never reach the learner', () => {
   assert.equal(rendered.includes('El no está aquí ahora'), false);
   assert.equal(rendered.includes('На той улице очень шумно'), false);
   assert.equal(rendered.includes('No puedes ser una mujer'), false);
+  assert.equal(rendered.includes('No queríamos empezar sin vos'), false);
+  assert.equal(rendered.includes('¿Podés hablar'), false);
+  assert.equal(rendered.includes('Esto monumento'), false);
+  assert.equal(rendered.includes('Tu novio te está engañando'), false);
+  assert.equal(rendered.includes('Murió ayer por la noche'), false);
+  for (const artificial of [
+    'Necesito información sobre ',
+    'Hoy hablamos de ',
+    'Necesito tiempo para ',
+    'Mi nuevo compañero es ',
+    'Aquí hay un hobby',
+  ])
+    assert.equal(rendered.includes(artificial), false, artificial);
+  assert.equal(
+    entries.find((entry) => entry.es === 'carta')?.example,
+    '¿Nos trae la carta, por favor?',
+  );
+  assert.equal(
+    entries.find((entry) => entry.es === 'dependiente')?.exampleRu,
+    'Продавец помог мне найти мой размер.',
+  );
+  assert.equal(
+    entries.find((entry) => entry.es === 'chupito')?.exampleRu,
+    'После ужина они заказали по шоту.',
+  );
 });
 
 test('music clips have valid short timestamps', () => {
@@ -86,5 +139,27 @@ test('translation choices are built as four-option questions', () => {
   assert.match(
     source,
     /normalizeText\(entry\.ru\) !== normalizeText\(card\.ru\)/,
+  );
+});
+
+test('lesson 1 keeps ambiguous agreement prompts as guided choices', () => {
+  const lesson = courseLessons.find((item) => item.id === 'intro');
+  assert.ok(lesson);
+  assert.equal(lesson.exercises.length, 50);
+  for (const prompt of [
+    'La doctora es ___.',
+    'Los amigos son ___.',
+    'Выберите правильную пару страна → национальность.',
+  ]) {
+    const exercise = lesson.exercises.find((item) => item.prompt === prompt);
+    assert.ok(exercise, `missing exercise: ${prompt}`);
+    assert.equal(exercise.mode, 'choice', `${prompt} must provide choices`);
+    assert.ok((exercise.options?.length || 0) >= 2);
+  }
+  assert.equal(
+    lesson.exercises.some((item) =>
+      item.prompt.startsWith('Впишите правильный ответ без вариантов:'),
+    ),
+    false,
   );
 });
