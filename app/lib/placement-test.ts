@@ -133,6 +133,37 @@ const setTwo: PlacementQuestion[] = [
 
 export const placementQuestionSets = [setOne, setTwo];
 
+export const arrangedPlacementOptions = (
+  question: PlacementQuestion,
+  attempt: number,
+) => {
+  if (!question.options?.length) return [];
+  const correct = question.options.find((option) =>
+      question.answers.some(
+        (answer) => normalizeText(answer) === normalizeText(option),
+      ),
+    ) || question.options[0],
+    rest = question.options.filter((option) => option !== correct),
+    seed = Array.from(`${question.id}-${attempt}`).reduce(
+      (value, character) =>
+        (value * 33 + character.charCodeAt(0)) >>> 0,
+      5381,
+    );
+  rest.sort((left, right) => {
+    const rank = (value: string) =>
+      Array.from(value).reduce(
+        (total, character) =>
+          (total * 31 + character.charCodeAt(0) + seed) >>> 0,
+        seed,
+      );
+    return rank(left) - rank(right);
+  });
+  const position = (seed + attempt) % question.options.length,
+    result = [...rest];
+  result.splice(position, 0, correct);
+  return result;
+};
+
 export const placementAnswerIsCorrect = (value: string, answers: string[]) =>
   answers.some((answer) =>
     normalizeText(value) === normalizeText(answer) || analyzeAnswer(value, answer).correct,

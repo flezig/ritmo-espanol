@@ -48,6 +48,10 @@ export const maskExactTerm = (
   replacement = '_____',
 ) => text.replace(exactTermPattern(term), replacement);
 
+export const hasUsableMaskedContext = (original: string, masked: string) =>
+  masked !== original &&
+  masked.replace(/_+/g, '').replace(/[^\p{L}\p{N}]+/gu, '').length >= 3;
+
 const misspell = (word: string) => {
   if (/[áéíóúü]/iu.test(word))
     return word.normalize('NFD').replace(/[\u0300-\u036f]/g, '');

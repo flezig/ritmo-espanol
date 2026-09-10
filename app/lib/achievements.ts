@@ -13,6 +13,8 @@ export type AchievementStats = {
   rushSeconds: number;
   rushTotalScore: number;
   rushBestScore: number;
+  articleSessions: number;
+  articlePerfectSessions: number;
   dailyChallengeDays: string[];
   dailyPlanDays: string[];
   lessonIds: string[];
@@ -26,6 +28,7 @@ export type AchievementEvent =
   | { type: 'listening-correct' }
   | { type: 'pronunciation-correct' }
   | { type: 'rush-session'; score: number; seconds: number }
+  | { type: 'article-session'; score: number; total: number }
   | { type: 'placement-test-complete'; level: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' }
   | { type: 'daily-challenge-complete'; day: string }
   | { type: 'daily-plan-complete'; day: string };
@@ -45,6 +48,8 @@ export const defaultAchievementStats: AchievementStats = {
   rushSeconds: 0,
   rushTotalScore: 0,
   rushBestScore: 0,
+  articleSessions: 0,
+  articlePerfectSessions: 0,
   dailyChallengeDays: [],
   dailyPlanDays: [],
   lessonIds: [],
@@ -90,6 +95,11 @@ export const applyAchievementEvent = (
     next.rushSeconds += seconds;
     next.rushTotalScore += score;
     next.rushBestScore = Math.max(next.rushBestScore, score);
+  }
+  else if (event.type === 'article-session') {
+    next.articleSessions += 1;
+    if (event.total > 0 && event.score === event.total)
+      next.articlePerfectSessions += 1;
   }
   else if (event.type === 'placement-test-complete') {
     next.placementTests += 1;

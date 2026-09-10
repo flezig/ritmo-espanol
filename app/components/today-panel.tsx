@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Headphones, RotateCcw, Volume2 } from 'lucide-react';
 import { ReportExerciseButton } from './report-exercise-button';
 import {
   placementQuestionSets,
+  arrangedPlacementOptions,
   scorePlacement,
   type PlacementLevel,
   type PlacementResult,
@@ -101,7 +102,11 @@ export default function TodayPanel({
   const activeQuestions =
     placementQuestionSets[attemptIndex % placementQuestionSets.length];
   const question = activeQuestions[index];
-  const answer = responses[question?.id] || '';
+  const answer = responses[question?.id] || '',
+    displayedOptions = useMemo(
+      () => arrangedPlacementOptions(question, attemptIndex + 1),
+      [question, attemptIndex],
+    );
   const speak = (rate: number) => {
     if (!question.audio || typeof speechSynthesis === 'undefined') return;
     speechSynthesis.cancel();
@@ -183,7 +188,7 @@ export default function TodayPanel({
           {question.context && <blockquote lang="es">{question.context}</blockquote>}
           {question.audio && <div className="placement-audio"><Headphones /><span>Текст скрыт: отвечайте только на слух</span><button onClick={() => speak(1)}><Volume2 /> Обычная</button><button onClick={() => speak(.5)}><Volume2 /> 0.5×</button></div>}
           <h3>{question.prompt}</h3>
-          {question.options ? <div className="placement-options">{question.options.map((option) => <button className={answer === option ? 'selected' : ''} onClick={() => setResponses((items) => ({ ...items, [question.id]: option }))} key={option}>{option}</button>)}</div> : <input autoFocus value={answer} onChange={(event) => setResponses((items) => ({ ...items, [question.id]: event.target.value }))} placeholder="Введите ответ самостоятельно…" />}
+          {question.options ? <div className="placement-options">{displayedOptions.map((option) => <button className={answer === option ? 'selected' : ''} onClick={() => setResponses((items) => ({ ...items, [question.id]: option }))} key={option}>{option}</button>)}</div> : <input autoFocus value={answer} onChange={(event) => setResponses((items) => ({ ...items, [question.id]: event.target.value }))} placeholder="Введите ответ самостоятельно…" />}
           <footer><button disabled={index === 0} onClick={() => setIndex((value) => value - 1)}>Назад</button>{index === activeQuestions.length - 1 ? <button disabled={!answer.trim()} onClick={finish}>Рассчитать уровень</button> : <button disabled={!answer.trim()} onClick={() => setIndex((value) => value + 1)}>Следующий вопрос</button>}</footer>
           <small>40 вопросов: по 10 на грамматику, чтение, аудирование и письмо. Регистр и знаки препинания не учитываются. Повторный тест использует другой набор той же структуры.</small>
         </div>

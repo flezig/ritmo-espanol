@@ -80,7 +80,13 @@ const diversifyExercises = (
   let choiceNumber = 0;
   const varied = items.map((item) => {
     if (item.mode !== 'choice' || !convertChoicesToInput) return item;
-    const convertToInput = choiceNumber++ % 3 === 1;
+    // A fill-in sentence is not a free-input task unless the prompt itself
+    // supplies the missing lemma/meaning or asks for a mechanical conversion.
+    // Otherwise many perfectly natural words could fit the same blank.
+    const hasExplicitClue =
+      item.prompt.includes('→') || /\([^)]{2,}\)/.test(item.prompt);
+    if (!hasExplicitClue) return item;
+    const convertToInput = choiceNumber++ % 2 === 0;
     return convertToInput
       ? {
           ...item,

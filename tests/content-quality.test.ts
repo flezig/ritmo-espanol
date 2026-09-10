@@ -163,3 +163,46 @@ test('lesson 1 keeps ambiguous agreement prompts as guided choices', () => {
     false,
   );
 });
+
+test('lesson free input is used only when the prompt identifies the answer', () => {
+  for (const lesson of courseLessons) {
+    for (const exercise of lesson.exercises) {
+      if (
+        exercise.mode !== 'type' ||
+        !exercise.prompt.startsWith('Впишите правильный ответ без вариантов:')
+      )
+        continue;
+      assert.match(
+        exercise.prompt,
+        /→|\([^)]{2,}\)/,
+        `${lesson.id}: ${exercise.prompt}`,
+      );
+    }
+  }
+});
+
+test('lesson and grammar choices use displayed shuffled options', () => {
+  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  assert.match(source, /displayedOptions = shuffledOptions/);
+  assert.match(source, /displayedOptions\.map\(\(option, index\)/);
+  assert.match(source, /displayedGrammarOptions = shuffledOptions/);
+  assert.match(source, /displayedGrammarOptions\.map/);
+});
+
+test('quick start uses meaningful checks and allows retry after an error', () => {
+  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const quickStart = source.slice(
+    source.indexOf('const starterLessons'),
+    source.indexOf('function shuffledOptions'),
+  );
+  assert.equal(quickStart.includes("prompt: 'Tú ___ café.'"), false);
+  assert.match(quickStart, /prompt: 'Tú ___ pan\.'/);
+  assert.match(quickStart, /choice === check\.answer \|\| answerLock\.current/);
+  assert.match(quickStart, /else answerLock\.current = false/);
+  assert.match(quickStart, /ritmo-focus-lesson-id/);
+  assert.match(quickStart, /displayedStarterOptions\.map/);
+  assert.match(quickStart, /title: '04 · Знакомство'/);
+  assert.match(quickStart, /title: '05 · В кафе'/);
+  assert.match(quickStart, /title: '06 · В городе'/);
+  assert.match(quickStart, /Perdone, ¿dónde está el metro\?/);
+});

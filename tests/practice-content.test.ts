@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  hasUsableMaskedContext,
   inferGenderArticle,
   makeSingleWordCorrection,
   maskExactTerm,
@@ -28,6 +29,18 @@ test('article tasks exclude common-gender and ambiguous nouns', () => {
 test('context masking replaces only the complete studied term', () => {
   assert.equal(maskExactTerm('Vamos a casa.', 'a'), 'Vamos _____ casa.');
   assert.equal(maskExactTerm('La cama está aquí.', 'ama'), 'La cama está aquí.');
+  assert.equal(hasUsableMaskedContext('Hace frío.', '_____.'), false);
+  assert.equal(
+    hasUsableMaskedContext(
+      '¿Dónde recojo el equipaje?',
+      '_____',
+    ),
+    false,
+  );
+  assert.equal(
+    hasUsableMaskedContext('Hoy hace frío.', 'Hoy _____.'),
+    true,
+  );
 });
 
 test('correction tasks always target the studied single word', () => {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   placementAnswerIsCorrect,
+  arrangedPlacementOptions,
   placementQuestionSets,
   placementSkills,
   scorePlacement,
@@ -27,6 +28,18 @@ test('every placement attempt has 40 balanced questions from A1 through C1', () 
     placementQuestionSets[0].map((question) => question.prompt),
     placementQuestionSets[1].map((question) => question.prompt),
   );
+});
+
+test('placement choices rotate the correct answer across positions', () => {
+  const choiceQuestions = placementQuestionSets[0].filter(
+    (question) => question.options?.length,
+  );
+  const positions = choiceQuestions.map((question) => {
+    const options = arrangedPlacementOptions(question, 1);
+    return options.findIndex((option) => question.answers.includes(option));
+  });
+  assert.equal(positions.every((position) => position === 0), false);
+  assert.equal(new Set(positions).size >= 3, true);
 });
 
 test('placement answers ignore punctuation and capitalization', () => {

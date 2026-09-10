@@ -59,6 +59,11 @@ test('all explicit achievement events update their persistent counters', () => {
   stats = applyAchievementEvent(stats, { type: 'placement-test-complete', level: 'B2' }, 12);
   stats = applyAchievementEvent(
     stats,
+    { type: 'article-session', score: 10, total: 10 },
+    12,
+  );
+  stats = applyAchievementEvent(
+    stats,
     { type: 'lesson-complete', lessonId: 'intro' },
     12,
   );
@@ -72,6 +77,8 @@ test('all explicit achievement events update their persistent counters', () => {
   assert.equal(stats.pronunciationCorrect, 1);
   assert.equal(stats.placementTests, 1);
   assert.deepEqual(stats.placementLevels, ['B2']);
+  assert.equal(stats.articleSessions, 1);
+  assert.equal(stats.articlePerfectSessions, 1);
   assert.deepEqual(stats.lessonIds, ['intro']);
 });
 
@@ -134,7 +141,7 @@ test('every achievement has a unique id, positive target and progress rule', () 
     targets = [...catalog.matchAll(/target: (\d+)/g)].map((match) =>
       Number(match[1]),
     );
-  assert.equal(ids.length, 93);
+  assert.equal(ids.length, 97);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal((catalog.match(/progress:/g) || []).length, ids.length);
   assert.equal(targets.length, ids.length);

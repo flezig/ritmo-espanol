@@ -47,6 +47,11 @@ import {
 } from './lib/achievements';
 import { STANDARD_RECOGNITION_DISTRIBUTION } from './lib/practice-distribution';
 import {
+  createArticlePracticeSession,
+  type ArticlePracticeQuestion,
+} from './lib/article-practice';
+import {
+  hasUsableMaskedContext,
   inferGenderArticle,
   maskExactTerm,
   makeSingleWordCorrection,
@@ -361,6 +366,11 @@ const loadAchievementStats = (): AchievementStats => {
       rushSeconds: Math.max(0, Number(stored.rushSeconds) || 0),
       rushTotalScore: Math.max(0, Number(stored.rushTotalScore) || 0),
       rushBestScore: Math.max(0, Number(stored.rushBestScore) || 0),
+      articleSessions: Math.max(0, Number(stored.articleSessions) || 0),
+      articlePerfectSessions: Math.max(
+        0,
+        Number(stored.articlePerfectSessions) || 0,
+      ),
       topicSessions,
       musicPracticeSessions: Math.max(
         Number(stored.musicPracticeSessions) || 0,
@@ -457,6 +467,10 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: 'rush-time-10', category: 'Регулярность', icon: '⏱️', name: 'Diez Minutos de Ritmo', lockedMotto: '«Un minuto siempre cuenta.»', unlockedMotto: '«Diez minutos pensando en español.»', description: 'Провести суммарно 10 минут в завершённых Spanish Rush.', target: 10, progress: ({ stats }) => Math.floor(stats.rushSeconds / 60) },
   { id: 'rush-time-30', category: 'Регулярность', icon: '⌛', name: 'Media Hora Sin Pausa', lockedMotto: '«El tiempo corre contigo.»', unlockedMotto: '«Media hora de reflejos en español.»', description: 'Провести суммарно 30 минут в завершённых Spanish Rush.', target: 30, progress: ({ stats }) => Math.floor(stats.rushSeconds / 60) },
   { id: 'rush-time-120', category: 'Регулярность', icon: '🕰️', name: 'Dos Horas de Vuelo', lockedMotto: '«Cada segundo deja una huella.»', unlockedMotto: '«Dos horas completas a toda velocidad.»', description: 'Провести суммарно 120 минут в завершённых Spanish Rush.', target: 120, progress: ({ stats }) => Math.floor(stats.rushSeconds / 60) },
+  { id: 'articles-first', category: 'Старт', icon: '📚', name: 'El Primer Artículo', lockedMotto: '«El или la — пора сделать выбор.»', unlockedMotto: '«Первое исключение уже не исключение для тебя.»', description: 'Завершить первую сессию тренировки артиклей.', target: 1, progress: ({ stats }) => stats.articleSessions },
+  { id: 'articles-5', category: 'Прогресс', icon: '🧩', name: 'Género en Orden', lockedMotto: '«Каждому слову нужен свой артикль.»', unlockedMotto: '«Пять сессий расставили всё по местам.»', description: 'Завершить 5 сессий тренировки артиклей.', target: 5, progress: ({ stats }) => stats.articleSessions },
+  { id: 'articles-20', category: 'Мастерство', icon: '🏛️', name: 'Maestro de Artículos', lockedMotto: '«Исключения всё ещё прячутся.»', unlockedMotto: '«Двадцать сессий: el и la больше не путаются.»', description: 'Завершить 20 сессий тренировки артиклей.', target: 20, progress: ({ stats }) => stats.articleSessions },
+  { id: 'articles-perfect', category: 'Мастерство', icon: '💎', name: 'Sin Una Duda', lockedMotto: '«Десять решений ждут точности.»', unlockedMotto: '«Десять из десяти — без единой ошибки.»', description: 'Завершить сессию артиклей со счётом 10 из 10.', target: 1, progress: ({ stats }) => stats.articlePerfectSessions },
   { id: 'ritmo-colombiano', category: 'Культура', icon: '🎵', name: 'Ritmo Colombiano', lockedMotto: '«La música ya está dentro de ti.»', unlockedMotto: '«Has encontrado el ritmo.»', description: 'Завершить 5 сессий Practice по теме «Музыка».', target: 5, progress: ({ stats }) => stats.musicPracticeSessions },
   { id: 'bogota', category: 'Культура', icon: '🇨🇴', name: 'Un Día en Bogotá', lockedMotto: '«Cuatro rutas llevan a la capital.»', unlockedMotto: '«Bogotá ya habla contigo.»', description: 'Завершить практику по темам: еда, музыка, город и путешествия.', target: 4, progress: ({ stats }) => ['Еда и ресторан', 'Музыка', 'Город и транспорт', 'Путешествия'].filter((topic) => (stats.topicSessions[topic] || 0) > 0).length },
   { id: 'madrid', category: 'Культура', icon: '🇪🇸', name: 'Fin de Semana en Madrid', lockedMotto: '«La ciudad nunca termina.»', unlockedMotto: '«Madrid ya conoce tus pasos.»', description: 'Завершить практику по городу, еде, досугу и путешествиям.', target: 4, progress: ({ stats }) => ['Город и транспорт', 'Еда и ресторан', 'Досуг и хобби', 'Путешествия'].filter((topic) => (stats.topicSessions[topic] || 0) > 0).length },
@@ -2727,6 +2741,7 @@ function HomeView({
 const starterLessons = [
   {
     title: '01 · Presente simple',
+    lessonId: 'day',
     subtitle: 'Говорим о себе и ежедневных действиях',
     steps: [
       ['Основа', 'Уберите -ar/-er/-ir: hablar → habl-, comer → com-.'],
@@ -2738,6 +2753,7 @@ const starterLessons = [
   },
   {
     title: '02 · Артикли',
+    lessonId: 'intro',
     subtitle: 'El, la, los, las и когда нужен un/una',
     steps: [
       ['Род', 'el — мужской род, la — женский: el viaje, la mesa.'],
@@ -2749,6 +2765,7 @@ const starterLessons = [
   },
   {
     title: '03 · Предлоги',
+    lessonId: 'day',
     subtitle: 'A, de, en, con, por и para без путаницы',
     steps: [
       ['a', 'направление и адресат: Voy a Madrid.'],
@@ -2756,6 +2773,42 @@ const starterLessons = [
       ['en / con', 'место или транспорт / совместность: en casa, con Ana.'],
       ['por / para', 'причина или путь / цель или получатель.'],
       ['В речи', 'Este regalo es para ti. Gracias por venir.'],
+    ],
+  },
+  {
+    title: '04 · Знакомство',
+    lessonId: 'intro',
+    subtitle: 'Поздороваться, представиться и поддержать первый разговор',
+    steps: [
+      ['Поздороваться', 'Buenos días. — Доброе утро.'],
+      ['Узнать имя', '¿Cómo te llamas? — Как тебя зовут?'],
+      ['Сказать, откуда вы', 'Soy de Rusia. — Я из России.'],
+      ['Рассказать о себе', 'Soy estudiante. — Я студент.'],
+      ['Завершить знакомство', 'Mucho gusto. — Очень приятно.'],
+    ],
+  },
+  {
+    title: '05 · В кафе',
+    lessonId: 'food',
+    subtitle: 'Сделать заказ, уточнить цену и попросить счёт',
+    steps: [
+      ['Вежливый заказ', 'Quisiera un café, por favor. — Я бы хотел кофе, пожалуйста.'],
+      ['Выбрать блюдо', 'Para mí, una ensalada. — Мне салат.'],
+      ['Спросить цену', '¿Cuánto cuesta? — Сколько это стоит?'],
+      ['Попросить воду', '¿Me trae agua, por favor? — Принесите мне воду, пожалуйста.'],
+      ['Попросить счёт', 'La cuenta, por favor. — Счёт, пожалуйста.'],
+    ],
+  },
+  {
+    title: '06 · В городе',
+    lessonId: 'home',
+    subtitle: 'Спросить дорогу и понять короткое объяснение маршрута',
+    steps: [
+      ['Начать вежливо', 'Perdone, ¿dónde está el metro? — Извините, где метро?'],
+      ['Идти прямо', 'Siga recto. — Идите прямо.'],
+      ['Повернуть', 'Gire a la derecha. — Поверните направо.'],
+      ['Уточнить расстояние', '¿Está lejos? — Это далеко?'],
+      ['Понять ориентир', 'Está al lado del banco. — Это рядом с банком.'],
     ],
   },
 ];
@@ -2772,7 +2825,7 @@ const starterChecks = [
       answer: 'trabajamos',
     },
     {
-      prompt: 'Tú ___ café.',
+      prompt: 'Tú ___ pan.',
       options: ['comes', 'como', 'comen'],
       answer: 'comes',
     },
@@ -2849,6 +2902,87 @@ const starterChecks = [
       answer: 'por',
     },
   ],
+  [
+    {
+      prompt: 'Сейчас утро. Как поздороваться?',
+      options: ['Buenos días.', 'Buenas noches.', 'Hasta mañana.'],
+      answer: 'Buenos días.',
+    },
+    {
+      prompt: 'Как спросить имя собеседника?',
+      options: ['¿Cómo te llamas?', '¿Dónde vives?', '¿Cuántos años tienes?'],
+      answer: '¿Cómo te llamas?',
+    },
+    {
+      prompt: 'Вы из России. Выберите подходящую реплику.',
+      options: ['Soy de Rusia.', 'Vivo Rusia.', 'Estoy de Rusia.'],
+      answer: 'Soy de Rusia.',
+    },
+    {
+      prompt: 'Как сказать «Я студент»?',
+      options: ['Soy estudiante.', 'Tengo estudiante.', 'Estoy estudiante.'],
+      answer: 'Soy estudiante.',
+    },
+    {
+      prompt: 'Что уместно ответить при знакомстве?',
+      options: ['Mucho gusto.', 'La cuenta, por favor.', 'Gire a la derecha.'],
+      answer: 'Mucho gusto.',
+    },
+  ],
+  [
+    {
+      prompt: 'Как вежливо заказать кофе?',
+      options: ['Quisiera un café, por favor.', '¿Dónde está el café?', 'No tomo café nunca.'],
+      answer: 'Quisiera un café, por favor.',
+    },
+    {
+      prompt: 'Официант спрашивает: «¿Qué desea?». Вы хотите салат.',
+      options: ['Para mí, una ensalada.', 'La ensalada está cerrada.', 'Soy una ensalada.'],
+      answer: 'Para mí, una ensalada.',
+    },
+    {
+      prompt: 'Как спросить «Сколько это стоит?»',
+      options: ['¿Cuánto cuesta?', '¿Cómo se llama?', '¿A qué hora abre?'],
+      answer: '¿Cuánto cuesta?',
+    },
+    {
+      prompt: 'Как вежливо попросить принести воду?',
+      options: ['¿Me trae agua, por favor?', '¿Me llama agua?', '¿Me cuesta agua?'],
+      answer: '¿Me trae agua, por favor?',
+    },
+    {
+      prompt: 'Вы закончили есть. Что сказать официанту?',
+      options: ['La cuenta, por favor.', 'Siga recto.', 'Mucho gusto.'],
+      answer: 'La cuenta, por favor.',
+    },
+  ],
+  [
+    {
+      prompt: 'Как вежливо спросить, где метро?',
+      options: ['Perdone, ¿dónde está el metro?', '¿Cuánto cuesta el metro?', 'El metro está cerrado.'],
+      answer: 'Perdone, ¿dónde está el metro?',
+    },
+    {
+      prompt: 'Вам говорят «Siga recto». Что нужно сделать?',
+      options: ['Идти прямо.', 'Повернуть налево.', 'Вернуться назад.'],
+      answer: 'Идти прямо.',
+    },
+    {
+      prompt: 'Как сказать «Поверните направо»?',
+      options: ['Gire a la derecha.', 'Siga hasta mañana.', 'Está a la izquierda.'],
+      answer: 'Gire a la derecha.',
+    },
+    {
+      prompt: 'Как уточнить, далеко ли нужное место?',
+      options: ['¿Está lejos?', '¿Está abierto?', '¿Está ocupado?'],
+      answer: '¿Está lejos?',
+    },
+    {
+      prompt: 'Что означает «Está al lado del banco»?',
+      options: ['Это рядом с банком.', 'Это внутри банка.', 'Это далеко от банка.'],
+      answer: 'Это рядом с банком.',
+    },
+  ],
 ] as const;
 function LearnView({ go }: { go: (section: Section) => void }) {
   const [lesson, setLesson] = useState(0),
@@ -2858,7 +2992,11 @@ function LearnView({ go }: { go: (section: Section) => void }) {
     answerLock = useRef(false);
   const { speakText } = useSpanishVoices(),
     current = starterLessons[lesson],
-    check = starterChecks[lesson][step - 1];
+    check = starterChecks[lesson][step - 1],
+    displayedStarterOptions = shuffledOptions(
+      [...check.options],
+      `quick-start-${lesson}-${step}`,
+    );
   useEffect(() => {
     try {
       setCompleted(
@@ -2867,7 +3005,7 @@ function LearnView({ go }: { go: (section: Section) => void }) {
     } catch {}
   }, []);
   const choose = (option: string) => {
-    if (choice || answerLock.current) return;
+    if (choice === check.answer || answerLock.current) return;
     answerLock.current = true;
     const correct = option === check.answer;
     setChoice(option);
@@ -2878,10 +3016,13 @@ function LearnView({ go }: { go: (section: Section) => void }) {
         next = { ...completed, [key]: Math.max(completed[key] || 0, step) };
       setCompleted(next);
       localStorage.setItem('ritmo-learn-progress', JSON.stringify(next));
-    }
+    } else answerLock.current = false;
   };
   const advance = () => {
-    if (step === 5) go('Lessons');
+    if (step === 5) {
+      sessionStorage.setItem('ritmo-focus-lesson-id', current.lessonId);
+      go('Lessons');
+    }
     else {
       answerLock.current = false;
       setStep((value) => value + 1);
@@ -2891,15 +3032,16 @@ function LearnView({ go }: { go: (section: Section) => void }) {
   return (
     <div className="view-stack">
       <ViewHead
-        over="СТАРТ С НУЛЯ · 3 ОСНОВЫ"
+        over="СТАРТ С НУЛЯ · 3 ОСНОВЫ · 3 СЦЕНАРИЯ"
         title="Сначала — то, без чего не заговорить."
-        copy="Короткие уроки идут в правильном порядке: presente, артикли, затем предлоги."
+        copy="Сначала разберите presente, артикли и предлоги, затем примените их в знакомстве, кафе и городе."
       />
       <div className="starter-grid">
         {starterLessons.map((item, index) => (
           <button
             className={lesson === index ? 'active' : ''}
             onClick={() => {
+              answerLock.current = false;
               setLesson(index);
               setStep(Math.min(5, (completed[String(index)] || 0) + 1));
               setChoice('');
@@ -2918,7 +3060,7 @@ function LearnView({ go }: { go: (section: Section) => void }) {
       <div className="lesson-stage">
         <div className="lesson-scene">
           <span>0{lesson + 1}</span>
-          <p>УРОК ДЛЯ НАЧАЛА</p>
+          <p>{lesson < 3 ? 'УРОК ДЛЯ НАЧАЛА' : 'ПРАКТИЧЕСКИЙ СЦЕНАРИЙ'}</p>
           <h2>{current.title.split(' · ')[1]}</h2>
           <div>♪ ♫ ♪</div>
         </div>
@@ -2938,12 +3080,12 @@ function LearnView({ go }: { go: (section: Section) => void }) {
               section={`Быстрый старт: ${current.title}`}
               prompt={check.prompt}
               answer={check.answer}
-              options={[...check.options]}
+              options={displayedStarterOptions}
             />
             <small>БЫСТРАЯ ПРОВЕРКА</small>
             <h4>{check.prompt}</h4>
             <div>
-              {check.options.map((option) => (
+              {displayedStarterOptions.map((option) => (
                 <button
                   className={
                     choice === option
@@ -4904,7 +5046,11 @@ function GrammarView() {
     answerLock = useRef(false);
   const topic = grammarTopics[active],
     questions = grammarQuestionBanks[active],
-    test = questions[question];
+    test = questions[question],
+    displayedGrammarOptions = shuffledOptions(
+      test.options,
+      `grammar-${active}-${question}`,
+    );
   const { leaving, move } = useTaskMotion();
   const choose = (option: string) => {
     if (choice || answerLock.current) return;
@@ -5037,7 +5183,7 @@ function GrammarView() {
             </small>
             <p>{test.prompt}</p>
             <div>
-              {test.options.map((option) => (
+              {displayedGrammarOptions.map((option) => (
                 <button
                   className={
                     choice === option
@@ -7428,7 +7574,9 @@ function SpanishRushGame() {
       .filter((item): item is StudyCard => !!item && item.key !== wordCard.key),
     maskedExample = maskExactTerm(wordCard.example, wordCard.es),
     wantsContext = round % 3 === 1,
-    hasRealBlank = wantsContext && maskedExample !== wordCard.example,
+    hasRealBlank =
+      wantsContext &&
+      hasUsableMaskedContext(wordCard.example, maskedExample),
     prompt = isGrammar
       ? grammarTask.prompt
       : round % 3 === 0
@@ -7580,8 +7728,127 @@ function SpanishRushGame() {
   );
 }
 
+function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
+  const [session, setSession] = useState<ArticlePracticeQuestion[]>(() =>
+      createArticlePracticeSession(),
+    ),
+    [index, setIndex] = useState(0),
+    [choice, setChoice] = useState(''),
+    [score, setScore] = useState(0),
+    [finished, setFinished] = useState(false),
+    answerLock = useRef(false);
+  const question = session[index],
+    correct = choice === question?.answer;
+  const restart = () => {
+    answerLock.current = false;
+    setSession(createArticlePracticeSession());
+    setIndex(0);
+    setChoice('');
+    setScore(0);
+    setFinished(false);
+  };
+  const choose = (value: string) => {
+    if (choice || answerLock.current || !question) return;
+    answerLock.current = true;
+    const isCorrect = value === question.answer;
+    setChoice(value);
+    playFeedbackSound(isCorrect);
+    recordLearningEvent(isCorrect, isCorrect ? 4 : 1);
+    if (isCorrect) setScore((current) => current + 1);
+  };
+  const next = () => {
+    answerLock.current = false;
+    if (index === session.length - 1) {
+      setFinished(true);
+      playCelebrationSound('finish');
+      recordAchievementEvent({
+        type: 'article-session',
+        score,
+        total: session.length,
+      });
+      return;
+    }
+    setIndex((current) => current + 1);
+    setChoice('');
+  };
+  if (finished)
+    return (
+      <section className="article-practice article-finish game-panel">
+        <span>📚</span>
+        <p className="eyebrow">СЕССИЯ ЗАВЕРШЕНА</p>
+        <h2>{score} из {session.length} правильных ответов</h2>
+        <p>Новая сессия соберёт другой набор исключений и снова перемешает варианты.</p>
+        <div>
+          <button className="primary-btn" onClick={restart}>Ещё 10 заданий</button>
+          <button className="article-back" onClick={onBack}>К режимам</button>
+        </div>
+      </section>
+    );
+  return (
+    <section className="article-practice game-panel">
+      <header className="article-practice-head">
+        <button className="article-back" onClick={onBack}><ArrowLeft /> К режимам</button>
+        <div>
+          <span>АРТИКЛИ · EL ИЛИ LA</span>
+          <b>{index + 1} / {session.length}</b>
+        </div>
+      </header>
+      <div className="article-practice-track">
+        <i style={{ width: `${((index + 1) / session.length) * 100}%` }} />
+      </div>
+      <article className="article-question task-swap" key={question.id}>
+        <ReportExerciseButton
+          id={`article-practice:${question.id}`}
+          section="Practice: артикли"
+          prompt={question.prompt}
+          answer={question.answer}
+          options={question.options}
+        />
+        <small>
+          {question.kind === 'article'
+            ? 'ВЫБЕРИТЕ EL ИЛИ LA'
+            : question.kind === 'meaning-article'
+              ? 'ЗНАЧЕНИЕ ПОДСКАЗАНО'
+              : 'АРТИКЛЬ МЕНЯЕТ ЗНАЧЕНИЕ'}
+        </small>
+        <h2>{question.prompt}</h2>
+        <div className="article-options">
+          {question.options.map((option) => (
+            <button
+              className={
+                choice
+                  ? option === question.answer
+                    ? 'correct'
+                    : option === choice
+                      ? 'wrong'
+                      : ''
+                  : ''
+              }
+              disabled={!!choice}
+              onClick={() => choose(option)}
+              key={option}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        {choice && (
+          <footer className={correct ? 'correct' : 'wrong'}>
+            <b>{correct ? 'Верно!' : `Правильный ответ: ${question.answer}`}</b>
+            <p>{question.explanation}</p>
+            <button onClick={next}>
+              {index === session.length - 1 ? 'Завершить' : 'Следующее задание'}
+              <ArrowRight />
+            </button>
+          </footer>
+        )}
+      </article>
+    </section>
+  );
+}
+
 function PracticeHub() {
-  const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush'>('menu');
+  const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush' | 'articles'>('menu');
   return (
     <div className="view-stack practice-hub">
       <section className="practice-mode-picker">
@@ -7594,6 +7861,9 @@ function PracticeHub() {
         <button className={game === 'rush' ? 'active' : ''} onClick={() => setGame('rush')}>
           <span>⏱️</span><b>Spanish Rush</b><small>60 секунд · combo и бонусы</small>
         </button>
+        <button className={game === 'articles' ? 'active' : ''} onClick={() => setGame('articles')}>
+          <span>📚</span><b>Артикли: el или la</b><small>10 случайных заданий · исключения и значения</small>
+        </button>
       </section>
       {game === 'menu' ? (
         <section className="practice-mode-welcome game-panel">
@@ -7605,6 +7875,8 @@ function PracticeHub() {
         <AdaptivePracticeView showModes={() => setGame('menu')} />
       ) : game === 'detective' ? (
         <DetectiveGame />
+      ) : game === 'articles' ? (
+        <ArticlePracticeGame onBack={() => setGame('menu')} />
       ) : (
         <SpanishRushGame />
       )}
@@ -7976,13 +8248,6 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
               <option key={item}>{item}</option>
             ))}
           </select>
-        </div>
-        <div className="exercise-kind-legend">
-          <span>👋 Новое слово</span>
-          <span>⌨ Ввод</span>
-          <span>🔊 Аудио</span>
-          <span>✍️ Целые фразы</span>
-          <span>🛠 Исправление</span>
         </div>
       </section>
       <div className="srs-summary">
@@ -10008,18 +10273,33 @@ function ProfileView() {
           </div>
         </header>
         <div className="activity-calendar">
-          {days.map((day) => (
-            <span
-              className={profile.activeDays.includes(day) ? 'active' : ''}
-              title={day}
-              key={day}
-            >
-              <i />
-              {new Date(`${day}T12:00:00`)
+          {days.map((day) => {
+            const date = new Date(`${day}T12:00:00`),
+              weekday = date
                 .toLocaleDateString('ru-RU', { weekday: 'short' })
-                .slice(0, 1)}
-            </span>
-          ))}
+                .replace('.', ''),
+              calendarDate = date
+                .toLocaleDateString('ru-RU', {
+                  day: 'numeric',
+                  month: 'short',
+                })
+                .replace('.', '');
+            return (
+              <span
+                className={profile.activeDays.includes(day) ? 'active' : ''}
+                title={date.toLocaleDateString('ru-RU', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}
+                key={day}
+              >
+                <i />
+                <b>{weekday}</b>
+                <small>{calendarDate}</small>
+              </span>
+            );
+          })}
         </div>
         <p>
           Заход засчитывается один раз в календарный день. Если вернуться завтра
@@ -10076,7 +10356,6 @@ function ProfileView() {
           </div>
         )}
       </section>
-      <MemoryDashboard />
     </div>
   );
 }
