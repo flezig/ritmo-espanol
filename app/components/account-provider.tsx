@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { User } from '@supabase/supabase-js';
 import {
   acknowledgeContentReport, clearCloudProgress, cloudProgressHash, cloudSyncMeta,
+  CLOUD_PROGRESS_KEYS,
   collectCloudProgress, fetchCloudProgress, getCloudClient, migrateMarkedReports,
   currentProgressFields, preserveFutureFields, offlineAccount,
   pendingContentReports, ProgressConflict, pushCloudProgress, queueContentReport,
@@ -13,6 +14,7 @@ import {
 import { mergeProgress, type ProgressData } from '../lib/progress-merge';
 import { migrateLocalProgress } from '../lib/storage-version';
 import { BACKUP_VERSION } from '../lib/backup';
+import { flushClientErrors, recordClientError } from '../lib/error-journal';
 
 type AuthResult = { ok: true; confirmationRequired?: boolean } | { ok: false; message: string };
 type AccountContextValue = {
@@ -140,6 +142,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           await submitCloudContentReport(supabase, report);
           acknowledgeContentReport(report);
         }
+        // Error logging must never block the user's progress if its migration
+        // has not been applied yet or the journal is temporarily unavailable.
+        try {
+          await flushClientErrors(supabase, activeUser.id);
+        } catch (journalError) {
+          console.error('Client error journal flush failed', journalError);
+        }
         const clean = cloudProgressHash() === cloudProgressHash(currentProgressFields(saved.data));
         setStatus(clean ? 'synced' : 'syncing');
         setMessage(clean ? 'Прогресс сохранён в аккаунте.' : 'Отправляем последние изменения…');
@@ -149,6 +158,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           showConflict({ local: localForConflict, remote: error.remote });
         } else {
           console.error('Progress sync failed', error);
+          recordClientError('sync', error, {
+            phase: 'progress-sync',
+            online: navigator.onLine,
+          });
           setStatus(navigator.onLine ? 'error' : 'offline');
           setMessage(navigator.onLine
             ? 'Не удалось сохранить в облаке. Изменения остаются здесь; повторим отправку.'
@@ -200,32 +213,77 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       if (error) { setStatus('error'); setMessage(authMessage(error)); }
       else acceptUser(data.session?.user ?? null);
     }).catch((error) => { if (alive) { setStatus('error'); setMessage(authMessage(error)); } });
-    let ticks = 0;
-    const check = () => {
-      const current = userRef.current;
-      if (!current || signingOut.current) return;
-      const meta = cloudSyncMeta.read();
-      if (++ticks % 15 === 0 ||
-          cloudProgressHash() !== cloudProgressHash(currentProgressFields(meta?.baseline.data || {})) ||
-          pendingContentReports().length) void syncUser(current);
+    let syncTimer = 0;
+    const hasPendingChanges = () => {
+      const baseline = currentProgressFields(cloudSyncMeta.read()?.baseline.data || {});
+      return cloudProgressHash() !== cloudProgressHash(baseline) || pendingContentReports().length > 0;
     };
-    const timer = window.setInterval(check, 2000);
-    const refresh = () => { if (userRef.current && !signingOut.current) void syncUser(userRef.current); };
-    const visibility = () => { if (document.visibilityState === 'hidden' || document.visibilityState === 'visible') refresh(); };
-    const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (userRef.current && cloudProgressHash() !== cloudProgressHash(currentProgressFields(cloudSyncMeta.read()?.baseline.data || {}))) {
-        refresh(); event.preventDefault(); event.returnValue = '';
-      }
+    const flushChanges = async () => {
+      const current = userRef.current;
+      if (!current || signingOut.current || conflictRef.current || !hasPendingChanges()) return;
+      if (inflight.current) await inflight.current;
+      if (
+        userRef.current?.id === current.id &&
+        !signingOut.current &&
+        !conflictRef.current &&
+        hasPendingChanges()
+      )
+        await syncUser(current);
+    };
+    const scheduleSave = () => {
+      window.clearTimeout(syncTimer);
+      syncTimer = window.setTimeout(() => void flushChanges(), 1400);
+    };
+    const progressEvents = [
+      'ritmo-profile',
+      'ritmo-achievements',
+      'ritmo-achievement-stats',
+      'ritmo-errors',
+      'ritmo-custom-words',
+      'ritmo-example-reports',
+      'ritmo-exercise-reports',
+      'ritmo-lesson-word-db',
+      'ritmo-learn-progress',
+      'ritmo-word-progress',
+      'ritmo-srs',
+      'ritmo-favorites',
+      'ritmo-progress',
+      'ritmo-detective-progress',
+      'ritmo-rush-records',
+      'ritmo-daily-challenges',
+      'ritmo-placement',
+      'ritmo-cloud-progress-changed',
+    ];
+    progressEvents.forEach((eventName) =>
+      window.addEventListener(eventName, scheduleSave),
+    );
+    const refresh = () => {
+      const current = userRef.current;
+      if (current && !signingOut.current) void syncUser(current);
+    };
+    const visibility = () => {
+      if (document.visibilityState === 'hidden') void flushChanges();
+      else refresh();
+    };
+    const storageChanged = (event: StorageEvent) => {
+      if (event.key && (CLOUD_PROGRESS_KEYS as readonly string[]).includes(event.key))
+        scheduleSave();
     };
     window.addEventListener('online', refresh);
     window.addEventListener('focus', refresh);
+    window.addEventListener('storage', storageChanged);
     document.addEventListener('visibilitychange', visibility);
-    window.addEventListener('beforeunload', beforeUnload);
     return () => {
-      alive = false; subscription.subscription.unsubscribe(); window.clearInterval(timer);
-      window.removeEventListener('online', refresh); window.removeEventListener('focus', refresh);
+      alive = false;
+      subscription.subscription.unsubscribe();
+      window.clearTimeout(syncTimer);
+      progressEvents.forEach((eventName) =>
+        window.removeEventListener(eventName, scheduleSave),
+      );
+      window.removeEventListener('online', refresh);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('storage', storageChanged);
       document.removeEventListener('visibilitychange', visibility);
-      window.removeEventListener('beforeunload', beforeUnload);
     };
   }, [supabase, syncUser, showReady]);
 

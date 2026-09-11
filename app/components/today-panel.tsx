@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Headphones, RotateCcw, Volume2 } from 'lucide-react';
 import { ReportExerciseButton } from './report-exercise-button';
+import { recordClientError } from '../lib/error-journal';
 import {
   placementQuestionSets,
   arrangedPlacementOptions,
@@ -115,6 +116,13 @@ export default function TodayPanel({
     utterance.rate = rate;
     const voice = speechSynthesis.getVoices().find((item) => item.lang.toLowerCase().startsWith('es'));
     if (voice) utterance.voice = voice;
+    utterance.onerror = (event) => {
+      if (event.error !== 'canceled' && event.error !== 'interrupted')
+        recordClientError('audio', event.error || 'speech-synthesis-error', {
+          source: 'placement-test',
+          language: utterance.lang,
+        });
+    };
     speechSynthesis.speak(utterance);
   };
   const finish = () => {

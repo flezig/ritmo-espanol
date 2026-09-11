@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { vocabularyTopics } from '../app/vocabulary.ts';
-import { courseLessons } from '../app/lessons.ts';
+import { courseLessons, type LessonExercise } from '../app/lessons.ts';
 
 const entries = vocabularyTopics.flatMap((topic) => topic.entries.map((entry) => ({ ...entry, topic: topic.name })));
 
@@ -151,7 +151,9 @@ test('lesson 1 keeps ambiguous agreement prompts as guided choices', () => {
     'Los amigos son ___.',
     'Выберите правильную пару страна → национальность.',
   ]) {
-    const exercise = lesson.exercises.find((item) => item.prompt === prompt);
+    const exercise: LessonExercise | undefined = lesson.exercises.find(
+      (item) => item.prompt === prompt,
+    );
     assert.ok(exercise, `missing exercise: ${prompt}`);
     assert.equal(exercise.mode, 'choice', `${prompt} must provide choices`);
     assert.ok((exercise.options?.length || 0) >= 2);

@@ -41,6 +41,7 @@ import { YouTubeEmbed } from './components/youtube-embed';
 import { AccountProvider, useAccount } from './components/account-provider';
 import { ReportExerciseButton } from './components/report-exercise-button';
 import { trackLocalEvent } from './lib/local-analytics';
+import { recordClientError } from './lib/error-journal';
 import { parsePracticeSnapshot, reconcilePracticeCards } from './lib/practice-session';
 import { BACKUP_KEYS, BACKUP_VERSION, isValidBackup, type RitmoBackup } from './lib/backup';
 import {
@@ -898,7 +899,15 @@ function useSpanishVoices() {
     utterance.pitch = 1;
     utterance.volume = 1;
     if (voices.length) utterance.voice = voices[voiceIndex % voices.length];
-    utterance.onerror = () => setVoiceError('Не удалось включить выбранный голос. Выберите другой голос или продолжите без аудио.');
+    utterance.onerror = (event) => {
+      setVoiceError('Не удалось включить выбранный голос. Выберите другой голос или продолжите без аудио.');
+      if (event.error !== 'canceled' && event.error !== 'interrupted')
+        recordClientError('audio', event.error || 'speech-synthesis-error', {
+          voice: utterance.voice?.name || '',
+          language: utterance.lang,
+          speed,
+        });
+    };
     utterance.onstart = () => setVoiceError('');
     speechSynthesis.speak(utterance);
     return true;
@@ -3041,6 +3050,7 @@ function LearnView({ go }: { go: (section: Section) => void }) {
         next = { ...completed, [key]: Math.max(completed[key] || 0, step) };
       setCompleted(next);
       localStorage.setItem('ritmo-learn-progress', JSON.stringify(next));
+      window.dispatchEvent(new Event('ritmo-learn-progress'));
     } else answerLock.current = false;
   };
   const advance = () => {
@@ -3224,26 +3234,43 @@ function LessonsView() {
       (word) => word.lessonId === lesson.id,
     ).length;
   useEffect(() => {
-    const requestedLessonId = sessionStorage.getItem('ritmo-focus-lesson-id'),
-      requestedIndex = requestedLessonId
-        ? courseLessons.findIndex((item) => item.id === requestedLessonId)
-        : -1,
-      shouldFocusFirst =
-        sessionStorage.getItem('ritmo-focus-first-lesson') === 'true';
-    if (requestedIndex < 0 && !shouldFocusFirst) return;
-    if (requestedIndex >= 0) setLessonIndex(requestedIndex);
-    sessionStorage.removeItem('ritmo-focus-lesson-id');
-    sessionStorage.removeItem('ritmo-focus-first-lesson');
-    window.requestAnimationFrame(() =>
+    const focusRequestedLesson = () => {
+      const requestedLessonId = sessionStorage.getItem('ritmo-focus-lesson-id'),
+        requestedTheoryIndex = Number(
+          sessionStorage.getItem('ritmo-focus-theory-index'),
+        ),
+        requestedIndex = requestedLessonId
+          ? courseLessons.findIndex((item) => item.id === requestedLessonId)
+          : -1,
+        shouldFocusFirst =
+          sessionStorage.getItem('ritmo-focus-first-lesson') === 'true';
+      if (requestedIndex < 0 && !shouldFocusFirst) return;
+      if (requestedIndex >= 0) setLessonIndex(requestedIndex);
+      if (
+        requestedIndex >= 0 &&
+        Number.isInteger(requestedTheoryIndex) &&
+        requestedTheoryIndex >= 0 &&
+        requestedTheoryIndex < courseLessons[requestedIndex].theory.length
+      )
+        setTheoryBlockIndex(requestedTheoryIndex);
+      sessionStorage.removeItem('ritmo-focus-lesson-id');
+      sessionStorage.removeItem('ritmo-focus-theory-index');
+      sessionStorage.removeItem('ritmo-focus-first-lesson');
       window.requestAnimationFrame(() =>
-        lessonWorkspaceRef.current?.scrollIntoView({
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-            ? 'auto'
-            : 'smooth',
-          block: 'start',
-        }),
-      ),
-    );
+        window.requestAnimationFrame(() =>
+          lessonWorkspaceRef.current?.scrollIntoView({
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+              ? 'auto'
+              : 'smooth',
+            block: 'start',
+          }),
+        ),
+      );
+    };
+    focusRequestedLesson();
+    window.addEventListener('ritmo-global-search-focus', focusRequestedLesson);
+    return () =>
+      window.removeEventListener('ritmo-global-search-focus', focusRequestedLesson);
   }, []);
   const resumeIndex = (targetLesson: (typeof courseLessons)[number], state?: LessonState) => {
     if (state?.completed) return 0;
@@ -3997,6 +4024,27 @@ function VocabularyView() {
   const history = useWordHistory();
   const { records, markNew } = useSRS();
   const { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices();
+  useEffect(() => {
+    const focusRequestedWord = () => {
+      const requestedQuery = sessionStorage.getItem('ritmo-global-vocabulary-query');
+      if (!requestedQuery) return;
+      setQuery(requestedQuery);
+      setFilter('all');
+      sessionStorage.removeItem('ritmo-global-vocabulary-query');
+      window.requestAnimationFrame(() =>
+        vocabularyLibraryRef.current?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? 'auto'
+            : 'smooth',
+          block: 'start',
+        }),
+      );
+    };
+    focusRequestedWord();
+    window.addEventListener('ritmo-global-search-focus', focusRequestedWord);
+    return () =>
+      window.removeEventListener('ritmo-global-search-focus', focusRequestedWord);
+  }, []);
   const studyDeck = makeStudyDeck();
   const topic =
     vocabularyTopics.find((item) => item.name === selected) ??
@@ -5133,6 +5181,24 @@ function GrammarView() {
       `grammar-${active}-${question}`,
     );
   const { leaving, move } = useTaskMotion();
+  useEffect(() => {
+    const focusRequestedRule = () => {
+      const requestedIndex = Number(
+        sessionStorage.getItem('ritmo-focus-grammar-index'),
+      );
+      if (
+        Number.isInteger(requestedIndex) &&
+        requestedIndex >= 0 &&
+        requestedIndex < grammarTopics.length
+      )
+        setActive(requestedIndex);
+      sessionStorage.removeItem('ritmo-focus-grammar-index');
+    };
+    focusRequestedRule();
+    window.addEventListener('ritmo-global-search-focus', focusRequestedRule);
+    return () =>
+      window.removeEventListener('ritmo-global-search-focus', focusRequestedRule);
+  }, []);
   const choose = (option: string) => {
     if (choice || answerLock.current) return;
     answerLock.current = true;
@@ -6173,6 +6239,18 @@ function MusicView() {
     totalExercises = songs.reduce((sum, item) => sum + item.games.length, 0),
     isCorrect =
       !!choice && normalizeText(choice) === normalizeText(round.answer);
+  useEffect(() => {
+    const focusRequestedSong = () => {
+      const requestedTitle = sessionStorage.getItem('ritmo-focus-song-title'),
+        requestedIndex = songs.findIndex((item) => item.title === requestedTitle);
+      if (requestedIndex >= 0) setSelected(requestedIndex);
+      sessionStorage.removeItem('ritmo-focus-song-title');
+    };
+    focusRequestedSong();
+    window.addEventListener('ritmo-global-search-focus', focusRequestedSong);
+    return () =>
+      window.removeEventListener('ritmo-global-search-focus', focusRequestedSong);
+  }, []);
   const resetRound = () => {
     answerLock.current = false;
     setChoice('');
@@ -6670,11 +6748,24 @@ function _PracticeView() {
     setFinished(false);
   };
   const speak = () => {
-    if (!card || typeof speechSynthesis === 'undefined') return;
+    if (!card) return;
+    if (typeof speechSynthesis === 'undefined') {
+      recordClientError('audio', 'speech-synthesis-unavailable', {
+        source: 'dictation',
+      });
+      return;
+    }
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(card.es.split(' / ')[0]);
     utterance.lang = 'es-ES';
     utterance.rate = 0.82;
+    utterance.onerror = (event) => {
+      if (event.error !== 'canceled' && event.error !== 'interrupted')
+        recordClientError('audio', event.error || 'speech-synthesis-error', {
+          source: 'dictation',
+          language: utterance.lang,
+        });
+    };
     speechSynthesis.speak(utterance);
   };
   const submit = () => {
@@ -7411,6 +7502,7 @@ function DetectiveGame() {
         'ritmo-detective-progress',
         JSON.stringify({ ...saved, [level]: Math.max(saved[level] || 0, stars) }),
       );
+      window.dispatchEvent(new Event('ritmo-detective-progress'));
       return;
     }
     setCaseIndex((current) => current + 1);
@@ -7627,6 +7719,7 @@ function SpanishRushGame() {
         nextBest = Math.max(Number(saved.best) || 0, score),
         daily = { ...saved.daily, [today]: Math.max(saved.daily?.[today] || 0, score) };
       localStorage.setItem('ritmo-rush-records', JSON.stringify({ best: nextBest, daily }));
+      window.dispatchEvent(new Event('ritmo-rush-records'));
       setBest(nextBest);
       playCelebrationSound('finish');
       recordAchievementEvent({
@@ -8039,9 +8132,11 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       sessionErrors,
     };
     const saveTimer = window.setTimeout(
-      () =>
-        localStorage.setItem('ritmo-practice-session', JSON.stringify(saved)),
-      typed ? 180 : 0,
+      () => {
+        localStorage.setItem('ritmo-practice-session', JSON.stringify(saved));
+        window.dispatchEvent(new Event('ritmo-cloud-progress-changed'));
+      },
+      typed ? 1000 : 0,
     );
     return () => window.clearTimeout(saveTimer);
   }, [
@@ -10148,6 +10243,7 @@ function ReportedExercisesPanel() {
   const remove = (report: ExerciseReport) => {
     const next = reports.filter((item) => item.id !== report.id);
     localStorage.setItem('ritmo-exercise-reports', JSON.stringify(next));
+    window.dispatchEvent(new Event('ritmo-exercise-reports'));
     setReports(next);
     void account.reportContent({
       reportKey: report.id,
@@ -10822,6 +10918,191 @@ function LoadingScreen() {
   );
 }
 
+type GlobalSearchItem = {
+  id: string;
+  kind: 'Слово' | 'Урок' | 'Правило' | 'Песня';
+  title: string;
+  description: string;
+  search: string;
+  section: Section;
+  focus?: string;
+};
+
+function GlobalSearch({ go }: { go: (section: Section) => void }) {
+  const [query, setQuery] = useState(''),
+    [open, setOpen] = useState(false),
+    inputRef = useRef<HTMLInputElement>(null),
+    items = useMemo<GlobalSearchItem[]>(
+      () => [
+        ...vocabularyTopics.flatMap((topic) =>
+          topic.entries.map((entry) => ({
+            id: `word-${topic.name}-${entry.id}`,
+            kind: 'Слово' as const,
+            title: entry.es,
+            description: `${entry.ru} · ${topic.name}`,
+            search: `${entry.es} ${entry.ru} ${entry.example} ${entry.exampleRu || ''} ${topic.name}`,
+            section: 'Vocabulary' as const,
+            focus: entry.es,
+          })),
+        ),
+        ...courseLessons.map((lesson) => ({
+          id: `lesson-${lesson.id}`,
+          kind: 'Урок' as const,
+          title: `Урок ${lesson.number}: ${lesson.title}`,
+          description: lesson.subtitle,
+          search: `${lesson.title} ${lesson.subtitle} ${(lessonCoreVocabulary[lesson.id] || []).map((word) => `${word.es} ${word.ru}`).join(' ')}`,
+          section: 'Lessons' as const,
+          focus: lesson.id,
+        })),
+        ...courseLessons.flatMap((lesson) =>
+          lesson.theory.map((rule, index) => ({
+            id: `lesson-rule-${lesson.id}-${index}`,
+            kind: 'Правило' as const,
+            title: rule.title,
+            description: `Урок ${lesson.number} · ${rule.paragraphs[0]}`,
+            search: `${rule.title} ${rule.paragraphs.join(' ')} ${rule.examples.flat().join(' ')}`,
+            section: 'Lessons' as const,
+            focus: `${lesson.id}:${index}`,
+          })),
+        ),
+        ...grammarTopics.flatMap((topic, topicIndex) =>
+          topic.rules.map((rule, ruleIndex) => ({
+            id: `grammar-${topicIndex}-${ruleIndex}`,
+            kind: 'Правило' as const,
+            title: topic.name,
+            description: rule,
+            search: `${topic.name} ${topic.use} ${topic.formula} ${rule}`,
+            section: 'Grammar' as const,
+            focus: String(topicIndex),
+          })),
+        ),
+        ...songs.map((song) => ({
+          id: `song-${song.title}`,
+          kind: 'Песня' as const,
+          title: song.title,
+          description: `${song.artist} · ${song.level}`,
+          search: `${song.title} ${song.artist} ${song.level} ${song.games.map((round) => `${round.prompt} ${round.answer}`).join(' ')}`,
+          section: 'Music' as const,
+          focus: song.title,
+        })),
+      ],
+      [],
+    ),
+    normalizedQuery = normalizeText(query),
+    results = normalizedQuery
+      ? items
+          .filter((item) => normalizeText(item.search).includes(normalizedQuery))
+          .sort((first, second) => {
+            const firstStarts = normalizeText(first.title).startsWith(normalizedQuery),
+              secondStarts = normalizeText(second.title).startsWith(normalizedQuery);
+            return Number(secondStarts) - Number(firstStarts);
+          })
+          .slice(0, 8)
+      : [];
+  useEffect(() => {
+    const openFromKeyboard = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setOpen(true);
+        window.requestAnimationFrame(() => inputRef.current?.focus());
+      }
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', openFromKeyboard);
+    return () => window.removeEventListener('keydown', openFromKeyboard);
+  }, []);
+  const openItem = (item: GlobalSearchItem) => {
+    if (item.section === 'Vocabulary' && item.focus)
+      sessionStorage.setItem('ritmo-global-vocabulary-query', item.focus);
+    if (item.section === 'Lessons' && item.focus) {
+      const [lessonId, theoryIndex] = item.focus.split(':');
+      sessionStorage.setItem('ritmo-focus-lesson-id', lessonId);
+      if (theoryIndex)
+        sessionStorage.setItem('ritmo-focus-theory-index', theoryIndex);
+    }
+    if (item.section === 'Grammar' && item.focus)
+      sessionStorage.setItem('ritmo-focus-grammar-index', item.focus);
+    if (item.section === 'Music' && item.focus)
+      sessionStorage.setItem('ritmo-focus-song-title', item.focus);
+    setOpen(false);
+    setQuery('');
+    go(item.section);
+    window.setTimeout(
+      () => window.dispatchEvent(new Event('ritmo-global-search-focus')),
+      0,
+    );
+  };
+  return (
+    <div className={open ? 'global-search open' : 'global-search'}>
+      <button
+        type="button"
+        className="global-search-trigger"
+        onClick={() => {
+          setOpen(true);
+          window.requestAnimationFrame(() => inputRef.current?.focus());
+        }}
+        aria-label="Поиск по сайту"
+      >
+        <Search />
+        <span>Поиск</span>
+        <kbd>⌘ K</kbd>
+      </button>
+      {open && (
+        <div className="global-search-panel" role="dialog" aria-label="Поиск по сайту">
+          <label>
+            <Search />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Слово, перевод, правило, урок или песня…"
+            />
+            <button type="button" onClick={() => setOpen(false)} aria-label="Закрыть поиск">×</button>
+          </label>
+          <div className="global-search-results">
+            {!normalizedQuery ? (
+              <p>Введите запрос — например, «артикли», «аэропорт» или «Maluma».</p>
+            ) : results.length ? (
+              results.map((item) => (
+                <button type="button" onClick={() => openItem(item)} key={item.id}>
+                  <span>{item.kind}</span>
+                  <b>{item.title}</b>
+                  <small>{item.description}</small>
+                  <ArrowRight />
+                </button>
+              ))
+            ) : (
+              <p>Ничего не найдено. Попробуйте другое слово.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClientErrorJournal() {
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) =>
+      recordClientError('javascript', event.error || event.message, {
+        source: event.filename,
+        line: event.lineno,
+        column: event.colno,
+      });
+    const handleRejection = (event: PromiseRejectionEvent) =>
+      recordClientError('promise', event.reason, {
+        source: 'unhandledrejection',
+      });
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, []);
+  return null;
+}
+
 function ReviewReminderWatcher() {
   const { preferences } = useSitePreferences(),
     { records } = useSRS();
@@ -10976,6 +11257,7 @@ function RitmoApp() {
   return (
     <>
       {loading && <LoadingScreen />}
+      <ClientErrorJournal />
       <ReviewReminderWatcher />
       <LearnedAchievementToast />
       <AchievementUnlockToast
@@ -11037,6 +11319,7 @@ function RitmoApp() {
               <ChevronRight />
               <b>{nav.find((item) => item.name === section)?.label}</b>
             </div>
+            <GlobalSearch go={navigate} />
             <div className="top-actions">
               <button className="xp-pill" aria-label="Открыть прогресс" onClick={() => navigate('Progress')}>
                 <Sparkles />
