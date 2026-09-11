@@ -3149,6 +3149,7 @@ function useTaskMotion() {
 function LessonsView() {
   const [lessonIndex, setLessonIndex] = useState(0),
     [mode, setMode] = useState<'theory' | 'practice'>('theory'),
+    [theoryBlockIndex, setTheoryBlockIndex] = useState(0),
     [question, setQuestion] = useState(0),
     [answer, setAnswer] = useState(''),
     [typedAnswer, setTypedAnswer] = useState(''),
@@ -3304,6 +3305,7 @@ function LessonsView() {
     answerLock.current = false;
     const stored = progress[courseLessons[index].id];
     setLessonIndex(index);
+    setTheoryBlockIndex(0);
     setQuestion(resumeIndex(courseLessons[index], stored));
     setMode('theory');
     setMistakeMode(false);
@@ -3461,53 +3463,106 @@ function LessonsView() {
           </div>
         </header>
         {mode === 'theory' ? (
-          <div className="theory-layout">
-            <main>
-              {lesson.theory.map((block, index) => {
-                const favoriteId = `${lesson.id}-rule-${index}`;
-                return (
-                  <article className="theory-block" key={block.title}>
+          <div className="theory-study">
+            <nav className="theory-toc" aria-label="Содержание урока">
+              <header>
+                <div>
+                  <span>СОДЕРЖАНИЕ</span>
+                  <b>{lesson.theory.length} правил</b>
+                </div>
+                <small>
+                  {theoryBlockIndex + 1} / {lesson.theory.length}
+                </small>
+              </header>
+              <div>
+                {lesson.theory.map((block, index) => (
+                  <button
+                    type="button"
+                    className={theoryBlockIndex === index ? 'active' : ''}
+                    onClick={() => setTheoryBlockIndex(index)}
+                    aria-current={theoryBlockIndex === index ? 'step' : undefined}
+                    key={block.title}
+                  >
                     <span>{String(index + 1).padStart(2, '0')}</span>
-                    <button
-                      className={
-                        contentFavorites.some((item) => item.id === favoriteId)
-                          ? 'save-rule active'
-                          : 'save-rule'
-                      }
-                      onClick={() =>
-                        toggleContentFavorite({
-                          id: favoriteId,
-                          type: 'правило',
-                          title: block.title,
-                          body: `${block.paragraphs[0]} · ${block.examples[0]?.[0] || ''} ${block.examples[0]?.[1] || ''}`,
-                        })
-                      }
-                      aria-label="Сохранить правило и пример"
-                    >
-                      <Heart fill="currentColor" />
-                    </button>
-                    <h3>{block.title}</h3>
-                    {block.paragraphs.map((text) => (
-                      <p key={text}>{text}</p>
-                    ))}
-                    <div className="theory-examples">
-                      {block.examples.map((example) => (
-                        <div key={example[0]}>
-                          <b>{example[0]}</b>
-                          <small>{example[1]}</small>
-                        </div>
+                    <b>{block.title}</b>
+                  </button>
+                ))}
+              </div>
+            </nav>
+            <div className="theory-layout">
+              <main>
+                {(() => {
+                  const block = lesson.theory[theoryBlockIndex] || lesson.theory[0],
+                    favoriteId = `${lesson.id}-rule-${theoryBlockIndex}`;
+                  return (
+                    <article className="theory-block focused-theory-block" key={`${lesson.id}-${theoryBlockIndex}`}>
+                      <span>{String(theoryBlockIndex + 1).padStart(2, '0')}</span>
+                      <button
+                        className={
+                          contentFavorites.some((item) => item.id === favoriteId)
+                            ? 'save-rule active'
+                            : 'save-rule'
+                        }
+                        onClick={() =>
+                          toggleContentFavorite({
+                            id: favoriteId,
+                            type: 'правило',
+                            title: block.title,
+                            body: `${block.paragraphs[0]} · ${block.examples[0]?.[0] || ''} ${block.examples[0]?.[1] || ''}`,
+                          })
+                        }
+                        aria-label="Сохранить правило и пример"
+                      >
+                        <Heart fill="currentColor" />
+                      </button>
+                      <h3>{block.title}</h3>
+                      {block.paragraphs.map((text) => (
+                        <p key={text}>{text}</p>
                       ))}
-                    </div>
-                    {block.note && (
-                      <div className="theory-note">
-                        <Lightbulb />
-                        <p>{block.note}</p>
+                      <div className="theory-examples">
+                        {block.examples.map((example) => (
+                          <div key={example[0]}>
+                            <b>{example[0]}</b>
+                            <small>{example[1]}</small>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </article>
-                );
-              })}
-            </main>
+                      {block.note && (
+                        <div className="theory-note">
+                          <Lightbulb />
+                          <p>{block.note}</p>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })()}
+                <div className="theory-step-navigation">
+                  <button
+                    type="button"
+                    onClick={() => setTheoryBlockIndex((value) => Math.max(0, value - 1))}
+                    disabled={theoryBlockIndex === 0}
+                  >
+                    <ArrowLeft /> Предыдущее правило
+                  </button>
+                  {theoryBlockIndex < lesson.theory.length - 1 ? (
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      onClick={() =>
+                        setTheoryBlockIndex((value) =>
+                          Math.min(lesson.theory.length - 1, value + 1),
+                        )
+                      }
+                    >
+                      Следующее правило <ArrowRight />
+                    </button>
+                  ) : (
+                    <button type="button" className="primary-btn" onClick={startPractice}>
+                      Перейти к заданиям <ArrowRight />
+                    </button>
+                  )}
+                </div>
+              </main>
             <aside>
               <CatMascot state="neutral" />
               <h3>Совет помощника</h3>
@@ -3536,6 +3591,7 @@ function LessonsView() {
                 Перейти к 50 заданиям <ArrowRight />
               </button>
             </aside>
+            </div>
           </div>
         ) : (
           <div className="exercise-layout">
@@ -8451,13 +8507,6 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           <CatPeek
             state={revealed ? (correct ? 'happy' : 'wrong') : 'thinking'}
           />
-          <ReportExerciseButton
-            id={`practice:${card.key}:${responseKind}:${normalizeText(taskPrompt)}`}
-            section={`Practice: ${card.topic}`}
-            prompt={taskPrompt}
-            answer={expectedAnswer}
-            options={responseKind === 'choice' ? options : undefined}
-          />
           <header>
             <div>
               <span>{skillLabels[card.skill]}</span>
@@ -8493,18 +8542,39 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
               {index + 1} / {session.length}
             </b>
             <button className="practice-exit" onClick={showModes}>Все режимы</button>
-            <button className="mark-new" onClick={resetAsNew}>
-              Отметить новым
-            </button>
-            <button
-              className={
-                records[card.key]?.favorite ? 'favorite active' : 'favorite'
-              }
-              onClick={() => toggleFavorite(card)}
-              aria-label="Добавить в избранное"
-            >
-              <Heart fill="currentColor" />
-            </button>
+            <details className="practice-more-actions">
+              <summary aria-label="Другие действия" title="Другие действия">
+                •••
+              </summary>
+              <div>
+                <button type="button" onClick={resetAsNew}>
+                  <span>↺</span>
+                  <b>Отметить новым</b>
+                </button>
+                <button
+                  type="button"
+                  className={records[card.key]?.favorite ? 'active' : ''}
+                  onClick={() => toggleFavorite(card)}
+                >
+                  <Heart fill="currentColor" />
+                  <b>
+                    {records[card.key]?.favorite
+                      ? 'Убрать из избранного'
+                      : 'Добавить в избранное'}
+                  </b>
+                </button>
+                <div className="practice-report-action">
+                  <b>Сообщить о задании</b>
+                  <ReportExerciseButton
+                    id={`practice:${card.key}:${responseKind}:${normalizeText(taskPrompt)}`}
+                    section={`Practice: ${card.topic}`}
+                    prompt={taskPrompt}
+                    answer={expectedAnswer}
+                    options={responseKind === 'choice' ? options : undefined}
+                  />
+                </div>
+              </div>
+            </details>
           </header>
           <div className="srs-track">
             <span style={{ width: `${(index / session.length) * 100}%` }} />
@@ -9656,7 +9726,8 @@ function ProgressView({ go }: { go: (s: Section) => void }) {
 }
 
 function AchievementsView({ go }: { go: (section: Section) => void }) {
-  const achievements = useAchievements(),
+  const [showAllAchievements, setShowAllAchievements] = useState(false),
+    achievements = useAchievements(),
     unlocked = achievements.filter((item) => item.unlocked),
     categories: AchievementCategory[] = [
       'Старт',
@@ -9666,9 +9737,64 @@ function AchievementsView({ go }: { go: (section: Section) => void }) {
       'Культура',
       'Секретные',
     ],
-    next = achievements
-      .filter((item) => !item.unlocked && !item.secret && item.current > 0)
-      .sort((a, b) => b.current / b.target - a.current / a.target)[0];
+    nearest = achievements
+      .filter((item) => !item.unlocked && !item.secret)
+      .sort(
+        (a, b) =>
+          b.current / b.target - a.current / a.target ||
+          a.target - a.current - (b.target - b.current),
+      )
+      .slice(0, 3),
+    recent = [...unlocked]
+      .sort(
+        (a, b) =>
+          new Date(b.unlockedAt || 0).getTime() -
+          new Date(a.unlockedAt || 0).getTime(),
+      )
+      .slice(0, 3);
+  const renderAchievementCard = (
+    item: (typeof achievements)[number],
+    compact = false,
+  ) => {
+    const hidden = item.secret && !item.unlocked;
+    return (
+      <article
+        className={`${item.unlocked ? 'unlocked' : 'locked'} ${compact ? 'compact' : ''}`}
+        key={item.id}
+      >
+        <span className="achievement-icon">{hidden ? '❔' : item.icon}</span>
+        <div>
+          <small>
+            {item.unlocked ? 'ОТКРЫТО' : hidden ? 'СЕКРЕТ' : 'ЕЩЁ ЗАКРЫТО'}
+          </small>
+          <h3>{hidden ? '???' : item.name}</h3>
+          <em>{item.unlocked ? item.unlockedMotto : item.lockedMotto}</em>
+          <p>
+            {hidden ? 'Условие откроется вместе с наградой.' : item.description}
+          </p>
+          {!hidden && (
+            <>
+              <div className="achievement-track">
+                <i
+                  style={{
+                    width: `${Math.min(100, (item.current / item.target) * 100)}%`,
+                  }}
+                />
+              </div>
+              <b>
+                {item.current} / {item.target}
+              </b>
+            </>
+          )}
+          {item.unlockedAt && (
+            <time dateTime={item.unlockedAt}>
+              Получено {new Date(item.unlockedAt).toLocaleDateString('ru-RU')}
+            </time>
+          )}
+        </div>
+      </article>
+    );
+  };
   return (
     <div className="view-stack achievements-view">
       <header className="achievements-hero">
@@ -9686,22 +9812,74 @@ function AchievementsView({ go }: { go: (section: Section) => void }) {
           <span>из {achievements.length} открыто</span>
         </div>
       </header>
-      {next && (
-        <section className="next-achievement">
-          <span>{next.icon}</span>
-          <div>
-            <small>БЛИЖАЙШАЯ НАГРАДА</small>
-            <h2>{next.name}</h2>
-            <p>{next.lockedMotto}</p>
-            <div className="achievement-track">
-              <i style={{ width: `${(next.current / next.target) * 100}%` }} />
+      <div className="achievement-overview">
+        <section className="achievement-overview-section">
+          <header>
+            <div>
+              <span>СЛЕДУЮЩИЙ ШАГ</span>
+              <h2>Три ближайшие награды</h2>
             </div>
-            <b>{next.current} / {next.target} · {next.description}</b>
+            <button onClick={() => go('Practice')}>
+              Продолжить <ArrowRight />
+            </button>
+          </header>
+          <div className="achievement-grid achievement-nearest-grid">
+            {nearest.map((item) => renderAchievementCard(item, true))}
           </div>
-          <button onClick={() => go('Practice')}>Продолжить <ArrowRight /></button>
         </section>
-      )}
-      <div className="achievement-categories">
+        <section className="achievement-overview-section">
+          <header>
+            <div>
+              <span>КОЛЛЕКЦИЯ</span>
+              <h2>Недавно полученные</h2>
+            </div>
+          </header>
+          {recent.length ? (
+            <div className="achievement-grid achievement-recent-grid">
+              {recent.map((item) => renderAchievementCard(item, true))}
+            </div>
+          ) : (
+            <div className="achievement-empty">
+              Первая награда появится после завершённого учебного действия.
+            </div>
+          )}
+        </section>
+      </div>
+      <section className="achievement-category-overview">
+        <header>
+          <div>
+            <span>КАТЕГОРИИ</span>
+            <h2>Прогресс коллекции</h2>
+          </div>
+        </header>
+        <div className="achievement-category-summary">
+          {categories.map((category) => {
+            const items = achievements.filter((item) => item.category === category),
+              categoryUnlocked = items.filter((item) => item.unlocked).length;
+            return (
+              <article key={category}>
+                <div>
+                  <b>{category}</b>
+                  <span>{categoryUnlocked} / {items.length}</span>
+                </div>
+                <div className="achievement-track">
+                  <i style={{ width: `${items.length ? (categoryUnlocked / items.length) * 100 : 0}%` }} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          className="achievement-catalog-toggle"
+          onClick={() => setShowAllAchievements((value) => !value)}
+          aria-expanded={showAllAchievements}
+        >
+          {showAllAchievements ? 'Скрыть полный каталог' : 'Показать все достижения'}
+          <ArrowRight />
+        </button>
+      </section>
+      {showAllAchievements && <div className="achievement-categories">
         {categories.map((category) => {
           const items = achievements.filter((item) => item.category === category);
           return (
@@ -9711,38 +9889,12 @@ function AchievementsView({ go }: { go: (section: Section) => void }) {
                 <span>{items.filter((item) => item.unlocked).length} / {items.length}</span>
               </header>
               <div className="achievement-grid">
-                {items.map((item) => {
-                  const hidden = item.secret && !item.unlocked;
-                  return (
-                    <article className={item.unlocked ? 'unlocked' : 'locked'} key={item.id}>
-                      <span className="achievement-icon">{hidden ? '❔' : item.icon}</span>
-                      <div>
-                        <small>{item.unlocked ? 'ОТКРЫТО' : hidden ? 'СЕКРЕТ' : 'ЕЩЁ ЗАКРЫТО'}</small>
-                        <h3>{hidden ? '???' : item.name}</h3>
-                        <em>{item.unlocked ? item.unlockedMotto : item.lockedMotto}</em>
-                        <p>{hidden ? 'Условие откроется вместе с наградой.' : item.description}</p>
-                        {!hidden && (
-                          <>
-                            <div className="achievement-track">
-                              <i style={{ width: `${(item.current / item.target) * 100}%` }} />
-                            </div>
-                            <b>{item.current} / {item.target}</b>
-                          </>
-                        )}
-                        {item.unlockedAt && (
-                          <time dateTime={item.unlockedAt}>
-                            Получено {new Date(item.unlockedAt).toLocaleDateString('ru-RU')}
-                          </time>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
+                {items.map((item) => renderAchievementCard(item))}
               </div>
             </section>
           );
         })}
-      </div>
+      </div>}
       <aside className="achievement-rules">
         <ShieldCheck />
         <div>
