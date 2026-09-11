@@ -5983,6 +5983,358 @@ input {
   .achievement-overview-section > header h2,
   .achievement-category-overview > header h2 { font-size: 20px; }
 }
+
+/* The daily plan is now the first useful action on Home. */
+.welcome-row[class*='time-'] {
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
+}
+.welcome-row[class*='time-'] h1 {
+  font-size: clamp(26px, 3.2vw, 42px);
+}
+.welcome-row[class*='time-'] > div > p:last-child {
+  margin-top: 6px;
+}
+
+/* Accessibility preferences. */
+.ritmo-motion-off *,
+.ritmo-motion-off *::before,
+.ritmo-motion-off *::after,
+.motion-off *,
+.motion-off *::before,
+.motion-off *::after {
+  scroll-behavior: auto !important;
+  animation-duration: .001ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important;
+}
+.accessibility-settings {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+}
+.accessibility-settings > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.accessibility-settings > header h2 {
+  margin: 0;
+  font: 800 23px var(--font-syne);
+}
+.accessibility-settings > header > svg {
+  width: 27px;
+  height: 27px;
+  color: var(--purple);
+}
+.preference-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+.preference-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--soft);
+}
+.preference-list article > span:first-child {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--panel);
+  color: var(--purple);
+}
+.preference-list article > span svg {
+  width: 18px;
+  height: 18px;
+}
+.preference-list article > div {
+  min-width: 0;
+}
+.preference-list article b {
+  display: block;
+  font-size: 14px;
+}
+.preference-list article p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.preference-switch {
+  min-width: 68px;
+  display: grid;
+  grid-template-columns: 26px auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+}
+.preference-switch > i {
+  width: 26px;
+  height: 16px;
+  display: block;
+  position: relative;
+  border-radius: 999px;
+  background: var(--line);
+}
+.preference-switch > i::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--panel);
+  transition: transform .2s ease;
+}
+.preference-switch.active {
+  border-color: color-mix(in srgb, var(--aqua) 55%, var(--line));
+  color: var(--text);
+}
+.preference-switch.active > i { background: var(--aqua); }
+.preference-switch.active > i::after { transform: translateX(10px); }
+.preference-switch > span {
+  font-size: 11px;
+  font-weight: 850;
+}
+.email-reminder-note {
+  padding: 12px 14px;
+  border-left: 3px solid var(--aqua);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--aqua) 7%, var(--soft));
+}
+.email-reminder-note b { font-size: 13px; }
+.email-reminder-note p,
+.preference-notice {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.preference-notice {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--purple) 8%, var(--soft));
+  color: var(--text);
+}
+
+/* Long Profile content is available without making the main scan endless. */
+.profile-disclosure {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  overflow: clip;
+}
+.profile-disclosure > summary {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+.profile-disclosure > summary::-webkit-details-marker { display: none; }
+.profile-disclosure > summary > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.profile-disclosure > summary b { font-size: 16px; }
+.profile-disclosure > summary small {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.profile-disclosure > summary > svg {
+  width: 19px;
+  color: var(--muted);
+  transition: transform .2s ease;
+}
+.profile-disclosure[open] > summary > svg { transform: rotate(90deg); }
+.profile-disclosure-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--soft);
+  color: var(--purple);
+  font-size: 20px;
+}
+.profile-disclosure-icon svg { width: 20px; }
+.profile-disclosure-content {
+  display: grid;
+  gap: 13px;
+  padding: 0 14px 14px;
+}
+.profile-disclosure-content > section {
+  margin: 0;
+  box-shadow: none;
+}
+.profile-disclosure-help {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Full Spanish keyboard stays collapsed; contextual accent suggestions remain visible. */
+.accent-keys {
+  flex-wrap: wrap;
+}
+.accent-keys .accent-keyboard-toggle {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 30px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 9px !important;
+  color: var(--muted) !important;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.accent-keyboard-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Voice choice remains available without occupying a full row on every new word. */
+.intro-voice-setting {
+  position: relative;
+  width: max-content;
+  max-width: 100%;
+  margin: 2px auto 7px;
+}
+.intro-voice-setting > summary {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+  list-style: none;
+}
+.intro-voice-setting > summary::-webkit-details-marker { display: none; }
+.intro-voice-setting > summary svg { width: 15px; }
+.intro-voice-setting > summary span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.intro-voice-setting > div {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 50%;
+  width: min(340px, calc(100vw - 32px));
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+.intro-voice-setting select {
+  width: 100%;
+  max-width: none;
+}
+.intro-voice-setting small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+@media (max-width: 760px) {
+  .welcome-row[class*='time-'] {
+    padding: 12px 13px;
+  }
+  .welcome-row[class*='time-'] h1 { font-size: 25px; }
+  .welcome-row[class*='time-'] > div > p:last-child { display: none; }
+  .preference-list { grid-template-columns: 1fr; }
+  .accessibility-settings { padding: 15px; }
+  .accessibility-settings > header h2 { font-size: 20px; }
+  .profile-disclosure > summary {
+    grid-template-columns: 40px minmax(0, 1fr) 18px;
+    padding: 10px 12px;
+  }
+  .profile-disclosure-icon {
+    width: 40px;
+    height: 40px;
+  }
+  .srs-view.active-exercise .word-introduction .intro-voice-setting {
+    width: max-content;
+    max-width: 100%;
+    justify-self: center;
+    margin: 0;
+  }
+  .srs-view.active-exercise .word-introduction .intro-voice-setting > div {
+    position: fixed;
+    top: auto;
+    right: 10px;
+    bottom: 92px;
+    left: 10px;
+    width: auto;
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .preference-list article {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px;
+  }
+  .preference-list article > span:first-child {
+    width: 34px;
+    height: 34px;
+  }
+  .preference-switch {
+    min-width: 42px;
+    grid-template-columns: 26px;
+  }
+  .preference-switch > span { display: none; }
+  .accent-keys {
+    justify-content: flex-start;
+  }
+  .accent-key-grid {
+    flex: 0 0 100%;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .listen-orb {
     animation: none;
@@ -10121,5 +10473,53 @@ body {
   .placement-test > h3,
   .quiz.cat-card > p {
     padding-right: 38px;
+  }
+}
+
+/* Final cascade for the compact Home and Practice controls. */
+.welcome-row[class*='time-'] {
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
+}
+.welcome-row[class*='time-'] h1 {
+  font-size: clamp(26px, 3.2vw, 42px);
+}
+.welcome-row[class*='time-'] > div > p:last-child {
+  margin-top: 6px;
+}
+.intro-voice-setting {
+  position: relative;
+  width: max-content;
+  max-width: 100%;
+  display: block;
+  margin: 2px auto 7px;
+}
+.intro-voice-setting select {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 760px) {
+  .welcome-row[class*='time-'] {
+    padding: 12px 13px;
+  }
+  .welcome-row[class*='time-'] h1 { font-size: 25px; }
+  .welcome-row[class*='time-'] > div > p:last-child { display: none; }
+  .srs-view.active-exercise .word-introduction .intro-voice-setting {
+    width: max-content;
+    max-width: 100%;
+    display: block;
+    justify-self: center;
+    margin: 0;
+  }
+  .srs-view.active-exercise .word-introduction .intro-voice-setting > div {
+    position: fixed;
+    top: auto;
+    right: 10px;
+    bottom: 92px;
+    left: 10px;
+    width: auto;
+    transform: none;
   }
 }

@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Award,
   BarChart3,
+  Bell,
   BookOpen,
   Check,
   ChevronRight,
@@ -18,17 +19,20 @@ import {
   Languages,
   Library,
   Lightbulb,
+  Keyboard,
   Menu,
   Moon,
   Music2,
   Play,
   Search,
+  Settings,
   ShieldCheck,
   Sparkles,
   Sun,
   Upload,
   UserRound,
   Volume2,
+  VolumeX,
   Zap,
 } from 'lucide-react';
 import { vocabularyTopics } from './vocabulary';
@@ -102,14 +106,54 @@ const nav: { name: Section; label: string; icon: typeof Home }[] = [
   { name: 'Profile', label: 'Профиль', icon: UserRound },
 ];
 
-const motivation = [
-  'Cada paso cuenta — каждый шаг считается.',
-  'Hoy una palabra, mañana una conversación.',
-  'Los errores también enseñan — ошибки тоже учат.',
-  'Tu ritmo es suficiente. Sigue adelante.',
-  'Poco a poco se llega lejos — маленькими шагами можно дойти далеко.',
-  'La constancia vale más que la perfección.',
-];
+type SitePreferences = {
+  animations: boolean;
+  sounds: boolean;
+  autoSpeak: boolean;
+  reviewNotifications: boolean;
+};
+const preferenceStorageKey = 'ritmo-site-preferences',
+  defaultSitePreferences: SitePreferences = {
+    animations: true,
+    sounds: true,
+    autoSpeak: true,
+    reviewNotifications: false,
+  };
+const readSitePreferences = (): SitePreferences => {
+  if (typeof window === 'undefined') return defaultSitePreferences;
+  try {
+    return {
+      ...defaultSitePreferences,
+      ...JSON.parse(localStorage.getItem(preferenceStorageKey) || '{}'),
+    };
+  } catch {
+    return defaultSitePreferences;
+  }
+};
+function useSitePreferences() {
+  const [preferences, setPreferences] = useState<SitePreferences>(
+    defaultSitePreferences,
+  );
+  useEffect(() => {
+    const refresh = () => setPreferences(readSitePreferences());
+    refresh();
+    window.addEventListener('ritmo-preferences', refresh);
+    return () => window.removeEventListener('ritmo-preferences', refresh);
+  }, []);
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      'ritmo-motion-off',
+      !preferences.animations,
+    );
+  }, [preferences.animations]);
+  const updatePreferences = (patch: Partial<SitePreferences>) => {
+    const next = { ...readSitePreferences(), ...patch };
+    localStorage.setItem(preferenceStorageKey, JSON.stringify(next));
+    setPreferences(next);
+    window.dispatchEvent(new Event('ritmo-preferences'));
+  };
+  return { preferences, updatePreferences };
+}
 
 const statusLabels: Record<WordStatus, string> = {
   new: 'Новое',
@@ -792,7 +836,7 @@ function useSpanishVoices() {
         femaleNames =
           /m[oó]nica|paulina|marisol|helena|luciana|soledad|conchita|alba|dalia|lola|paloma|elvira/i,
         maleNames =
-          /jorge|diego|juan|carlos|pablo|enrique|miguel|[aá]lvaro|andr[eé]s|mateo|ra[uú]l/i,
+          /jorge|diego|juan|carlos|pablo|enrique|miguel|[aá]lvaro|dario|arnau|nicol[aá]s|santiago|arturo|sergio|sa[uú]l|andr[eé]s|mateo|ra[uú]l/i,
         qualityScore = (voice: SpeechSynthesisVoice) =>
           /premium|enhanced|natural|neural|google|microsoft/i.test(voice.name)
             ? -2
@@ -814,7 +858,9 @@ function useSpanishVoices() {
           findNamed(/paulina/i),
           findNamed(/m[oó]nica/i),
           findNamed(/jorge/i),
-          findNamed(/diego|juan|carlos|pablo|enrique|miguel|[aá]lvaro|andr[eé]s|mateo|ra[uú]l/i),
+          findNamed(/diego/i),
+          findNamed(/[aá]lvaro|dario|arnau|nicol[aá]s|santiago/i),
+          findNamed(/pablo|enrique|miguel|arturo|sergio|sa[uú]l|andr[eé]s|mateo|ra[uú]l/i),
         ].filter(Boolean) as SpeechSynthesisVoice[],
         ordered = [...new Set([...preferred, ...female, ...male, ...other])];
       setVoices(ordered);
@@ -861,7 +907,7 @@ function useSpanishVoices() {
 }
 const voiceDisplayName = (voice: SpeechSynthesisVoice) => {
   const male =
-      /jorge|diego|juan|carlos|pablo|enrique|miguel|[aá]lvaro|andr[eé]s|mateo|ra[uú]l/i.test(
+      /jorge|diego|juan|carlos|pablo|enrique|miguel|[aá]lvaro|dario|arnau|nicol[aá]s|santiago|arturo|sergio|sa[uú]l|andr[eé]s|mateo|ra[uú]l/i.test(
         voice.name,
       ),
     female =
@@ -876,7 +922,7 @@ const voiceDisplayName = (voice: SpeechSynthesisVoice) => {
   return `${male ? 'Мужской' : female ? 'Женский' : 'Испанский голос'} · ${voice.name} (${voice.lang})${quality}`;
 };
 const playFeedbackSound = (success: boolean) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !readSitePreferences().sounds) return;
   const AudioContextClass =
     window.AudioContext ||
     (window as typeof window & { webkitAudioContext?: typeof AudioContext })
@@ -904,7 +950,7 @@ const playFeedbackSound = (success: boolean) => {
   window.setTimeout(() => void context.close(), 500);
 };
 const playCelebrationSound = (kind: 'achievement' | 'finish' = 'finish') => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !readSitePreferences().sounds) return;
   const AudioContextClass =
     window.AudioContext ||
     (window as typeof window & { webkitAudioContext?: typeof AudioContext })
@@ -952,7 +998,8 @@ function AccentKeys({
 }) {
   const rootRef = useRef<HTMLElement>(null),
     caretRef = useRef(value.length),
-    [caret, setCaret] = useState(value.length);
+    [caret, setCaret] = useState(value.length),
+    [showKeyboard, setShowKeyboard] = useState(false);
   const input = () =>
     rootRef.current
       ?.closest('.answer-entry-with-keys')
@@ -1026,22 +1073,30 @@ function AccentKeys({
           })}
         </div>
       )}
-      <span>Испанские символы</span>
-      <div className="accent-key-grid">
-        {spanishInputKeys.map((character) => (
-          <button
-            type="button"
-            onMouseDown={keepInputFocused}
-            onClick={() => applyAtCaret(character)}
-            key={character}
-          >
-            {character}
-          </button>
-        ))}
-      </div>
-      <small>
-        Подсказка заменяет букву перед курсором, клавиатура вставляет в курсор
-      </small>
+      <button
+        type="button"
+        className="accent-keyboard-toggle"
+        onMouseDown={keepInputFocused}
+        onClick={() => setShowKeyboard((value) => !value)}
+        aria-expanded={showKeyboard}
+      >
+        <Keyboard />
+        {showKeyboard ? 'Скрыть символы' : 'Испанские символы'}
+      </button>
+      {showKeyboard && (
+        <div className="accent-key-grid">
+          {spanishInputKeys.map((character) => (
+            <button
+              type="button"
+              onMouseDown={keepInputFocused}
+              onClick={() => applyAtCaret(character)}
+              key={character}
+            >
+              {character}
+            </button>
+          ))}
+        </div>
+      )}
     </aside>
   );
 }
@@ -1996,35 +2051,6 @@ function CatHouse({ level }: { level: number }) {
     </figure>
   );
 }
-function MotivationCard() {
-  const [index, setIndex] = useState(0),
-    [burst, setBurst] = useState(false);
-  const next = () => {
-    setIndex((value) => (value + 1) % motivation.length);
-    setBurst(false);
-    window.requestAnimationFrame(() => setBurst(true));
-    window.setTimeout(() => setBurst(false), 650);
-  };
-  return (
-    <button
-      className={`motivation-card ${burst ? 'burst' : ''}`}
-      onClick={next}
-    >
-      <CatMascot
-        state={index % 3 === 2 ? 'love' : 'happy'}
-        small
-        interactive={false}
-      />
-      <span>
-        <small>ФРАЗА ДЛЯ РИТМА</small>
-        <b>{motivation[index]}</b>
-        <em>Нажми, чтобы получить новую</em>
-      </span>
-      <Sparkles />
-    </button>
-  );
-}
-
 function Hero({
   go,
   period,
@@ -2572,8 +2598,6 @@ function HomeView({
           <span>{russianDayWord(profile.streak)} подряд</span>
         </div>
       </section>
-      <Hero go={go} period={period} />
-      <MotivationCard />
       <Suspense fallback={<section className="today-panel loading">Готовим персональный план…</section>}>
         <TodayPanel
           due={due}
@@ -2627,6 +2651,7 @@ function HomeView({
           </div>
         </article>
       </section>
+      <Hero go={go} period={period} />
       <SpainMap learnedWords={learnedWords} />
       <ColombianWeek go={go} />
       <section className="dashboard-grid">
@@ -7945,7 +7970,8 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     deck = useMemo(() => makeStudyDeck(customWords), [customWords]),
     { records, rate, toggleFavorite, markNew, hydrated: srsHydrated } = useSRS();
   const { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices();
-  const { leaving, move } = useTaskMotion();
+  const { leaving, move } = useTaskMotion(),
+    { preferences } = useSitePreferences();
   const [mode, setMode] = useState<SessionMode>('five'),
     [topic, setTopic] = useState('Все темы'),
     [session, setSession] = useState<StudyCard[]>([]),
@@ -8177,9 +8203,9 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       );
   };
   useEffect(() => {
-    if (card && isIntroduction && voices.length)
+    if (card && isIntroduction && voices.length && preferences.autoSpeak)
       speakText(card.es.split(' / ')[0], 1);
-  }, [cardBase, isIntroduction, voiceIndex, voices.length]);
+  }, [cardBase, isIntroduction, voiceIndex, voices.length, preferences.autoSpeak]);
   const check = (value: string) => {
     if (!value.trim() || !card || revealed || answerLock.current) return;
     answerLock.current = true;
@@ -8437,25 +8463,32 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             <button className="practice-exit" onClick={showModes}>Все режимы</button>
           </header>
           <section>
-            <div className="intro-voice-setting">
-              <Volume2 />
-              <span>Голос</span>
-              {voices.length > 1 && (
-                <select
-                  value={voiceIndex}
-                  onChange={(event) =>
-                    setVoiceIndex(Number(event.target.value))
-                  }
-                  aria-label="Голос озвучивания"
-                >
-                  {voices.map((voice, index) => (
-                    <option value={index} key={`${voice.name}-${index}`}>
-                      {voiceDisplayName(voice)}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+            {voices.length > 1 && (
+              <details className="intro-voice-setting">
+                <summary>
+                  <Settings />
+                  Голос · {voices[voiceIndex]?.name || 'системный'}
+                </summary>
+                <div>
+                  <select
+                    value={voiceIndex}
+                    onChange={(event) =>
+                      setVoiceIndex(Number(event.target.value))
+                    }
+                    aria-label="Голос озвучивания"
+                  >
+                    {voices.map((voice, index) => (
+                      <option value={index} key={`${voice.name}-${index}`}>
+                        {voiceDisplayName(voice)}
+                      </option>
+                    ))}
+                  </select>
+                  <small>
+                    Доступные голоса зависят от браузера и установленных голосов устройства.
+                  </small>
+                </div>
+              </details>
+            )}
             <div className="intro-audio-speeds">
               <button className="intro-listen" onClick={() => speak(1, 'word')}>
                 <Volume2 /> Обычная скорость
@@ -9637,7 +9670,6 @@ function ProgressView({ go }: { go: (s: Section) => void }) {
           <p>точность по всему сайту</p>
         </article>
       </div>
-      <MotivationCard />
       <div className="house-progress-page">
         <CatHouse level={completed} />
         <section className="house-status">
@@ -10320,6 +10352,119 @@ function AccountPanel({
   );
 }
 
+function AccessibilitySettings() {
+  const { preferences, updatePreferences } = useSitePreferences(),
+    account = useAccount(),
+    [notice, setNotice] = useState('');
+  const toggleReviewNotifications = async () => {
+    if (preferences.reviewNotifications) {
+      updatePreferences({ reviewNotifications: false });
+      setNotice('Уведомления о повторениях выключены.');
+      return;
+    }
+    if (!('Notification' in window)) {
+      setNotice('Этот браузер не поддерживает уведомления.');
+      return;
+    }
+    const permission =
+      Notification.permission === 'default'
+        ? await Notification.requestPermission()
+        : Notification.permission;
+    if (permission !== 'granted') {
+      setNotice('Браузер не разрешил уведомления. Разрешение можно изменить в настройках сайта.');
+      return;
+    }
+    updatePreferences({ reviewNotifications: true });
+    setNotice('Сообщим только тогда, когда действительно наступит срок повторения.');
+  };
+  const rows: Array<{
+    key: keyof Pick<SitePreferences, 'animations' | 'sounds' | 'autoSpeak'>;
+    icon: React.ReactNode;
+    title: string;
+    copy: string;
+  }> = [
+    {
+      key: 'animations',
+      icon: <Sparkles />,
+      title: 'Анимации',
+      copy: 'Плавные переходы, движения котиков и декоративные эффекты.',
+    },
+    {
+      key: 'sounds',
+      icon: preferences.sounds ? <Volume2 /> : <VolumeX />,
+      title: 'Звуки ответов',
+      copy: 'Сигналы правильного ответа, ошибки и получения достижения.',
+    },
+    {
+      key: 'autoSpeak',
+      icon: <Volume2 />,
+      title: 'Автоматическая озвучка',
+      copy: 'Произносить новое слово сразу после появления карточки.',
+    },
+  ];
+  return (
+    <section className="accessibility-settings">
+      <header>
+        <div>
+          <p className="eyebrow">ДОСТУПНОСТЬ И УВЕДОМЛЕНИЯ</p>
+          <h2>Настройте сайт под себя</h2>
+        </div>
+        <Settings />
+      </header>
+      <div className="preference-list">
+        {rows.map((row) => (
+          <article key={row.key}>
+            <span>{row.icon}</span>
+            <div>
+              <b>{row.title}</b>
+              <p>{row.copy}</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={preferences[row.key]}
+              className={preferences[row.key] ? 'preference-switch active' : 'preference-switch'}
+              onClick={() => updatePreferences({ [row.key]: !preferences[row.key] })}
+            >
+              <i />
+              <span>{preferences[row.key] ? 'Вкл.' : 'Выкл.'}</span>
+            </button>
+          </article>
+        ))}
+        <article>
+          <span><Bell /></span>
+          <div>
+            <b>Напоминания о повторениях</b>
+            <p>
+              Только когда карточки уже готовы к повторению. Работает, пока сайт открыт в браузере.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={preferences.reviewNotifications}
+            className={preferences.reviewNotifications ? 'preference-switch active' : 'preference-switch'}
+            onClick={() => void toggleReviewNotifications()}
+          >
+            <i />
+            <span>{preferences.reviewNotifications ? 'Вкл.' : 'Выкл.'}</span>
+          </button>
+        </article>
+      </div>
+      <aside className="email-reminder-note">
+        <b>Напоминания по почте</b>
+        <p>
+          {account.user
+            ? `Адрес ${account.user.email} подтверждён, но для реальной рассылки ещё нужен отдельный почтовый сервис и серверное расписание.`
+            : 'Сначала потребуется войти в аккаунт, а затем подключить отдельный почтовый сервис и серверное расписание.'}
+          {' '}Сайт не показывает фиктивный переключатель, пока отправка писем не подключена.
+        </p>
+      </aside>
+      {notice && <p className="preference-notice" role="status">{notice}</p>}
+    </section>
+  );
+}
+
 function ProfileView() {
   const { profile, update } = useDeviceProfile(),
     account = useAccount(),
@@ -10458,11 +10603,49 @@ function ProfileView() {
           — серия продолжится; после пропущенного дня начнётся новая.
         </p>
       </section>
-      <LearnedWordsPanel />
-      <BackupPanel />
-      <ReportedExamplesPanel />
-      <ReportedExercisesPanel />
-      <section className="favorites-panel">
+      <AccessibilitySettings />
+      <details className="profile-disclosure">
+        <summary>
+          <span className="profile-disclosure-icon"><ShieldCheck /></span>
+          <span>
+            <b>Данные</b>
+            <small>Резервная копия и перенос прогресса</small>
+          </span>
+          <ChevronRight />
+        </summary>
+        <div className="profile-disclosure-content">
+          <BackupPanel />
+        </div>
+      </details>
+      <details className="profile-disclosure">
+        <summary>
+          <span className="profile-disclosure-icon">⚑</span>
+          <span>
+            <b>Обратная связь</b>
+            <small>Отмеченные примеры и упражнения</small>
+          </span>
+          <ChevronRight />
+        </summary>
+        <div className="profile-disclosure-content">
+          <p className="profile-disclosure-help">
+            Здесь можно проверить отправленные отметки или снять их после исправления материала.
+          </p>
+          <ReportedExamplesPanel />
+          <ReportedExercisesPanel />
+        </div>
+      </details>
+      <details className="profile-disclosure">
+        <summary>
+          <span className="profile-disclosure-icon"><Heart /></span>
+          <span>
+            <b>Сохранённое</b>
+            <small>{favoriteRecords.length + contentFavorites.length} в избранном · личная база слов</small>
+          </span>
+          <ChevronRight />
+        </summary>
+        <div className="profile-disclosure-content">
+          <LearnedWordsPanel />
+          <section className="favorites-panel">
         <header>
           <div>
             <p className="eyebrow">ИЗБРАННОЕ</p>
@@ -10507,7 +10690,9 @@ function ProfileView() {
             </p>
           </div>
         )}
-      </section>
+          </section>
+        </div>
+      </details>
     </div>
   );
 }
@@ -10637,13 +10822,57 @@ function LoadingScreen() {
   );
 }
 
+function ReviewReminderWatcher() {
+  const { preferences } = useSitePreferences(),
+    { records } = useSRS();
+  useEffect(() => {
+    if (!preferences.reviewNotifications || !('Notification' in window)) return;
+    const check = () => {
+      if (
+        Notification.permission !== 'granted' ||
+        document.visibilityState === 'visible'
+      )
+        return;
+      const due = Object.values(records).filter(
+        (record) => record.reviews > 0 && record.nextReview <= Date.now(),
+      ).length;
+      if (!due) return;
+      const lastNotice = Number(
+        localStorage.getItem('ritmo-last-review-notification') || 0,
+      );
+      if (Date.now() - lastNotice < 6 * 60 * 60 * 1000) return;
+      const notification = new Notification('Пора повторить испанский 🐾', {
+        body: `${due} ${due === 1 ? 'карточка готова' : 'карточек готовы'} к повторению.`,
+        tag: 'ritmo-review-due',
+      });
+      notification.onclick = () => {
+        window.focus();
+        window.location.hash = '#practice';
+        notification.close();
+      };
+      localStorage.setItem(
+        'ritmo-last-review-notification',
+        String(Date.now()),
+      );
+    };
+    const timer = window.setInterval(check, 60_000);
+    document.addEventListener('visibilitychange', check);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, [preferences.reviewNotifications, records]);
+  return null;
+}
+
 function RitmoApp() {
   const [section, setSection] = useState<Section>('Home'),
     [dark, setDark] = useState(true),
     [open, setOpen] = useState(false),
     [loading, setLoading] = useState(true);
   const { profile } = useDeviceProfile(true);
-  const account = useAccount();
+  const account = useAccount(),
+    { preferences } = useSitePreferences();
   const navigate = (next: Section, replace = false) => {
     const hash = `#${next.toLowerCase()}`;
     if (window.location.hash !== hash)
@@ -10747,11 +10976,14 @@ function RitmoApp() {
   return (
     <>
       {loading && <LoadingScreen />}
+      <ReviewReminderWatcher />
       <LearnedAchievementToast />
       <AchievementUnlockToast
         openAchievements={() => navigate('Achievements')}
       />
-      <div className={dark ? 'app dark' : 'app'}>
+      <div
+        className={`${dark ? 'app dark' : 'app'} ${preferences.animations ? '' : 'motion-off'}`}
+      >
         <aside className={open ? 'sidebar open' : 'sidebar'}>
           <button className="brand" aria-label="На главную" onClick={() => navigate('Home')}>
             <span>R</span>
