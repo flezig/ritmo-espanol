@@ -4166,6 +4166,210 @@ input {
   }
 }
 
+/* Lessons: keep the complete reading flow inside narrow phone viewports. */
+@media (max-width: 700px) {
+  .lesson-workspace {
+    width: 100%;
+    max-width: 100%;
+    padding: 14px;
+    overflow: hidden;
+    border-radius: 20px;
+  }
+  .lesson-workspace > header {
+    width: 100%;
+    min-width: 0;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+  }
+  .lesson-workspace > header > div:first-child,
+  .theory-study,
+  .theory-layout,
+  .theory-layout > main,
+  .theory-block,
+  .theory-examples,
+  .theory-examples > div,
+  .theory-note,
+  .theory-layout > aside,
+  .lesson-core-words {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .lesson-workspace h2 {
+    font-size: clamp(24px, 8vw, 30px);
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+  .lesson-workspace > header p {
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .theory-toc {
+    width: 100%;
+    padding: 12px;
+  }
+  .theory-toc > header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .theory-toc > header div {
+    min-width: 0;
+  }
+  .theory-toc > header b {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .theory-toc > header small {
+    flex: 0 0 auto;
+  }
+  .theory-toc > div {
+    width: 100%;
+    max-height: 238px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    padding: 0 2px 0 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: none;
+  }
+  .theory-toc button {
+    width: 100%;
+    min-height: 48px;
+    flex: none;
+    padding: 8px 10px;
+  }
+  .theory-toc button b {
+    overflow: visible;
+    line-height: 1.3;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .theory-block {
+    width: 100%;
+    padding: 58px 14px 16px;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+  .theory-block h3 {
+    margin-bottom: 12px;
+    padding-right: 0;
+    font-size: clamp(19px, 6vw, 23px);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .theory-block > p {
+    width: 100%;
+    margin: 11px 0;
+    font-size: 16px;
+    line-height: 1.62;
+    overflow-wrap: anywhere;
+  }
+  .theory-block > span {
+    top: 9px;
+    right: 12px;
+    font-size: 34px;
+  }
+  .theory-block .save-rule {
+    top: 10px;
+    right: 55px;
+  }
+  .theory-examples > div {
+    width: 100%;
+    padding: 11px 12px;
+  }
+  .theory-examples b,
+  .theory-examples small,
+  .theory-note p,
+  .lesson-core-words > span,
+  .lesson-core-words b,
+  .lesson-core-words small {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .theory-note {
+    width: 100%;
+    padding: 10px 11px;
+  }
+  .theory-note svg {
+    flex: 0 0 auto;
+  }
+
+  .theory-layout > aside {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    align-items: center;
+    gap: 5px 12px;
+    padding: 14px;
+    overflow: hidden;
+    border-radius: 17px;
+  }
+  .theory-layout > aside .cat-mascot {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 72px;
+    height: 72px;
+    aspect-ratio: 1;
+  }
+  .theory-layout > aside h3 {
+    grid-column: 2;
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .theory-layout > aside > p {
+    grid-column: 2;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.42;
+    overflow-wrap: anywhere;
+  }
+  .theory-layout > aside .lesson-core-words,
+  .theory-layout > aside .lesson-practice-cta {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .lesson-core-words {
+    margin: 8px 0 2px;
+    padding: 10px;
+  }
+  .lesson-core-words > div {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .lesson-workspace {
+    padding: 11px;
+    border-radius: 17px;
+  }
+  .lesson-mode {
+    gap: 3px;
+  }
+  .lesson-mode button {
+    min-height: 42px;
+    padding: 6px;
+    font-size: 12px;
+  }
+  .theory-layout > aside {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 5px 9px;
+    padding: 11px;
+  }
+  .theory-layout > aside .cat-mascot {
+    width: 58px;
+    height: 58px;
+  }
+}
+
 /* One global search for vocabulary, lessons, rules and songs. */
 .global-search {
   position: relative;
@@ -6480,6 +6684,56 @@ input {
     left: 10px;
     width: auto;
     transform: none;
+  }
+}
+
+/* Final lesson overrides: later shared rules must not restore phone overflow. */
+@media (max-width: 700px) {
+  .theory-toc {
+    width: 100%;
+    padding: 12px;
+    overflow: hidden;
+  }
+  .theory-toc > header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .theory-toc > div {
+    width: 100%;
+    max-height: 238px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    padding: 0 2px 0 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: none;
+  }
+  .theory-toc button {
+    width: 100%;
+    min-height: 48px;
+    flex: none;
+    padding: 8px 10px;
+  }
+  .theory-toc button b {
+    overflow: visible;
+    line-height: 1.3;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .theory-block h3 {
+    padding-right: 0;
+  }
+  .theory-block .save-rule {
+    top: 10px;
+    right: 55px;
+  }
+  .theory-block > span {
+    top: 9px;
+    right: 12px;
+    font-size: 34px;
   }
 }
 
