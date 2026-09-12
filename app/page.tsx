@@ -10928,6 +10928,19 @@ type GlobalSearchItem = {
   focus?: string;
 };
 
+const globalSearchKinds: Array<{
+  kind: GlobalSearchItem['kind'];
+  label: string;
+}> = [
+  { kind: 'Слово', label: 'Слова' },
+  { kind: 'Урок', label: 'Уроки' },
+  { kind: 'Правило', label: 'Правила' },
+  { kind: 'Песня', label: 'Песни' },
+];
+
+const normalizeSearchText = (value: string) =>
+  normalizeText(value.replace(/[ñÑ]/g, 'n'));
+
 function GlobalSearch({ go }: { go: (section: Section) => void }) {
   const [query, setQuery] = useState(''),
     [open, setOpen] = useState(false),
@@ -10988,17 +11001,27 @@ function GlobalSearch({ go }: { go: (section: Section) => void }) {
       ],
       [],
     ),
-    normalizedQuery = normalizeText(query),
-    results = normalizedQuery
+    normalizedQuery = normalizeSearchText(query),
+    matchingResults = normalizedQuery
       ? items
-          .filter((item) => normalizeText(item.search).includes(normalizedQuery))
+          .filter((item) =>
+            normalizeSearchText(item.search).includes(normalizedQuery),
+          )
           .sort((first, second) => {
-            const firstStarts = normalizeText(first.title).startsWith(normalizedQuery),
-              secondStarts = normalizeText(second.title).startsWith(normalizedQuery);
+            const firstStarts = normalizeSearchText(first.title).startsWith(normalizedQuery),
+              secondStarts = normalizeSearchText(second.title).startsWith(normalizedQuery);
             return Number(secondStarts) - Number(firstStarts);
           })
-          .slice(0, 8)
-      : [];
+      : [],
+    groupedResults = globalSearchKinds
+      .map((group) => ({
+        ...group,
+        total: matchingResults.filter((item) => item.kind === group.kind).length,
+        items: matchingResults
+          .filter((item) => item.kind === group.kind)
+          .slice(0, 4),
+      }))
+      .filter((group) => group.items.length > 0);
   useEffect(() => {
     const openFromKeyboard = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
@@ -11061,15 +11084,27 @@ function GlobalSearch({ go }: { go: (section: Section) => void }) {
           </label>
           <div className="global-search-results">
             {!normalizedQuery ? (
-              <p>Введите запрос — например, «артикли», «аэропорт» или «Maluma».</p>
-            ) : results.length ? (
-              results.map((item) => (
-                <button type="button" onClick={() => openItem(item)} key={item.id}>
-                  <span>{item.kind}</span>
-                  <b>{item.title}</b>
-                  <small>{item.description}</small>
-                  <ArrowRight />
-                </button>
+              <p>
+                Например: «артикли», «аэропорт» или «Maluma». Ударения и ñ
+                можно не вводить.
+              </p>
+            ) : groupedResults.length ? (
+              groupedResults.map((group) => (
+                <section className="global-search-group" key={group.kind}>
+                  <header>
+                    <b>{group.label}</b>
+                    <span>{group.total}</span>
+                  </header>
+                  <div>
+                    {group.items.map((item) => (
+                      <button type="button" onClick={() => openItem(item)} key={item.id}>
+                        <b>{item.title}</b>
+                        <small>{item.description}</small>
+                        <ArrowRight />
+                      </button>
+                    ))}
+                  </div>
+                </section>
               ))
             ) : (
               <p>Ничего не найдено. Попробуйте другое слово.</p>
