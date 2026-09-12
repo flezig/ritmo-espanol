@@ -35,7 +35,7 @@ import {
   VolumeX,
   Zap,
 } from 'lucide-react';
-import { vocabularyTopics } from './vocabulary';
+import { vocabularyTopics, type VocabularyLevel } from './vocabulary';
 import { courseLessons } from './lessons';
 import { YouTubeEmbed } from './components/youtube-embed';
 import { AccountProvider, useAccount } from './components/account-provider';
@@ -172,6 +172,7 @@ type SkillType =
 type StudyCard = {
   key: string;
   topic: string;
+  level?: VocabularyLevel | 'Личное' | 'Урок';
   core?: boolean;
   es: string;
   ru: string;
@@ -1583,6 +1584,7 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
         contextPrompt = maskExactTerm(entry.example, contextWord),
         hasClearBlank = contextPrompt !== entry.example,
         examples = {
+          level: topic.level,
           core: !!entry.core,
           exampleRu: entry.exampleRu,
           extraExample: entry.extraExample,
@@ -1598,7 +1600,7 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
           ...examples,
           skill: 'recognition',
           answer: entry.ru,
-          prompt: `Что означает «${entry.es}»?`,
+          prompt: `Напишите основной перевод из карточки: «${entry.es}»`,
         },
         {
           key: `${base}-production`,
@@ -1609,7 +1611,7 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
           ...examples,
           skill: 'production',
           answer: entry.es.split(' / ')[0],
-          prompt: `Напишите по-испански: «${entry.ru}»`,
+          prompt: `Напишите изучаемое слово по-испански: «${entry.ru}». Контекст: ${entry.exampleRu}`,
         },
         {
           key: `${base}-listening`,
@@ -1620,7 +1622,7 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
           ...examples,
           skill: 'listening',
           answer: entry.ru,
-          prompt: 'Прослушайте слово и напишите его значение по-русски',
+          prompt: 'Прослушайте слово и напишите основной перевод из карточки',
         },
         {
           key: `${base}-dictation`,
@@ -1665,6 +1667,7 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
     const base = `Мои слова-${entry.id}`,
       common = {
         topic: 'Мои слова',
+        level: 'Личное' as const,
         core: false,
         es: entry.es,
         ru: entry.ru,
@@ -1679,21 +1682,21 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
         key: `${base}-recognition`,
         skill: 'recognition' as const,
         answer: entry.ru,
-        prompt: `Что означает «${entry.es}»?`,
+        prompt: `Напишите основной перевод из карточки: «${entry.es}»`,
       },
       {
         ...common,
         key: `${base}-production`,
         skill: 'production' as const,
         answer: entry.es,
-        prompt: `Напишите по-испански: «${entry.ru}»`,
+        prompt: `Напишите изучаемое слово по-испански: «${entry.ru}». Контекст: ${entry.exampleRu}`,
       },
       {
         ...common,
         key: `${base}-listening`,
         skill: 'listening' as const,
         answer: entry.ru,
-        prompt: 'Прослушайте слово и напишите его значение по-русски',
+        prompt: 'Прослушайте слово и напишите основной перевод из карточки',
       },
       {
         ...common,
@@ -1748,6 +1751,7 @@ const learnedWordDictationCards = (words: LearnedWordRecord[]): StudyCard[] =>
   words.map((word) => ({
     key: `lesson-db-${word.id}-dictation`,
     topic: word.lessonTitle,
+    level: 'Урок',
     es: word.es,
     ru: word.ru,
     example: word.example,
@@ -2346,7 +2350,7 @@ const loadDailyChallengeCompletions = (): Record<
   }
 };
 
-const dailyChallengeWords = vocabularyTopics.flatMap((topic) =>
+const dailyChallengeWords = vocabularyTopics.filter((topic) => topic.level === 'A1–A2').flatMap((topic) =>
   topic.entries.map((entry) => ({ ...entry, topic: topic.name })),
 );
 
@@ -4017,6 +4021,7 @@ function CustomWordsPanel() {
 }
 function VocabularyView() {
   const [query, setQuery] = useState('');
+  const [level, setLevel] = useState<VocabularyLevel>('A1–A2');
   const [selected, setSelected] = useState(vocabularyTopics[0].name);
   const [filter, setFilter] = useState<'all' | 'core' | WordStatus>('all');
   const vocabularyLibraryRef = useRef<HTMLElement>(null);
@@ -4030,6 +4035,17 @@ function VocabularyView() {
       if (!requestedQuery) return;
       setQuery(requestedQuery);
       setFilter('all');
+      const requestedTopic = vocabularyTopics.find((item) =>
+        item.entries.some(
+          (entry) =>
+            normalizeText(entry.es).includes(normalizeText(requestedQuery)) ||
+            normalizeText(entry.ru).includes(normalizeText(requestedQuery)),
+        ),
+      );
+      if (requestedTopic) {
+        setLevel(requestedTopic.level);
+        setSelected(requestedTopic.name);
+      }
       sessionStorage.removeItem('ritmo-global-vocabulary-query');
       window.requestAnimationFrame(() =>
         vocabularyLibraryRef.current?.scrollIntoView({
@@ -4046,9 +4062,11 @@ function VocabularyView() {
       window.removeEventListener('ritmo-global-search-focus', focusRequestedWord);
   }, []);
   const studyDeck = makeStudyDeck();
-  const topic =
-    vocabularyTopics.find((item) => item.name === selected) ??
-    vocabularyTopics[0];
+  const levelTopics = vocabularyTopics.filter((item) => item.level === level),
+    topic =
+      levelTopics.find((item) => item.name === selected) ??
+      levelTopics[0] ??
+      vocabularyTopics[0];
   const normalized = query.trim().toLowerCase();
   const results = vocabularyTopics
     .flatMap((item) =>
@@ -4056,6 +4074,7 @@ function VocabularyView() {
         ...entry,
         topic: item.name,
         icon: item.icon,
+        level: item.level,
       })),
     )
     .filter(
@@ -4071,6 +4090,7 @@ function VocabularyView() {
         ...entry,
         topic: topic.name,
         icon: topic.icon,
+        level: topic.level,
       }));
   const visible = base.filter((entry) => {
     const key = `${entry.topic}-${entry.id}`;
@@ -4089,7 +4109,7 @@ function VocabularyView() {
   return (
     <div className="view-stack vocabulary-view">
       <ViewHead
-        over={`${vocabularyCount} СЛОВ · ${vocabularyTopics.length} ЖИВЫХ ТЕМ`}
+        over={`${vocabularyCount} СЛОВ · A1–A2 И B1–B2`}
         title="Слова, которые пригодятся."
         copy="Статусы связаны с Practice и считаются одинаково во Vocabulary и Progress. После входа они синхронизируются с аккаунтом."
       />
@@ -4156,8 +4176,30 @@ function VocabularyView() {
         />
         <span>{visible.length} слов</span>
       </label>
+      <div className="vocabulary-level-tabs" aria-label="Уровень словаря">
+        {(['A1–A2', 'B1–B2'] as VocabularyLevel[]).map((item) => {
+          const count = vocabularyTopics
+            .filter((topicItem) => topicItem.level === item)
+            .reduce((sum, topicItem) => sum + topicItem.entries.length, 0);
+          return (
+            <button
+              className={level === item && !normalized ? 'active' : ''}
+              key={item}
+              onClick={() => {
+                const first = vocabularyTopics.find((topicItem) => topicItem.level === item);
+                setLevel(item);
+                if (first) setSelected(first.name);
+                setQuery('');
+              }}
+            >
+              <b>{item}</b>
+              <span>{count} слов</span>
+            </button>
+          );
+        })}
+      </div>
       <div className="vocab-topic-tabs">
-        {vocabularyTopics.map((item, index) => {
+        {levelTopics.map((item, index) => {
           const scene = topicPlaces[item.name] ?? index % 12,
             a2Scene = a2TopicPlaces[item.name];
           return (
@@ -4187,8 +4229,7 @@ function VocabularyView() {
               <span>{item.icon}</span>
               <b>{item.name}</b>
               <small>
-                {item.entries.length} слов ·{' '}
-                {item.entries.filter((entry) => entry.core).length} в ядре
+                {item.entries.length} слов · {item.level}
               </small>
               <i
                 className={
@@ -4224,7 +4265,7 @@ function VocabularyView() {
             <p className="eyebrow">
               {normalized
                 ? 'РЕЗУЛЬТАТЫ ПОИСКА'
-                : `${topic.icon} ${topic.name.toUpperCase()}`}
+                : `${topic.icon} ${topic.name.toUpperCase()} · ${topic.level}`}
             </p>
             <h2>{visible.length} слов</h2>
           </div>
@@ -4251,6 +4292,7 @@ function VocabularyView() {
                 <div className="word-main">
                   <b>{entry.es}</b>
                   <span>{entry.ru}</span>
+                  <small className="level-word-badge">{entry.level}</small>
                   {entry.core && (
                     <small className="core-word-badge">⭐ Ядро A1–A2</small>
                   )}
@@ -6531,9 +6573,11 @@ function MusicView() {
 }
 
 type SessionMode = 'five' | 'fifteen' | 'weak' | 'errors' | 'favorites';
+type PracticeLevel = VocabularyLevel | 'Все уровни';
 type SavedPracticeSession = {
-  version: 2 | 3 | 4;
+  version: 2 | 3 | 4 | 5;
   mode: SessionMode;
+  level?: PracticeLevel;
   topic: string;
   session: StudyCard[];
   index: number;
@@ -7029,15 +7073,18 @@ type ResponseKind =
   | 'correction'
   | 'audioWord'
   | 'audioSentence';
-const practiceTopics = [
+const practiceTopics = (level: PracticeLevel) => [
   'Все темы',
-  ...vocabularyTopics.map((topic) => topic.name),
-  'Мои слова',
-  'Уроки A1',
+  ...vocabularyTopics
+    .filter((topic) => level === 'Все уровни' || topic.level === level)
+    .map((topic) => topic.name),
+  ...(level === 'Все уровни' ? ['Мои слова', 'Уроки A1'] : []),
 ];
-const topicDeck = (deck: StudyCard[], topic: string) =>
+const topicDeck = (deck: StudyCard[], level: PracticeLevel, topic: string) =>
   topic === 'Все темы'
-    ? deck
+    ? level === 'Все уровни'
+      ? deck
+      : deck.filter((card) => card.level === level)
     : topic === 'Уроки A1'
       ? deck.filter(
           (card) =>
@@ -7669,7 +7716,7 @@ const randomOrder = (length: number) => {
 
 function SpanishRushGame() {
   const deck = useMemo(
-      () => makeStudyDeck().filter((card) => card.skill === 'recognition'),
+      () => makeStudyDeck().filter((card) => card.skill === 'recognition' && card.level === 'A1–A2'),
       [],
     ),
     { records } = useSRS(),
@@ -8066,6 +8113,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   const { leaving, move } = useTaskMotion(),
     { preferences } = useSitePreferences();
   const [mode, setMode] = useState<SessionMode>('five'),
+    [level, setLevel] = useState<PracticeLevel>('A1–A2'),
     [topic, setTopic] = useState('Все темы'),
     [session, setSession] = useState<StudyCard[]>([]),
     [index, setIndex] = useState(0),
@@ -8079,7 +8127,8 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     [introduced, setIntroduced] = useState<Record<string, boolean>>({}),
     [sessionErrors, setSessionErrors] = useState(0),
     [now, setNow] = useState(() => Date.now()),
-    [sessionHydrated, setSessionHydrated] = useState(false);
+    [sessionHydrated, setSessionHydrated] = useState(false),
+    [scopeOpen, setScopeOpen] = useState(false);
   const answerLock = useRef(false),
     gradeLock = useRef(false);
   useEffect(() => {
@@ -8087,7 +8136,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     try {
       const saved = parsePracticeSnapshot(localStorage.getItem('ritmo-practice-session')) as SavedPracticeSession | null;
       if (
-        (saved?.version === 2 || saved?.version === 3 || saved?.version === 4) &&
+        (saved?.version === 2 || saved?.version === 3 || saved?.version === 4 || saved?.version === 5) &&
         Array.isArray(saved.session) &&
         saved.session.length &&
         typeof saved.index === 'number'
@@ -8095,6 +8144,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         const { session: synchronizedSession, index: safeIndex, contentChanged } =
           reconcilePracticeCards(saved.session, saved.index, deck);
         setMode(saved.mode);
+        setLevel(saved.level || (vocabularyTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'));
         setTopic(saved.topic);
         setSession(synchronizedSession);
         setIndex(safeIndex);
@@ -8116,8 +8166,9 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   useEffect(() => {
     if (!sessionHydrated) return;
     const saved: SavedPracticeSession = {
-      version: 4,
+      version: 5,
       mode,
+      level,
       topic,
       session,
       index,
@@ -8142,6 +8193,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   }, [
     sessionHydrated,
     mode,
+    level,
     topic,
     session,
     index,
@@ -8162,7 +8214,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   useEffect(() => {
     if (!sessionHydrated || !srsHydrated || session.length || finished) return;
     const ready = buildSession(
-      topicDeck(makeStudyDeck(customWords), topic),
+      topicDeck(makeStudyDeck(customWords), level, topic),
       records,
       mode,
     );
@@ -8170,6 +8222,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   }, [
     now,
     mode,
+    level,
     topic,
     records,
     session.length,
@@ -8178,7 +8231,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     sessionHydrated,
     srsHydrated,
   ]);
-  const scopedDeck = useMemo(() => topicDeck(deck, topic), [deck, topic]),
+  const scopedDeck = useMemo(() => topicDeck(deck, level, topic), [deck, level, topic]),
     card = session[index],
     cardBase = card ? baseCardKey(card.key) : '',
     isIntroduction =
@@ -8264,11 +8317,12 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         .length,
     };
   }, [scopedDeck, records, now]);
-  const start = (nextMode: SessionMode, nextTopic = topic) => {
+  const start = (nextMode: SessionMode, nextTopic = topic, nextLevel = level) => {
     answerLock.current = false;
     gradeLock.current = false;
-    const nextDeck = topicDeck(deck, nextTopic);
+    const nextDeck = topicDeck(deck, nextLevel, nextTopic);
     setMode(nextMode);
+    setLevel(nextLevel);
     setTopic(nextTopic);
     setSession(buildSession(nextDeck, records, nextMode));
     setIndex(0);
@@ -8281,6 +8335,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     setIntroduced({});
     setSessionErrors(0);
     setNow(Date.now());
+    setScopeOpen(false);
     trackLocalEvent('practice_started', nextTopic);
   };
   const speak = (
@@ -8414,14 +8469,35 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         title="Слово сначала понятно — потом проверяется."
         copy="За одну сессию появляется не больше четырёх новых слов. Каждое проверяется минимум тремя разными способами, а одинаковые слова чередуются между собой."
       />
-      <section className="practice-topic-bar">
+      <section className={`practice-topic-bar ${scopeOpen ? 'open' : ''}`}>
+        <button
+          className="practice-scope-toggle"
+          type="button"
+          aria-expanded={scopeOpen}
+          onClick={() => setScopeOpen((value) => !value)}
+        >
+          {level} · {topic} <span>{scopeOpen ? 'Закрыть' : 'Сменить'}</span>
+        </button>
+        <div>
+          <span>УРОВЕНЬ</span>
+          <select
+            value={level}
+            onChange={(event) =>
+              start(mode, 'Все темы', event.target.value as PracticeLevel)
+            }
+          >
+            <option>A1–A2</option>
+            <option>B1–B2</option>
+            <option>Все уровни</option>
+          </select>
+        </div>
         <div>
           <span>ТЕМА СЛОВ</span>
           <select
             value={topic}
             onChange={(event) => start(mode, event.target.value)}
           >
-            {practiceTopics.map((item) => (
+            {practiceTopics(level).map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
@@ -8550,7 +8626,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           <header>
             <div>
               <span className="new-word-badge">НОВОЕ СЛОВО</span>
-              <small>{card.topic}</small>
+              <small>{card.level && `${card.level} · `}{card.topic}</small>
             </div>
             <b>
               {index + 1} / {session.length}
@@ -8639,7 +8715,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             <div>
               <span>{skillLabels[card.skill]}</span>
               <small>
-                {card.core ? '⭐ Ядро A1–A2 · ' : ''}{card.topic} ·{' '}
+                {card.core ? '⭐ Ядро A1–A2 · ' : card.level ? `${card.level} · ` : ''}{card.topic} ·{' '}
                 {responseKind === 'choice'
                   ? 'выбор ответа'
                   : responseKind === 'order'
@@ -9036,14 +9112,7 @@ function DictationView() {
     { records, rate } = useSRS(),
     { progress: wordProgress } = useWordProgress(),
     { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices(),
-    topics = [
-      ...new Set([
-        'Все темы',
-        ...learnedWordDb.map((word) => word.lessonTitle),
-        ...vocabularyTopics.map((item) => item.name),
-        ...(customWords.length ? ['Мои слова'] : []),
-      ]),
-    ],
+    [level, setLevel] = useState<PracticeLevel>('A1–A2'),
     [topic, setTopic] = useState('Все темы'),
     [cards, setCards] = useState<StudyCard[]>([]),
     [index, setIndex] = useState(0),
@@ -9051,7 +9120,16 @@ function DictationView() {
     [checked, setChecked] = useState(false),
     [audioTarget, setAudioTarget] = useState<'word' | 'sentence'>('word');
   const { leaving, move } = useTaskMotion();
-  const lessonCards = learnedWordDictationCards(learnedWordDb),
+  const topics = [...new Set([
+      'Все темы',
+      ...vocabularyTopics
+        .filter((item) => level === 'Все уровни' || item.level === level)
+        .map((item) => item.name),
+      ...(level === 'Все уровни'
+        ? [...learnedWordDb.map((word) => word.lessonTitle), ...(customWords.length ? ['Мои слова'] : [])]
+        : []),
+    ])],
+    lessonCards = learnedWordDictationCards(learnedWordDb),
     practiceCards = deck.filter(
       (card) =>
         card.skill === 'dictation' &&
@@ -9067,6 +9145,7 @@ function DictationView() {
             (item) => normalizeText(item.es) === normalizeText(card.es),
           ) === cardIndex,
       )
+      .filter((card) => level === 'Все уровни' || card.level === level)
       .filter((card) => topic === 'Все темы' || card.topic === topic),
     card = cards[index],
     expected = card
@@ -9076,7 +9155,7 @@ function DictationView() {
       : '',
     answerAnalysis = card ? analyzeAnswer(typed, expected) : null,
     correct = !!card && !!answerAnalysis?.correct;
-  const begin = (nextTopic = topic) => {
+  const begin = (nextTopic = topic, nextLevel = level) => {
     const available = [...lessonCards, ...practiceCards]
       .filter(
         (card, cardIndex, list) =>
@@ -9084,7 +9163,9 @@ function DictationView() {
             (item) => normalizeText(item.es) === normalizeText(card.es),
           ) === cardIndex,
       )
+      .filter((item) => nextLevel === 'Все уровни' || item.level === nextLevel)
       .filter((item) => nextTopic === 'Все темы' || item.topic === nextTopic);
+    setLevel(nextLevel);
     setTopic(nextTopic);
     setCards([...available].sort(() => Math.random() - 0.5).slice(0, 20));
     setIndex(0);
@@ -9131,11 +9212,22 @@ function DictationView() {
   return (
     <div className="view-stack dictation-view">
       <ViewHead
-        over="ДИКТАНТ · БАЗА ИЗУЧЕННЫХ СЛОВ"
+        over={`ДИКТАНТ · ${level} · БАЗА ИЗУЧЕННЫХ СЛОВ`}
         title="Слушайте и пишите без подсказки."
         copy="Диктант использует основные слова начатых уроков и слова, закреплённые в Practice. Случайные слова из теоретических примеров в базу не попадают."
       />
       <section className="dictation-toolbar">
+        <label>
+          <span>Уровень</span>
+          <select
+            value={level}
+            onChange={(event) => begin('Все темы', event.target.value as PracticeLevel)}
+          >
+            <option>A1–A2</option>
+            <option>B1–B2</option>
+            <option>Все уровни</option>
+          </select>
+        </label>
         <label>
           <span>Тема</span>
           <select value={topic} onChange={(event) => begin(event.target.value)}>
@@ -9181,7 +9273,7 @@ function DictationView() {
             answer={expected}
           />
           <header>
-            <span>{card.topic}</span>
+            <span>{card.level && `${card.level} · `}{card.topic}</span>
             <b>
               {index + 1} / {cards.length}
             </b>
@@ -10341,7 +10433,13 @@ function AccountPanel({
     [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
     [busy, setBusy] = useState(false),
-    [notice, setNotice] = useState('');
+    [notice, setNotice] = useState(''),
+    [securityEmail, setSecurityEmail] = useState(account.user?.email || ''),
+    [newPassword, setNewPassword] = useState(''),
+    [securityBusy, setSecurityBusy] = useState(false),
+    [securityNotice, setSecurityNotice] = useState('');
+
+  useEffect(() => setSecurityEmail(account.user?.email || ''), [account.user?.email]);
 
   if (!account.configured)
     return (
@@ -10379,6 +10477,46 @@ function AccountPanel({
             Выйти
           </button>
         </div>
+        <details className="account-security" open={account.recoveryMode || undefined}>
+          <summary>{account.recoveryMode ? 'Создайте новый пароль' : 'Почта и пароль'}</summary>
+          {account.recoveryMode && <p>Ссылка подтверждена. Введите новый пароль ниже, чтобы завершить восстановление.</p>}
+          <div>
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setSecurityBusy(true);
+                const result = await account.updateEmail(securityEmail);
+                setSecurityBusy(false);
+                setSecurityNotice(result.ok
+                  ? 'Письма подтверждения отправлены. Адрес изменится после подтверждения по ссылке.'
+                  : result.message);
+              }}
+            >
+              <label>
+                <span>Новая почта</span>
+                <input type="email" autoComplete="email" required value={securityEmail} onChange={(event) => setSecurityEmail(event.target.value)} />
+              </label>
+              <button disabled={securityBusy || securityEmail.trim().toLowerCase() === account.user.email?.toLowerCase()} type="submit">Изменить почту</button>
+            </form>
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setSecurityBusy(true);
+                const result = await account.updatePassword(newPassword);
+                setSecurityBusy(false);
+                setSecurityNotice(result.ok ? 'Пароль изменён.' : result.message);
+                if (result.ok) setNewPassword('');
+              }}
+            >
+              <label>
+                <span>Новый пароль</span>
+                <input type="password" autoComplete="new-password" minLength={8} maxLength={128} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
+              </label>
+              <button disabled={securityBusy || newPassword.length < 8} type="submit">Изменить пароль</button>
+            </form>
+          </div>
+          {securityNotice && <p role="status">{securityNotice}</p>}
+        </details>
       </section>
     );
 
@@ -10439,6 +10577,23 @@ function AccountPanel({
         <button className="primary-btn" disabled={busy} type="submit">
           {busy ? 'Подождите…' : mode === 'register' ? 'Создать аккаунт' : 'Войти'}
         </button>
+        {mode === 'login' && (
+          <button
+            className="password-reset-link"
+            disabled={busy || !email.trim()}
+            type="button"
+            onClick={async () => {
+              setBusy(true);
+              const result = await account.requestPasswordReset(email);
+              setBusy(false);
+              setNotice(result.ok
+                ? 'Ссылка для восстановления отправлена. Откройте письмо на этом устройстве.'
+                : result.message);
+            }}
+          >
+            Забыли пароль?
+          </button>
+        )}
       </form>
       {notice && <p className="account-notice" role="status">{notice}</p>}
       <small className="account-privacy">
@@ -10952,8 +11107,8 @@ function GlobalSearch({ go }: { go: (section: Section) => void }) {
             id: `word-${topic.name}-${entry.id}`,
             kind: 'Слово' as const,
             title: entry.es,
-            description: `${entry.ru} · ${topic.name}`,
-            search: `${entry.es} ${entry.ru} ${entry.example} ${entry.exampleRu || ''} ${topic.name}`,
+            description: `${entry.ru} · ${topic.level} · ${topic.name}`,
+            search: `${entry.es} ${entry.ru} ${entry.example} ${entry.exampleRu || ''} ${topic.level} ${topic.name}`,
             section: 'Vocabulary' as const,
             focus: entry.es,
           })),

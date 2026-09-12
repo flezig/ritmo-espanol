@@ -18,9 +18,12 @@ import { flushClientErrors, recordClientError } from '../lib/error-journal';
 
 type AuthResult = { ok: true; confirmationRequired?: boolean } | { ok: false; message: string };
 type AccountContextValue = {
-  user: User | null; configured: boolean; status: CloudSyncStatus; message: string;
+  user: User | null; configured: boolean; recoveryMode: boolean; status: CloudSyncStatus; message: string;
   register: (name: string, email: string, password: string) => Promise<AuthResult>;
   login: (email: string, password: string) => Promise<AuthResult>;
+  requestPasswordReset: (email: string) => Promise<AuthResult>;
+  updateEmail: (email: string) => Promise<AuthResult>;
+  updatePassword: (password: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
   syncNow: () => Promise<void>;
   reportContent: (report: ContentReportPayload) => Promise<AuthResult>;
@@ -31,8 +34,10 @@ const authMessage = (error: { message?: string } | unknown) => {
   if (value.includes('invalid login credentials')) return 'Неверная почта или пароль.';
   if (value.includes('email not confirmed')) return 'Подтвердите почту по ссылке из письма.';
   if (value.includes('already registered')) return 'Аккаунт с такой почтой уже существует.';
+  if (value.includes('same password')) return 'Новый пароль должен отличаться от текущего.';
+  if (value.includes('rate limit') || value.includes('too many requests')) return 'Слишком много попыток. Подождите и повторите.';
+  if (value.includes('email')) return 'Проверьте правильность адреса электронной почты.';
   if (value.includes('password')) return 'Используйте пароль не короче 8 символов.';
-  if (value.includes('rate limit')) return 'Слишком много попыток. Подождите и повторите.';
   return 'Не удалось соединиться. Проверьте интернет и повторите.';
 };
 function downloadSnapshot(data: ProgressData, label: string) {
@@ -53,6 +58,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<CloudSyncStatus>(supabase ? 'loading' : 'unconfigured');
   const [message, setMessage] = useState('');
+  const [recoveryMode, setRecoveryMode] = useState(false);
   const [ready, setReady] = useState(!supabase);
   const [epoch, setEpoch] = useState(0);
   const [conflict, setConflict] = useState<Conflict | null>(null);
@@ -205,7 +211,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         setMessage('Войдите для сохранения прогресса между устройствами.');
       }
     };
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true);
       window.setTimeout(() => acceptUser(session?.user ?? null), 0);
     });
     void supabase.auth.getSession().then(({ data, error }) => {
@@ -303,6 +310,51 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     } catch (error) { return { ok: false, message: authMessage(error) }; }
   }, [supabase]);
 
+  const requestPasswordReset = useCallback(async (email: string): Promise<AuthResult> => {
+    if (!supabase) return { ok: false, message: 'Восстановление пароля ещё не настроено.' };
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail))
+      return { ok: false, message: 'Введите корректную почту.' };
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: `${window.location.origin}/#profile`,
+      });
+      return error ? { ok: false, message: authMessage(error) } : { ok: true };
+    } catch (error) {
+      return { ok: false, message: authMessage(error) };
+    }
+  }, [supabase]);
+
+  const updateEmail = useCallback(async (email: string): Promise<AuthResult> => {
+    if (!supabase || !userRef.current) return { ok: false, message: 'Сначала войдите в аккаунт.' };
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail))
+      return { ok: false, message: 'Введите корректную почту.' };
+    try {
+      const { error } = await supabase.auth.updateUser(
+        { email: normalizedEmail },
+        { emailRedirectTo: `${window.location.origin}/#profile` },
+      );
+      return error ? { ok: false, message: authMessage(error) } : { ok: true, confirmationRequired: true };
+    } catch (error) {
+      return { ok: false, message: authMessage(error) };
+    }
+  }, [supabase]);
+
+  const updatePassword = useCallback(async (password: string): Promise<AuthResult> => {
+    if (!supabase || !userRef.current) return { ok: false, message: 'Сначала войдите в аккаунт.' };
+    if (password.length < 8)
+      return { ok: false, message: 'Используйте пароль не короче 8 символов.' };
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) return { ok: false, message: authMessage(error) };
+      setRecoveryMode(false);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: authMessage(error) };
+    }
+  }, [supabase]);
+
   const syncNow = useCallback(async () => { if (userRef.current) await syncUser(userRef.current); }, [syncUser]);
   const logout = useCallback(async () => {
     if (!supabase || !userRef.current || signingOut.current) return;
@@ -322,7 +374,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       offlineAccount.remove(userRef.current.id);
       localStorage.removeItem('ritmo-sync-recovery-' + userRef.current.id);
       clearCloudProgress();
-      userRef.current = null; setUser(null); setEpoch((value) => value + 1);
+      userRef.current = null; setUser(null); setRecoveryMode(false); setEpoch((value) => value + 1);
       setStatus('guest'); setMessage('Вы вышли из аккаунта.');
     } catch (error) {
       setStatus('error'); setMessage(authMessage(error));
@@ -363,7 +415,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AccountContext.Provider value={{ user, configured: Boolean(supabase), status, message, register, login, logout, syncNow, reportContent }}>
+    <AccountContext.Provider value={{ user, configured: Boolean(supabase), recoveryMode, status, message, register, login, requestPasswordReset, updateEmail, updatePassword, logout, syncNow, reportContent }}>
       {conflict ? (
         <main className="account-gate">
           <h1>Сохраним обе версии прогресса</h1>

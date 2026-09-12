@@ -1763,9 +1763,62 @@ input {
 }
 .account-connected {
   justify-content: flex-start;
+  flex-wrap: wrap;
   background:
     radial-gradient(circle at 94% 12%, #12d8c429, transparent 30%),
     var(--panel);
+}
+.account-security {
+  flex: 1 0 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.account-security summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--purple);
+  font-weight: 900;
+}
+.account-security > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.account-security form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+.account-security label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.account-security input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--soft);
+  padding: 0 12px;
+}
+.account-security button,
+.password-reset-link {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--soft);
+  padding: 0 13px;
+  font-weight: 800;
+}
+.password-reset-link {
+  align-self: start;
+  margin-top: 25px;
 }
 .account-cloud-mark {
   width: 58px;
@@ -7224,16 +7277,49 @@ input {
   padding: 15px 18px;
   box-shadow: var(--shadow);
 }
-.practice-topic-bar > div:first-child {
+.practice-topic-bar > div {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-.practice-topic-bar > div:first-child > span {
+.practice-topic-bar > div > span {
   font-size: 12px;
   font-weight: 900;
   color: var(--purple);
   letter-spacing: 0.1em;
+}
+.vocabulary-level-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.vocabulary-level-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 12px 16px;
+  cursor: pointer;
+}
+.vocabulary-level-tabs button.active {
+  border-color: var(--purple);
+  background: color-mix(in srgb, var(--panel) 88%, var(--purple));
+  box-shadow: 0 10px 24px #7c3cff1c;
+}
+.vocabulary-level-tabs b { font: 750 18px var(--font-syne); }
+.vocabulary-level-tabs span { color: var(--muted); font-size: 12px; }
+.level-word-badge {
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--purple);
+  padding: 3px 7px;
+  font-size: 9px;
+  font-weight: 900;
 }
 .practice-topic-bar select {
   min-width: 210px;
@@ -7246,6 +7332,9 @@ input {
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+}
+.practice-scope-toggle {
+  display: none;
 }
 .diverse-card > section > small {
   margin-top: 18px;
@@ -7395,10 +7484,35 @@ input {
 
 @media (max-width: 680px) {
   .srs-view.active-exercise .practice-topic-bar {
+    display: flex;
+    padding: 7px 9px;
+  }
+  .srs-view.active-exercise .practice-scope-toggle {
+    width: 100%;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--soft);
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 850;
+  }
+  .srs-view.active-exercise .practice-scope-toggle span {
+    color: var(--purple);
+  }
+  .srs-view.active-exercise .practice-topic-bar:not(.open) > div {
     display: none;
   }
+  .srs-view.active-exercise .practice-topic-bar.open > div {
+    display: flex;
+  }
   .srs-view.active-exercise .srs-card {
-    height: calc(100dvh - 160px);
+    height: calc(100dvh - 210px);
     max-height: none;
   }
   .srs-view.active-exercise .word-introduction {
@@ -7519,7 +7633,7 @@ input {
     align-items: stretch;
     flex-direction: column;
   }
-  .practice-topic-bar > div:first-child {
+  .practice-topic-bar > div {
     align-items: stretch;
     flex-direction: column;
   }
@@ -7530,6 +7644,14 @@ input {
   .srs-choice-grid {
     grid-template-columns: 1fr;
   }
+}
+@media (max-width: 680px) {
+  .account-security > div,
+  .account-security form,
+  .vocabulary-level-tabs {
+    grid-template-columns: 1fr;
+  }
+  .account-security button { min-height: 44px; }
 }
 
 /* Progress layout, transparent scoring and textbook grammar */

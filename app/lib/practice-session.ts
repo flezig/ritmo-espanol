@@ -1,5 +1,5 @@
 export type PracticeSnapshot = {
-  version: 2 | 3 | 4;
+  version: 2 | 3 | 4 | 5;
   topic: string;
   session: unknown[];
   index: number;
@@ -27,7 +27,7 @@ export const parsePracticeSnapshot = (value: string | null): PracticeSnapshot | 
   try {
     const data = JSON.parse(value) as Partial<PracticeSnapshot>;
     if (
-      (data.version !== 2 && data.version !== 3 && data.version !== 4) ||
+      (data.version !== 2 && data.version !== 3 && data.version !== 4 && data.version !== 5) ||
       typeof data.topic !== 'string' ||
       !Array.isArray(data.session) ||
       !Number.isInteger(data.index) ||

@@ -54,6 +54,7 @@ test('practice session parser rejects incomplete state', () => {
   assert.equal(parsePracticeSnapshot('{bad'), null);
   assert.equal(parsePracticeSnapshot(JSON.stringify({ version: 3, topic: 'Дом', session: [{ key: 'casa' }], index: 0 }))?.topic, 'Дом');
   assert.equal(parsePracticeSnapshot(JSON.stringify({ version: 4, topic: 'Дом', session: [{ key: 'casa' }], index: 0 }))?.topic, 'Дом');
+  assert.equal(parsePracticeSnapshot(JSON.stringify({ version: 5, topic: 'Все темы', level: 'B1–B2', session: [{ key: 'tesis' }], index: 0 }))?.topic, 'Все темы');
 });
 
 test('backup validation accepts only the current schema and known keys', () => {

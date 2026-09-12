@@ -9,9 +9,18 @@ export type VocabularyEntry = {
   extraExampleRu?: string;
 };
 
+export type VocabularyLevel = 'A1–A2' | 'B1–B2';
+export type VocabularyTopic = {
+  name: string;
+  icon: string;
+  level: VocabularyLevel;
+  entries: VocabularyEntry[];
+};
+
 import { corpusExamples } from './vocabulary-corpus.ts';
 import { legacyExampleTranslations } from './legacy-translations.ts';
 import { a2VocabularyTopics } from './a2-vocabulary.ts';
+import { b1b2VocabularyTopics } from './b1b2-vocabulary.ts';
 
 const legacyVocabularyTopics = [
   {
@@ -3446,16 +3455,19 @@ const expandHeadword = (entry: VocabularyEntry): VocabularyEntry[] => {
   });
 };
 const mergedTopics = [
-  ...coreTopics,
-  ...a2VocabularyTopics,
-  ...deduplicatedLegacyTopics,
+  ...coreTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
+  ...a2VocabularyTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
+  ...deduplicatedLegacyTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
+  ...b1b2VocabularyTopics.map((topic) => ({ ...topic, level: 'B1–B2' as const })),
 ].reduce<
-  Array<{ name: string; icon: string; entries: VocabularyEntry[] }>
+  VocabularyTopic[]
 >((topics, topic) => {
-  const existing = topics.find((item) => item.name === topic.name),
+  const existing = topics.find(
+      (item) => item.name === topic.name && item.level === topic.level,
+    ),
     cleanEntries = topic.entries.flatMap((entry) => expandHeadword(entry as VocabularyEntry));
   if (existing) existing.entries.push(...cleanEntries);
-  else topics.push({ ...topic, entries: cleanEntries });
+  else topics.push({ ...topic, entries: cleanEntries } as VocabularyTopic);
   return topics;
 }, []);
 
@@ -3487,6 +3499,16 @@ const preferredTopicOrder = [
   'Музыка',
   'Ночная жизнь',
   'Живой сленг',
+  'Мнение и аргументация',
+  'Эмоции и внутренние состояния',
+  'Карьера и рабочая среда',
+  'Образование и исследования',
+  'Новости и общество',
+  'Экология и устойчивое развитие',
+  'Экономика и личные финансы',
+  'Наука и цифровой мир',
+  'Здоровье и благополучие',
+  'Искусство и культурная жизнь',
 ];
 const orderedTopics = [...mergedTopics].sort(
   (first, second) =>

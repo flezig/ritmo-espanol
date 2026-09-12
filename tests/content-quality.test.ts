@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { vocabularyTopics } from '../app/vocabulary.ts';
+import { b1b2VocabularyTopics } from '../app/b1b2-vocabulary.ts';
 import { courseLessons, type LessonExercise } from '../app/lessons.ts';
 
 const entries = vocabularyTopics.flatMap((topic) => topic.entries.map((entry) => ({ ...entry, topic: topic.name })));
@@ -79,6 +80,29 @@ test('A2 topics stay complete and follow the learning route', () => {
   assert.deepEqual(
     names.filter((name) => required.includes(name)),
     required,
+  );
+});
+
+test('B1-B2 is a separate complete corpus with no A1-A2 overlap', () => {
+  const beginnerWords = new Set(
+    vocabularyTopics
+      .filter((topic) => topic.level === 'A1–A2')
+      .flatMap((topic) => topic.entries.map((entry) => entry.es.toLocaleLowerCase('es'))),
+  );
+  const advancedWords = b1b2VocabularyTopics.flatMap((topic) => topic.entries);
+  assert.equal(advancedWords.length, 100);
+  assert.equal(b1b2VocabularyTopics.length, 10);
+  for (const entry of advancedWords) {
+    assert.equal(beginnerWords.has(entry.es.toLocaleLowerCase('es')), false, `${entry.es} overlaps A1–A2`);
+    assert.equal(/\s\/\s/.test(entry.ru), false, `${entry.es} has an ambiguous translation`);
+    assert.match(entry.example, /[.!?]$/u, `${entry.es} needs a complete Spanish sentence`);
+    assert.match(entry.exampleRu, /[.!?]$/u, `${entry.es} needs a complete Russian translation`);
+  }
+  const releasedAdvanced = vocabularyTopics.filter((topic) => topic.level === 'B1–B2');
+  assert.equal(releasedAdvanced.length, 10);
+  assert.equal(
+    releasedAdvanced.reduce((sum, topic) => sum + topic.entries.length, 0),
+    advancedWords.length,
   );
 });
 
