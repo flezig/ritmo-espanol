@@ -7336,6 +7336,16 @@ input {
 .practice-scope-toggle {
   display: none;
 }
+.srs-empty .secondary-btn {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--text);
+  padding: 9px 15px;
+  font-weight: 850;
+  cursor: pointer;
+}
 .diverse-card > section > small {
   margin-top: 18px;
 }
@@ -8098,17 +8108,33 @@ body {
 }
 @media (max-width: 680px) {
   .spain-hero {
-    min-height: 500px;
+    min-height: 520px;
   }
   .spain-hero .hero-copy {
-    padding: 45px 20px;
+    width: 100%;
+    padding: 38px 18px 126px;
   }
   .spain-hero h2 {
-    font-size: 42px;
+    max-width: 100%;
+    font-size: clamp(34px, 10.5vw, 42px);
+    overflow-wrap: anywhere;
   }
   .hero-place {
-    right: 15px;
+    left: 14px;
+    right: 14px;
     bottom: 14px;
+    width: auto;
+    min-width: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .hero-place b,
+  .hero-place small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .hero-place small {
+    font-size: 9px;
+    letter-spacing: 0.02em;
   }
   .clip-hint {
     grid-template-columns: 1fr;

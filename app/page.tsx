@@ -6574,6 +6574,16 @@ function MusicView() {
 
 type SessionMode = 'five' | 'fifteen' | 'weak' | 'errors' | 'favorites';
 type PracticeLevel = VocabularyLevel | 'Все уровни';
+type PracticeProgressBaseline = {
+  srs: Record<string, SRSRecord | null>;
+  wordProgress: Record<string, WordStatus | null>;
+  wordHistory: Record<string, WordHistoryRecord | null>;
+  deviceProfile: string | null;
+  achievementStats: string | null;
+  achievementUnlocks: string | null;
+  errorProfile: string | null;
+  latestAchievement: string | null;
+};
 type SavedPracticeSession = {
   version: 2 | 3 | 4 | 5;
   mode: SessionMode;
@@ -6590,6 +6600,64 @@ type SavedPracticeSession = {
   finished: boolean;
   introduced: Record<string, boolean>;
   sessionErrors?: number;
+  awaitingStart?: boolean;
+  baseline?: PracticeProgressBaseline | null;
+};
+const capturePracticeBaseline = (cards: StudyCard[]): PracticeProgressBaseline => {
+  const read = <T,>(key: string): Record<string, T> => {
+      try {
+        return JSON.parse(localStorage.getItem(key) || '{}');
+      } catch {
+        return {};
+      }
+    },
+    records = read<SRSRecord>('ritmo-srs'),
+    statuses = read<WordStatus>('ritmo-word-progress'),
+    history = read<WordHistoryRecord>('ritmo-word-history'),
+    cardKeys = [...new Set(cards.map((card) => card.key))],
+    wordKeys = [...new Set(cards.map((card) => baseCardKey(card.key)))];
+  return {
+    srs: Object.fromEntries(cardKeys.map((key) => [key, records[key] || null])),
+    wordProgress: Object.fromEntries(wordKeys.map((key) => [key, statuses[key] || null])),
+    wordHistory: Object.fromEntries(wordKeys.map((key) => [key, history[key] || null])),
+    deviceProfile: localStorage.getItem('ritmo-device-profile'),
+    achievementStats: localStorage.getItem('ritmo-achievement-stats'),
+    achievementUnlocks: localStorage.getItem('ritmo-achievements'),
+    errorProfile: localStorage.getItem('ritmo-error-profile'),
+    latestAchievement: localStorage.getItem('ritmo-latest-achievement'),
+  };
+};
+const restorePracticeBaseline = (baseline: PracticeProgressBaseline) => {
+  const restore = (key: string, value: string | null) => {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  },
+  restoreEntries = <T,>(key: string, snapshot: Record<string, T | null>) => {
+    let current: Record<string, T> = {};
+    try {
+      current = JSON.parse(localStorage.getItem(key) || '{}');
+    } catch {}
+    Object.entries(snapshot).forEach(([entryKey, value]) => {
+      if (value === null) delete current[entryKey];
+      else current[entryKey] = value;
+    });
+    localStorage.setItem(key, JSON.stringify(current));
+  };
+  restoreEntries('ritmo-srs', baseline.srs);
+  restoreEntries('ritmo-word-progress', baseline.wordProgress);
+  restoreEntries('ritmo-word-history', baseline.wordHistory);
+  restore('ritmo-device-profile', baseline.deviceProfile);
+  restore('ritmo-achievement-stats', baseline.achievementStats);
+  restore('ritmo-achievements', baseline.achievementUnlocks);
+  restore('ritmo-error-profile', baseline.errorProfile);
+  restore('ritmo-latest-achievement', baseline.latestAchievement);
+  window.dispatchEvent(new Event('ritmo-srs'));
+  window.dispatchEvent(new Event('ritmo-word-progress'));
+  window.dispatchEvent(new Event('ritmo-profile'));
+  window.dispatchEvent(new Event('ritmo-achievement-stats'));
+  window.dispatchEvent(new Event('ritmo-achievements'));
+  window.dispatchEvent(new Event('ritmo-errors'));
+  window.dispatchEvent(new Event('ritmo-cloud-progress-changed'));
 };
 const buildSession = (
   deck: StudyCard[],
@@ -7078,10 +7146,13 @@ const practiceTopics = (level: PracticeLevel) => [
   ...vocabularyTopics
     .filter((topic) => level === 'Все уровни' || topic.level === level)
     .map((topic) => topic.name),
-  ...(level === 'Все уровни' ? ['Мои слова', 'Уроки A1'] : []),
+  'Мои слова',
+  ...(level === 'Все уровни' || level === 'A1–A2' ? ['Уроки A1'] : []),
 ];
 const topicDeck = (deck: StudyCard[], level: PracticeLevel, topic: string) =>
-  topic === 'Все темы'
+  topic === 'Мои слова'
+    ? deck.filter((card) => card.topic === 'Мои слова')
+    : topic === 'Все темы'
     ? level === 'Все уровни'
       ? deck
       : deck.filter((card) => card.level === level)
@@ -7715,9 +7786,13 @@ const randomOrder = (length: number) => {
 };
 
 function SpanishRushGame() {
-  const deck = useMemo(
-      () => makeStudyDeck().filter((card) => card.skill === 'recognition' && card.level === 'A1–A2'),
-      [],
+  const { words: customWords } = useCustomWords(),
+    deck = useMemo(
+      () => makeStudyDeck(customWords).filter((card) =>
+        card.skill === 'recognition' &&
+        (card.level === 'A1–A2' || card.topic === 'Мои слова'),
+      ),
+      [customWords],
     ),
     { records } = useSRS(),
     { progress } = useWordProgress(),
@@ -8128,7 +8203,9 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     [sessionErrors, setSessionErrors] = useState(0),
     [now, setNow] = useState(() => Date.now()),
     [sessionHydrated, setSessionHydrated] = useState(false),
-    [scopeOpen, setScopeOpen] = useState(false);
+    [scopeOpen, setScopeOpen] = useState(false),
+    [awaitingStart, setAwaitingStart] = useState(false),
+    [sessionBaseline, setSessionBaseline] = useState<PracticeProgressBaseline | null>(null);
   const answerLock = useRef(false),
     gradeLock = useRef(false);
   useEffect(() => {
@@ -8159,6 +8236,8 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         setFinished(!!saved.finished);
         setIntroduced(saved.introduced || {});
         setSessionErrors(Number(saved.sessionErrors) || 0);
+        setAwaitingStart(!!saved.awaitingStart);
+        setSessionBaseline(saved.baseline || null);
       }
     } catch {}
     setSessionHydrated(true);
@@ -8181,6 +8260,8 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       finished,
       introduced,
       sessionErrors,
+      awaitingStart,
+      baseline: sessionBaseline,
     };
     const saveTimer = window.setTimeout(
       () => {
@@ -8206,19 +8287,24 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     finished,
     introduced,
     sessionErrors,
+    awaitingStart,
+    sessionBaseline,
   ]);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30000);
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
-    if (!sessionHydrated || !srsHydrated || session.length || finished) return;
+    if (!sessionHydrated || !srsHydrated || session.length || finished || awaitingStart) return;
     const ready = buildSession(
       topicDeck(makeStudyDeck(customWords), level, topic),
       records,
       mode,
     );
-    if (ready.length) setSession(ready);
+    if (ready.length) {
+      setSessionBaseline(capturePracticeBaseline(ready));
+      setSession(ready);
+    }
   }, [
     now,
     mode,
@@ -8230,6 +8316,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     customWords,
     sessionHydrated,
     srsHydrated,
+    awaitingStart,
   ]);
   const scopedDeck = useMemo(() => topicDeck(deck, level, topic), [deck, level, topic]),
     card = session[index],
@@ -8320,11 +8407,12 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   const start = (nextMode: SessionMode, nextTopic = topic, nextLevel = level) => {
     answerLock.current = false;
     gradeLock.current = false;
-    const nextDeck = topicDeck(deck, nextLevel, nextTopic);
+    const nextDeck = topicDeck(deck, nextLevel, nextTopic),
+      nextSession = buildSession(nextDeck, records, nextMode);
     setMode(nextMode);
     setLevel(nextLevel);
     setTopic(nextTopic);
-    setSession(buildSession(nextDeck, records, nextMode));
+    setSession(nextSession);
     setIndex(0);
     setTyped('');
     setRevealed(false);
@@ -8336,7 +8424,33 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     setSessionErrors(0);
     setNow(Date.now());
     setScopeOpen(false);
+    setAwaitingStart(false);
+    setSessionBaseline(capturePracticeBaseline(nextSession));
     trackLocalEvent('practice_started', nextTopic);
+  };
+  const leaveSessionWithoutSaving = () => {
+    if (
+      sessionBaseline &&
+      !window.confirm(
+        'Выйти к выбору сессии? Результаты этой незавершённой сессии не сохранятся.',
+      )
+    ) return;
+    if (sessionBaseline) restorePracticeBaseline(sessionBaseline);
+    answerLock.current = false;
+    gradeLock.current = false;
+    setSession([]);
+    setIndex(0);
+    setTyped('');
+    setRevealed(false);
+    setCorrect(false);
+    setAnalysis(null);
+    setOrderedWords([]);
+    setFinished(false);
+    setIntroduced({});
+    setSessionErrors(0);
+    setSessionBaseline(null);
+    setAwaitingStart(true);
+    setScopeOpen(false);
   };
   const speak = (
     speed = 1,
@@ -8415,6 +8529,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         recordAchievementEvent({ type: 'pronunciation-correct' });
       if (index >= session.length - 1) {
         setFinished(true);
+        setSessionBaseline(null);
         playCelebrationSound('finish');
         recordAchievementEvent({
           type: 'practice-session',
@@ -8601,7 +8716,9 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         <article className="srs-empty">
           <CatMascot state="sleeping" />
           <h2>
-            {mode === 'favorites'
+            {awaitingStart
+              ? 'Выберите новую сессию'
+              : mode === 'favorites'
               ? 'В этой теме пока нет избранного'
               : mode === 'errors'
                 ? waitingErrors
@@ -8610,15 +8727,20 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                 : 'Для этого режима пока нет карточек'}
           </h2>
           <p>
-            {mode === 'errors'
+            {awaitingStart
+              ? 'Выберите уровень, тему и формат выше. Прогресс отменённой сессии не сохранён.'
+              : mode === 'errors'
               ? waitingErrors
                 ? `Ближайшая карточка откроется по таймеру. После «Не помню» — ровно через 10 минут.`
                 : 'Ошибочные ответы будут автоматически собираться здесь.'
               : 'Выберите другую тему или начните обычную сессию.'}
           </p>
-          <button className="primary-btn" onClick={() => start('five')}>
-            Начать 5 минут
-          </button>
+          {!awaitingStart && (
+            <button className="primary-btn" onClick={() => start('five')}>
+              Начать 5 минут
+            </button>
+          )}
+          <button className="secondary-btn" onClick={showModes}>Все игры</button>
         </article>
       ) : isIntroduction ? (
         <article className="word-introduction task-swap">
@@ -8631,7 +8753,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             <b>
               {index + 1} / {session.length}
             </b>
-            <button className="practice-exit" onClick={showModes}>Все режимы</button>
+            <button className="practice-exit" onClick={leaveSessionWithoutSaving}>Сменить сессию</button>
           </header>
           <section>
             {voices.length > 1 && (
@@ -8745,7 +8867,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             <b>
               {index + 1} / {session.length}
             </b>
-            <button className="practice-exit" onClick={showModes}>Все режимы</button>
+            <button className="practice-exit" onClick={leaveSessionWithoutSaving}>Сменить сессию</button>
             <details className="practice-more-actions">
               <summary aria-label="Другие действия" title="Другие действия">
                 •••
@@ -9125,15 +9247,17 @@ function DictationView() {
       ...vocabularyTopics
         .filter((item) => level === 'Все уровни' || item.level === level)
         .map((item) => item.name),
-      ...(level === 'Все уровни'
-        ? [...learnedWordDb.map((word) => word.lessonTitle), ...(customWords.length ? ['Мои слова'] : [])]
+      ...(customWords.length ? ['Мои слова'] : []),
+      ...(level === 'Все уровни' || level === 'A1–A2'
+        ? learnedWordDb.map((word) => word.lessonTitle)
         : []),
     ])],
     lessonCards = learnedWordDictationCards(learnedWordDb),
     practiceCards = deck.filter(
       (card) =>
         card.skill === 'dictation' &&
-        (wordWasStudied(card, records) ||
+        (card.topic === 'Мои слова' ||
+          wordWasStudied(card, records) ||
           ['learning', 'difficult', 'learned'].includes(
             wordProgress[baseCardKey(card.key)] || 'new',
           )),
@@ -9145,7 +9269,9 @@ function DictationView() {
             (item) => normalizeText(item.es) === normalizeText(card.es),
           ) === cardIndex,
       )
-      .filter((card) => level === 'Все уровни' || card.level === level)
+      .filter((card) =>
+        card.topic === 'Мои слова' || level === 'Все уровни' || card.level === level,
+      )
       .filter((card) => topic === 'Все темы' || card.topic === topic),
     card = cards[index],
     expected = card
@@ -9163,7 +9289,9 @@ function DictationView() {
             (item) => normalizeText(item.es) === normalizeText(card.es),
           ) === cardIndex,
       )
-      .filter((item) => nextLevel === 'Все уровни' || item.level === nextLevel)
+      .filter((item) =>
+        item.topic === 'Мои слова' || nextLevel === 'Все уровни' || item.level === nextLevel,
+      )
       .filter((item) => nextTopic === 'Все темы' || item.topic === nextTopic);
     setLevel(nextLevel);
     setTopic(nextTopic);
@@ -9199,7 +9327,12 @@ function DictationView() {
   };
   const next = () =>
     move(() => {
-      if (index >= cards.length - 1) begin(topic);
+      if (index >= cards.length - 1) {
+        setCards([]);
+        setIndex(0);
+        setTyped('');
+        setChecked(false);
+      }
       else {
         setIndex((value) => value + 1);
         setTyped('');
@@ -9221,7 +9354,14 @@ function DictationView() {
           <span>Уровень</span>
           <select
             value={level}
-            onChange={(event) => begin('Все темы', event.target.value as PracticeLevel)}
+            onChange={(event) => {
+              setLevel(event.target.value as PracticeLevel);
+              setTopic('Все темы');
+              setCards([]);
+              setIndex(0);
+              setTyped('');
+              setChecked(false);
+            }}
           >
             <option>A1–A2</option>
             <option>B1–B2</option>
@@ -9230,7 +9370,16 @@ function DictationView() {
         </label>
         <label>
           <span>Тема</span>
-          <select value={topic} onChange={(event) => begin(event.target.value)}>
+          <select
+            value={topic}
+            onChange={(event) => {
+              setTopic(event.target.value);
+              setCards([]);
+              setIndex(0);
+              setTyped('');
+              setChecked(false);
+            }}
+          >
             {topics.map((item) => (
               <option key={item}>{item}</option>
             ))}
@@ -9240,7 +9389,7 @@ function DictationView() {
           <b>{learned.length}</b>
           <span>слов из базы доступно</span>
         </div>
-        <button onClick={() => begin(topic)} disabled={!learned.length}>
+        <button onClick={() => begin(topic, level)} disabled={!learned.length}>
           Начать диктант
         </button>
       </section>
