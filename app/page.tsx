@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -1571,7 +1571,7 @@ const lessonCoreVocabulary: Record<string, LessonWord[]> = {
     },
   ],
 };
-const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
+const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
   ...vocabularyTopics.flatMap((topic) =>
     topic.entries.flatMap((entry) => {
       const base = `${topic.name}-${entry.id}`,
@@ -1709,6 +1709,25 @@ const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
   }),
   ...grammarReviewCards,
 ];
+const studyDeckCache = new Map<string, StudyCard[]>();
+const makeStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => {
+  const signature = JSON.stringify(
+    customWords.map((word) => [
+      word.id,
+      word.es,
+      word.ru,
+      word.example,
+      word.exampleRu,
+      word.extraExample,
+      word.extraExampleRu,
+    ]),
+  );
+  const cached = studyDeckCache.get(signature);
+  if (cached) return cached;
+  const deck = buildStudyDeck(customWords);
+  studyDeckCache.set(signature, deck);
+  return deck;
+};
 const auditVocabularyPracticeSync = () => {
   const deck = makeStudyDeck(),
     byKey = new Map(deck.map((card) => [card.key, card])),
@@ -6572,7 +6591,8 @@ function MusicView() {
   );
 }
 
-type SessionMode = 'five' | 'fifteen' | 'weak' | 'errors' | 'favorites';
+type SessionMode = 'five' | 'weak' | 'errors' | 'favorites';
+type SavedSessionMode = SessionMode | 'fifteen';
 type PracticeLevel = VocabularyLevel | 'Все уровни';
 type PracticeProgressBaseline = {
   srs: Record<string, SRSRecord | null>;
@@ -6586,7 +6606,7 @@ type PracticeProgressBaseline = {
 };
 type SavedPracticeSession = {
   version: 2 | 3 | 4 | 5;
-  mode: SessionMode;
+  mode: SavedSessionMode;
   level?: PracticeLevel;
   topic: string;
   session: StudyCard[];
@@ -6665,7 +6685,7 @@ const buildSession = (
   mode: SessionMode,
 ) => {
   const now = Date.now(),
-    count = mode === 'five' ? 16 : mode === 'fifteen' ? 20 : 30;
+    count = mode === 'five' ? 16 : 30;
   let pool: StudyCard[] = [];
   if (mode === 'favorites')
     pool = deck.filter((card) => records[card.key]?.favorite);
@@ -6931,16 +6951,6 @@ function _PracticeView() {
           <span>
             <b>5 минут</b>
             <small>8 быстрых заданий</small>
-          </span>
-        </button>
-        <button
-          className={mode === 'fifteen' ? 'active' : ''}
-          onClick={() => start('fifteen')}
-        >
-          <ClockBadge minutes={15} />
-          <span>
-            <b>15 минут</b>
-            <small>20 смешанных заданий</small>
           </span>
         </button>
         <button
@@ -8144,20 +8154,25 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
 }
 
 function PracticeHub() {
-  const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush' | 'articles'>('menu');
+  const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush' | 'articles'>('menu'),
+    [isSwitching, startGameTransition] = useTransition();
+  const selectGame = (next: typeof game) => {
+    if (next === game || isSwitching) return;
+    startGameTransition(() => setGame(next));
+  };
   return (
-    <div className="view-stack practice-hub">
+    <div className="view-stack practice-hub" aria-busy={isSwitching}>
       <section className="practice-mode-picker">
-        <button className={game === 'study' ? 'active' : ''} onClick={() => setGame('study')}>
+        <button className={game === 'study' ? 'active' : ''} disabled={isSwitching} onClick={() => selectGame('study')}>
           <span>🧠</span><b>Учить слова</b><small>Прежняя адаптивная практика</small>
         </button>
-        <button className={game === 'detective' ? 'active' : ''} onClick={() => setGame('detective')}>
+        <button className={game === 'detective' ? 'active' : ''} disabled={isSwitching} onClick={() => selectGame('detective')}>
           <span>📖</span><b>Детектив по тексту</b><small>A1 и A2 · по 20 заданий</small>
         </button>
-        <button className={game === 'rush' ? 'active' : ''} onClick={() => setGame('rush')}>
+        <button className={game === 'rush' ? 'active' : ''} disabled={isSwitching} onClick={() => selectGame('rush')}>
           <span>⏱️</span><b>Spanish Rush</b><small>60 секунд · combo и бонусы</small>
         </button>
-        <button className={game === 'articles' ? 'active' : ''} onClick={() => setGame('articles')}>
+        <button className={game === 'articles' ? 'active' : ''} disabled={isSwitching} onClick={() => selectGame('articles')}>
           <span>📚</span><b>Артикли: el или la</b><small>10 случайных заданий · исключения и значения</small>
         </button>
       </section>
@@ -8168,11 +8183,11 @@ function PracticeHub() {
           <p>Учите слова без спешки, читайте истории или устройте минутный спринт.</p>
         </section>
       ) : game === 'study' ? (
-        <AdaptivePracticeView showModes={() => setGame('menu')} />
+        <AdaptivePracticeView showModes={() => selectGame('menu')} />
       ) : game === 'detective' ? (
         <DetectiveGame />
       ) : game === 'articles' ? (
-        <ArticlePracticeGame onBack={() => setGame('menu')} />
+        <ArticlePracticeGame onBack={() => selectGame('menu')} />
       ) : (
         <SpanishRushGame />
       )}
@@ -8220,7 +8235,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       ) {
         const { session: synchronizedSession, index: safeIndex, contentChanged } =
           reconcilePracticeCards(saved.session, saved.index, deck);
-        setMode(saved.mode);
+        setMode(saved.mode === 'fifteen' ? 'five' : saved.mode);
         setLevel(saved.level || (vocabularyTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'));
         setTopic(saved.topic);
         setSession(synchronizedSession);
@@ -8627,16 +8642,6 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           <span>
             <b>5 минут</b>
             <small>16 разных заданий</small>
-          </span>
-        </button>
-        <button
-          className={mode === 'fifteen' ? 'active' : ''}
-          onClick={() => start('fifteen')}
-        >
-          <ClockBadge minutes={15} />
-          <span>
-            <b>15 минут</b>
-            <small>20 смешанных заданий</small>
           </span>
         </button>
         <button
