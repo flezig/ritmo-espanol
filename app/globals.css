@@ -4222,6 +4222,54 @@ input {
   }
 }
 
+/* Practice result: keep the decision close to the answer being assessed. */
+.srs-view.active-exercise .recall-result.confirmed-answer > b:first-child {
+  color: #2fae84;
+  font-size: 14px;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+.srs-view.active-exercise .recall-result > p .answer-focus {
+  display: inline-block;
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 850;
+  line-height: 1.15;
+}
+.srs-view.active-exercise .answer-analysis.is-correct {
+  color: var(--text);
+}
+.srs-view.active-exercise .answer-analysis.is-correct::before,
+.srs-view.active-exercise .answer-analysis.is-correct > b {
+  color: #2fae84;
+}
+.srs-view.active-exercise .answer-analysis.is-nuance,
+.srs-view.active-exercise .answer-analysis.accent.is-nuance {
+  background: transparent;
+}
+.srs-view.active-exercise .answer-analysis.is-nuance::before,
+.srs-view.active-exercise .answer-analysis.is-nuance > b {
+  color: #b87816;
+}
+.srs-view.active-exercise .srs-card > section.answered .grade-grid {
+  position: static;
+  margin: 18px 0 7px;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+@media (max-width: 680px) {
+  .srs-view.active-exercise .recall-result.confirmed-answer > b:first-child {
+    font-size: 13px;
+  }
+  .srs-view.active-exercise .recall-result > p .answer-focus {
+    font-size: 22px;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .grade-grid {
+    margin-top: 13px;
+  }
+}
+
 /* Practice: keep the exercise and answer comparison visually dominant. */
 .practice-card-heading {
   position: relative;
@@ -11263,18 +11311,14 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-bottom: 66px;
+  padding-bottom: 10px;
 }
 .srs-view.active-exercise .srs-card > section.answered .grade-grid {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  left: 10px;
-  z-index: 10;
-  margin: 0;
-  padding-top: 6px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  backdrop-filter: blur(8px);
+  position: static;
+  margin: 18px 0 7px;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 @media (max-width: 680px) {
@@ -11296,7 +11340,7 @@ body {
     padding-right: 98px;
   }
   .srs-view.active-exercise .srs-card > section.answered .recall-result {
-    padding: 7px 8px 58px;
+    padding: 7px 8px 9px;
   }
   .srs-view.active-exercise .srs-card > section.answered .spelling-diff {
     display: none;
@@ -11316,9 +11360,7 @@ body {
     line-height: 1.25;
   }
   .srs-view.active-exercise .srs-card > section.answered .grade-grid {
-    right: 6px;
-    bottom: 5px;
-    left: 6px;
+    margin-top: 13px;
   }
   .exercise-report-wrap {
     top: 8px;

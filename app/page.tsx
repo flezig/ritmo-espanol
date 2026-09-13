@@ -9174,23 +9174,27 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             {revealed && (
               <div
                 className={
-                  (responseKind === 'self' && !analysis) || correct
-                    ? 'recall-result good'
-                    : 'recall-result bad'
+                  `${
+                    (responseKind === 'self' && !analysis) || correct
+                      ? 'recall-result good'
+                      : 'recall-result bad'
+                  }${correct && analysis ? ' confirmed-answer' : ''}`
                 }
               >
                 <b>
                   {responseKind === 'self' && !analysis
                     ? 'Сравните со своим ответом'
                     : correct
-                      ? 'Верно!'
+                      ? '✓ Верно'
                       : 'Эта ошибка сохранена для отработки'}
                 </b>
                 <p>
                   {!correct && responseKind !== 'self' && (
                     <small>Правильный ответ: </small>
                   )}
-                  <strong className={correct ? 'word-assembled' : ''}>
+                  <strong
+                    className={`answer-focus${correct ? ' word-assembled' : ''}`}
+                  >
                     {expectedAnswer}
                   </strong>
                 </p>
@@ -9200,7 +9204,15 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                   </small>
                 )}
                 {analysis && (
-                  <div className={`answer-analysis ${analysis.kind}`}>
+                  <div
+                    className={`answer-analysis ${analysis.kind}${
+                      analysis.correct && analysis.kind === 'exact'
+                        ? ' is-correct'
+                        : analysis.correct
+                          ? ' is-nuance'
+                          : ''
+                    }`}
+                  >
                     <b>
                       {analysis.kind === 'article'
                         ? 'Артикль'
@@ -9222,6 +9234,24 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                 {!correct && typed && (
                   <SpellingDiff value={typed} answer={expectedAnswer} />
                 )}
+                <div className="grade-grid">
+                  <button onClick={() => grade('again')}>
+                    <b>Не помню</b>
+                    <span>реально через 10 минут</span>
+                  </button>
+                  <button onClick={() => grade('hard')}>
+                    <b>Трудно</b>
+                    <span>примерно через 12 часов</span>
+                  </button>
+                  <button onClick={() => grade('good')}>
+                    <b>Хорошо</b>
+                    <span>интервал растёт</span>
+                  </button>
+                  <button onClick={() => grade('easy')}>
+                    <b>Легко</b>
+                    <span>намного позже</span>
+                  </button>
+                </div>
                 <div className="answer-examples">
                   {examples.map((example, exampleIndex) => (
                     <div key={exampleIndex}>
@@ -9243,24 +9273,6 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                       />
                     </div>
                   ))}
-                </div>
-                <div className="grade-grid">
-                  <button onClick={() => grade('again')}>
-                    <b>Не помню</b>
-                    <span>реально через 10 минут</span>
-                  </button>
-                  <button onClick={() => grade('hard')}>
-                    <b>Трудно</b>
-                    <span>примерно через 12 часов</span>
-                  </button>
-                  <button onClick={() => grade('good')}>
-                    <b>Хорошо</b>
-                    <span>интервал растёт</span>
-                  </button>
-                  <button onClick={() => grade('easy')}>
-                    <b>Легко</b>
-                    <span>намного позже</span>
-                  </button>
                 </div>
               </div>
             )}
