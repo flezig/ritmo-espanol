@@ -3,7 +3,16 @@ export type PracticeSnapshot = {
   topic: string;
   session: unknown[];
   index: number;
+  finished?: boolean;
+  awaitingStart?: boolean;
 };
+
+/** Resume only after the learner has completed at least two graded cards. */
+export const shouldAutoResumePractice = (snapshot: PracticeSnapshot | null) =>
+  !!snapshot &&
+  !snapshot.awaitingStart &&
+  snapshot.session.length > 0 &&
+  (snapshot.finished === true || snapshot.index >= 2);
 
 /** Keep the current card by identity when earlier cards disappear. */
 export function reconcilePracticeCards<T extends { key: string; answer: string; es: string; ru: string }>(

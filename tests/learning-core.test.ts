@@ -5,7 +5,10 @@ import {
   nextStreak, scheduleReview,
 } from '../app/lib/learning-core.ts';
 import { isValidBackup } from '../app/lib/backup.ts';
-import { parsePracticeSnapshot } from '../app/lib/practice-session.ts';
+import {
+  parsePracticeSnapshot,
+  shouldAutoResumePractice,
+} from '../app/lib/practice-session.ts';
 
 test('punctuation is ignored but word order is not', () => {
   assert.equal(analyzeAnswer('¿Hola, señor!', 'Hola señor').correct, true);
@@ -55,6 +58,20 @@ test('practice session parser rejects incomplete state', () => {
   assert.equal(parsePracticeSnapshot(JSON.stringify({ version: 3, topic: 'Дом', session: [{ key: 'casa' }], index: 0 }))?.topic, 'Дом');
   assert.equal(parsePracticeSnapshot(JSON.stringify({ version: 4, topic: 'Дом', session: [{ key: 'casa' }], index: 0 }))?.topic, 'Дом');
   assert.equal(parsePracticeSnapshot(JSON.stringify({ version: 5, topic: 'Все темы', level: 'B1–B2', session: [{ key: 'tesis' }], index: 0 }))?.topic, 'Все темы');
+});
+
+test('practice resumes automatically only after two completed cards', () => {
+  const snapshot = (index: number, awaitingStart = false) => ({
+    version: 5 as const,
+    topic: 'Все темы',
+    session: [{ key: 'hola' }],
+    index,
+    awaitingStart,
+  });
+  assert.equal(shouldAutoResumePractice(snapshot(0)), false);
+  assert.equal(shouldAutoResumePractice(snapshot(1)), false);
+  assert.equal(shouldAutoResumePractice(snapshot(2)), true);
+  assert.equal(shouldAutoResumePractice(snapshot(5, true)), false);
 });
 
 test('backup validation accepts only the current schema and known keys', () => {

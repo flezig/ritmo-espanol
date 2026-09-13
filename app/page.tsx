@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -42,7 +42,11 @@ import { AccountProvider, useAccount } from './components/account-provider';
 import { ReportExerciseButton } from './components/report-exercise-button';
 import { trackLocalEvent } from './lib/local-analytics';
 import { recordClientError } from './lib/error-journal';
-import { parsePracticeSnapshot, reconcilePracticeCards } from './lib/practice-session';
+import {
+  parsePracticeSnapshot,
+  reconcilePracticeCards,
+  shouldAutoResumePractice,
+} from './lib/practice-session';
 import { BACKUP_KEYS, BACKUP_VERSION, isValidBackup, type RitmoBackup } from './lib/backup';
 import {
   applyAchievementEvent,
@@ -6591,8 +6595,8 @@ function MusicView() {
   );
 }
 
-type SessionMode = 'five' | 'weak' | 'errors' | 'favorites';
-type SavedSessionMode = SessionMode | 'fifteen';
+type SessionMode = 'five' | 'errors' | 'favorites';
+type SavedSessionMode = SessionMode | 'fifteen' | 'weak';
 type PracticeLevel = VocabularyLevel | 'Все уровни';
 type PracticeProgressBaseline = {
   srs: Record<string, SRSRecord | null>;
@@ -6703,15 +6707,6 @@ const buildSession = (
           records[b.key].lapses - records[a.key].lapses ||
           records[b.key].difficulty - records[a.key].difficulty,
       );
-  else if (mode === 'weak')
-    pool = deck
-      .filter((card) => records[card.key]?.reviews)
-      .sort(
-        (a, b) =>
-          records[b.key].difficulty +
-          records[b.key].lapses * 1.5 -
-          (records[a.key].difficulty + records[a.key].lapses * 1.5),
-      );
   else {
     const due = deck
       .filter(
@@ -6726,37 +6721,45 @@ const buildSession = (
           records[card.key].nextReview <= now,
       )
       .sort((a, b) => records[b.key].difficulty - records[a.key].difficulty);
-    const readyReviews = [...due, ...weak].filter(
-        (card, index, list) =>
-          list.findIndex((item) => item.key === card.key) === index,
-      ),
-      wordBases = deck
-        .filter((card) => card.skill === 'recognition')
-        .map((card) => baseCardKey(card.key))
-        .filter((base, index, list) => list.indexOf(base) === index),
+    const readyReviewKeys = new Set<string>(),
+      readyReviews = [...due, ...weak].filter((card) => {
+        if (readyReviewKeys.has(card.key)) return false;
+        readyReviewKeys.add(card.key);
+        return true;
+      }),
+      cardsByBase = new Map<string, StudyCard[]>(),
+      wordBases: string[] = [],
+      wordBaseSet = new Set<string>();
+    deck.forEach((card) => {
+      const base = baseCardKey(card.key),
+        group = cardsByBase.get(base);
+      if (group) group.push(card);
+      else cardsByBase.set(base, [card]);
+      if (card.skill === 'recognition' && !wordBaseSet.has(base)) {
+        wordBaseSet.add(base);
+        wordBases.push(base);
+      }
+    });
+    const
       unfinishedBases = wordBases.filter((base) => {
-        const group = deck.filter((card) => baseCardKey(card.key) === base),
+        const group = cardsByBase.get(base) || [],
           reviewed = group.filter((card) => records[card.key]?.reviews).length,
-          unreviewed = group.filter((card) => !records[card.key]?.reviews).length;
+          unreviewed = group.length - reviewed;
         return reviewed > 0 && unreviewed > 0;
       }),
       freshBases = wordBases
         .filter((base) =>
-          deck
-            .filter((card) => baseCardKey(card.key) === base)
-            .every((card) => !records[card.key]?.reviews),
+          (cardsByBase.get(base) || []).every(
+            (card) => !records[card.key]?.reviews,
+          ),
         )
         .sort(
           (first, second) =>
             Number(
-              deck.some(
-                (card) => baseCardKey(card.key) === second && card.core,
-              ),
+              (cardsByBase.get(second) || []).some((card) => card.core),
             ) -
             Number(
-              deck.some(
-                (card) => baseCardKey(card.key) === first && card.core,
-              ),
+              (cardsByBase.get(first) || []).some((card) => card.core),
             ),
         ),
       skillOrder: SkillType[] = [
@@ -6768,11 +6771,8 @@ const buildSession = (
         'article',
       ],
       orderedUnreviewed = (base: string) =>
-        deck
-          .filter(
-            (card) =>
-              baseCardKey(card.key) === base && !records[card.key]?.reviews,
-          )
+        (cardsByBase.get(base) || [])
+          .filter((card) => !records[card.key]?.reviews)
           .sort(
             (a, b) =>
               skillOrder.indexOf(a.skill) - skillOrder.indexOf(b.skill),
@@ -6811,21 +6811,19 @@ const buildSession = (
         ...minimumNew,
         ...extraNew,
       ],
+      selectedKeys = new Set(selected.map((card) => card.key)),
       standaloneFresh = deck.filter(
         (card) =>
           !records[card.key]?.reviews &&
-          !wordBases.includes(baseCardKey(card.key)) &&
-          !selected.some((item) => item.key === card.key),
+          !wordBaseSet.has(baseCardKey(card.key)) &&
+          !selectedKeys.has(card.key),
       ).sort((first, second) => Number(second.core) - Number(first.core));
     pool = [
       ...selected,
       ...standaloneFresh.slice(0, Math.max(0, count - selected.length)),
     ];
   }
-  const unique = pool.filter(
-      (card, index) =>
-        pool.findIndex((item) => item.key === card.key) === index,
-    ),
+  const unique = pool.slice(),
     mixed: StudyCard[] = [];
   const distinctWords = new Set(unique.map((card) => baseCardKey(card.key))).size,
     spacingWindow = Math.min(3, Math.max(0, distinctWords - 1));
@@ -6851,6 +6849,14 @@ const dueLabel = (record?: SRSRecord) => {
     return `через ${Math.max(1, Math.round(delta / 3600000))} ч`;
   return `через ${Math.max(1, Math.round(delta / 86400000))} дн`;
 };
+const readyWordsLabel = (count: number) => {
+  const lastTwo = count % 100,
+    last = count % 10;
+  if (last === 1 && lastTwo !== 11) return `${count} слово готово сейчас`;
+  if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14))
+    return `${count} слова готовы сейчас`;
+  return `${count} слов готовы сейчас`;
+};
 function _PracticeView() {
   const deck = makeStudyDeck(),
     { records, rate, toggleFavorite } = useSRS(),
@@ -6869,7 +6875,6 @@ function _PracticeView() {
       (item) =>
         records[item.key]?.reviews && records[item.key].nextReview <= now,
     ).length,
-    weak = deck.filter((item) => records[item.key]?.difficulty >= 6.2).length,
     favorites = deck.filter((item) => records[item.key]?.favorite).length;
   const start = (nextMode: SessionMode) => {
     setMode(nextMode);
@@ -6951,16 +6956,6 @@ function _PracticeView() {
           <span>
             <b>5 минут</b>
             <small>8 быстрых заданий</small>
-          </span>
-        </button>
-        <button
-          className={mode === 'weak' ? 'active' : ''}
-          onClick={() => start('weak')}
-        >
-          <span className="session-icon">🎯</span>
-          <span>
-            <b>Слабые места</b>
-            <small>{weak} проблемных навыков</small>
           </span>
         </button>
         <button
@@ -8154,25 +8149,23 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
 }
 
 function PracticeHub() {
-  const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush' | 'articles'>('menu'),
-    [isSwitching, startGameTransition] = useTransition();
+  const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush' | 'articles'>('menu');
   const selectGame = (next: typeof game) => {
-    if (next === game || isSwitching) return;
-    startGameTransition(() => setGame(next));
+    if (next !== game) setGame(next);
   };
   return (
-    <div className="view-stack practice-hub" aria-busy={isSwitching}>
+    <div className="view-stack practice-hub">
       <section className="practice-mode-picker">
-        <button className={game === 'study' ? 'active' : ''} disabled={isSwitching} onClick={() => selectGame('study')}>
+        <button className={game === 'study' ? 'active' : ''} onClick={() => selectGame('study')}>
           <span>🧠</span><b>Учить слова</b><small>Прежняя адаптивная практика</small>
         </button>
-        <button className={game === 'detective' ? 'active' : ''} disabled={isSwitching} onClick={() => selectGame('detective')}>
+        <button className={game === 'detective' ? 'active' : ''} onClick={() => selectGame('detective')}>
           <span>📖</span><b>Детектив по тексту</b><small>A1 и A2 · по 20 заданий</small>
         </button>
-        <button className={game === 'rush' ? 'active' : ''} disabled={isSwitching} onClick={() => selectGame('rush')}>
+        <button className={game === 'rush' ? 'active' : ''} onClick={() => selectGame('rush')}>
           <span>⏱️</span><b>Spanish Rush</b><small>60 секунд · combo и бонусы</small>
         </button>
-        <button className={game === 'articles' ? 'active' : ''} disabled={isSwitching} onClick={() => selectGame('articles')}>
+        <button className={game === 'articles' ? 'active' : ''} onClick={() => selectGame('articles')}>
           <span>📚</span><b>Артикли: el или la</b><small>10 случайных заданий · исключения и значения</small>
         </button>
       </section>
@@ -8197,12 +8190,12 @@ function PracticeHub() {
 
 function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   const { words: customWords, hydrated: customHydrated } = useCustomWords(),
-    deck = useMemo(() => makeStudyDeck(customWords), [customWords]),
     { records, rate, toggleFavorite, markNew, hydrated: srsHydrated } = useSRS();
   const { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices();
   const { leaving, move } = useTaskMotion(),
     { preferences } = useSitePreferences();
-  const [mode, setMode] = useState<SessionMode>('five'),
+  const [deck, setDeck] = useState<StudyCard[]>([]),
+    [mode, setMode] = useState<SessionMode>('five'),
     [level, setLevel] = useState<PracticeLevel>('A1–A2'),
     [topic, setTopic] = useState('Все темы'),
     [session, setSession] = useState<StudyCard[]>([]),
@@ -8219,44 +8212,72 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     [now, setNow] = useState(() => Date.now()),
     [sessionHydrated, setSessionHydrated] = useState(false),
     [scopeOpen, setScopeOpen] = useState(false),
-    [awaitingStart, setAwaitingStart] = useState(false),
+    [awaitingStart, setAwaitingStart] = useState(true),
     [sessionBaseline, setSessionBaseline] = useState<PracticeProgressBaseline | null>(null);
   const answerLock = useRef(false),
     gradeLock = useRef(false);
+  const deckReady = customHydrated && deck.length > 0;
   useEffect(() => {
-    if (!customHydrated || sessionHydrated) return;
+    if (!customHydrated) return;
+    setDeck([]);
+    const timer = window.setTimeout(() => setDeck(makeStudyDeck(customWords)), 0);
+    return () => window.clearTimeout(timer);
+  }, [customHydrated, customWords]);
+  useEffect(() => {
+    if (!deckReady || sessionHydrated) return;
     try {
       const saved = parsePracticeSnapshot(localStorage.getItem('ritmo-practice-session')) as SavedPracticeSession | null;
       if (
         (saved?.version === 2 || saved?.version === 3 || saved?.version === 4 || saved?.version === 5) &&
         Array.isArray(saved.session) &&
-        saved.session.length &&
         typeof saved.index === 'number'
       ) {
-        const { session: synchronizedSession, index: safeIndex, contentChanged } =
-          reconcilePracticeCards(saved.session, saved.index, deck);
-        setMode(saved.mode === 'fifteen' ? 'five' : saved.mode);
+        const savedMode =
+          saved.mode === 'fifteen' || saved.mode === 'weak'
+            ? 'five'
+            : saved.mode;
+        setMode(savedMode);
         setLevel(saved.level || (vocabularyTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'));
         setTopic(saved.topic);
-        setSession(synchronizedSession);
-        setIndex(safeIndex);
-        setTyped(contentChanged ? '' : saved.typed || '');
-        setRevealed(contentChanged ? false : !!saved.revealed);
-        setCorrect(contentChanged ? false : !!saved.correct);
-        setAnalysis(contentChanged ? null : saved.analysis || null);
-        setAudioTarget(saved.audioTarget || 'word');
-        setOrderedWords(
-          Array.isArray(saved.orderedWords) ? saved.orderedWords : [],
-        );
-        setFinished(!!saved.finished);
-        setIntroduced(saved.introduced || {});
-        setSessionErrors(Number(saved.sessionErrors) || 0);
-        setAwaitingStart(!!saved.awaitingStart);
-        setSessionBaseline(saved.baseline || null);
+        if (shouldAutoResumePractice(saved)) {
+          const {
+            session: synchronizedSession,
+            index: safeIndex,
+            contentChanged,
+          } = reconcilePracticeCards(saved.session, saved.index, deck);
+          setSession(synchronizedSession);
+          setIndex(safeIndex);
+          setTyped(contentChanged ? '' : saved.typed || '');
+          setRevealed(contentChanged ? false : !!saved.revealed);
+          setCorrect(contentChanged ? false : !!saved.correct);
+          setAnalysis(contentChanged ? null : saved.analysis || null);
+          setAudioTarget(saved.audioTarget || 'word');
+          setOrderedWords(
+            Array.isArray(saved.orderedWords) ? saved.orderedWords : [],
+          );
+          setFinished(!!saved.finished);
+          setIntroduced(saved.introduced || {});
+          setSessionErrors(Number(saved.sessionErrors) || 0);
+          setAwaitingStart(false);
+          setSessionBaseline(saved.baseline || null);
+        } else {
+          setSession([]);
+          setIndex(0);
+          setTyped('');
+          setRevealed(false);
+          setCorrect(false);
+          setAnalysis(null);
+          setOrderedWords([]);
+          setFinished(false);
+          setIntroduced({});
+          setSessionErrors(0);
+          setAwaitingStart(true);
+          setSessionBaseline(null);
+        }
       }
     } catch {}
     setSessionHydrated(true);
-  }, [customHydrated, sessionHydrated]);
+  }, [deck, deckReady, sessionHydrated]);
   useEffect(() => {
     if (!sessionHydrated) return;
     const saved: SavedPracticeSession = {
@@ -8394,7 +8415,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           : [],
       [card, scopedDeck, index],
     );
-  const { due, weak, errorCount, waitingErrors, favorites } = useMemo(() => {
+  const { due, errorCount, waitingErrors, favorites } = useMemo(() => {
     const allErrors = scopedDeck.filter(
       (item) =>
         records[item.key]?.reviews &&
@@ -8409,10 +8430,6 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         (item) =>
           records[item.key]?.reviews && records[item.key].nextReview <= now,
       ).length,
-      weak: scopedDeck.filter(
-        (item) =>
-          records[item.key]?.reviews && records[item.key].difficulty >= 6.2,
-      ).length,
       errorCount: readyErrors,
       waitingErrors: allErrors.length - readyErrors,
       favorites: scopedDeck.filter((item) => records[item.key]?.favorite)
@@ -8420,6 +8437,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     };
   }, [scopedDeck, records, now]);
   const start = (nextMode: SessionMode, nextTopic = topic, nextLevel = level) => {
+    if (!deckReady) return;
     answerLock.current = false;
     gradeLock.current = false;
     const nextDeck = topicDeck(deck, nextLevel, nextTopic),
@@ -8451,6 +8469,30 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       )
     ) return;
     if (sessionBaseline) restorePracticeBaseline(sessionBaseline);
+    const selectionState: SavedPracticeSession = {
+      version: 5,
+      mode,
+      level,
+      topic,
+      session: [],
+      index: 0,
+      typed: '',
+      revealed: false,
+      correct: false,
+      analysis: null,
+      audioTarget: 'word',
+      orderedWords: [],
+      finished: false,
+      introduced: {},
+      sessionErrors: 0,
+      awaitingStart: true,
+      baseline: null,
+    };
+    localStorage.setItem(
+      'ritmo-practice-session',
+      JSON.stringify(selectionState),
+    );
+    window.dispatchEvent(new Event('ritmo-cloud-progress-changed'));
     answerLock.current = false;
     gradeLock.current = false;
     setSession([]);
@@ -8597,7 +8639,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       <ViewHead
         over="АДАПТИВНОЕ ПОВТОРЕНИЕ · СНАЧАЛА ЗНАКОМСТВО"
         title="Слово сначала понятно — потом проверяется."
-        copy="За одну сессию появляется не больше четырёх новых слов. Каждое проверяется минимум тремя разными способами, а одинаковые слова чередуются между собой."
+        copy="Короткая адаптивная тренировка смешивает повторения, ошибки и новый материал."
       />
       <section className={`practice-topic-bar ${scopeOpen ? 'open' : ''}`}>
         <button
@@ -8612,6 +8654,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           <span>УРОВЕНЬ</span>
           <select
             value={level}
+            disabled={!deckReady}
             onChange={(event) =>
               start(mode, 'Все темы', event.target.value as PracticeLevel)
             }
@@ -8625,6 +8668,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           <span>ТЕМА СЛОВ</span>
           <select
             value={topic}
+            disabled={!deckReady}
             onChange={(event) => start(mode, event.target.value)}
           >
             {practiceTopics(level).map((item) => (
@@ -8636,6 +8680,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
       <div className="srs-summary">
         <button
           className={mode === 'five' ? 'active' : ''}
+          disabled={!deckReady}
           onClick={() => start('five')}
         >
           <ClockBadge minutes={5} />
@@ -8645,17 +8690,8 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           </span>
         </button>
         <button
-          className={mode === 'weak' ? 'active' : ''}
-          onClick={() => start('weak')}
-        >
-          <span className="session-icon">🎯</span>
-          <span>
-            <b>Слабые места</b>
-            <small>{weak} трудных навыков</small>
-          </span>
-        </button>
-        <button
           className={mode === 'errors' ? 'active' : ''}
+          disabled={!deckReady}
           onClick={() => start('errors')}
         >
           <span className="session-icon">↻</span>
@@ -8668,6 +8704,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         </button>
         <button
           className={mode === 'favorites' ? 'active' : ''}
+          disabled={!deckReady}
           onClick={() => start('favorites')}
         >
           <span className="session-icon">♥</span>
@@ -8677,17 +8714,26 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           </span>
         </button>
       </div>
-      <div className="daily-mix">
-        <span>
-          <b>{due}</b> действительно готовы сейчас · {topic}
-        </span>
-        <span>не больше 4 новых слов за сессию</span>
-        <span>минимум 3 разных задания на новое слово</span>
-        <span>повтор через 10 минут не появляется раньше</span>
-        <span>обычное узнавание: ввод 35% · 4 варианта 30% · контекст 20% · аудио 15%</span>
-      </div>
+      <section className="practice-session-overview">
+        <strong>{readyWordsLabel(due)}</strong>
+        <small>{topic}</small>
+        <details className="practice-session-how">
+          <summary>
+            Как формируется сессия <ArrowRight />
+          </summary>
+          <div>
+            <span>Не больше четырёх новых слов за сессию.</span>
+            <span>Новое слово проверяется минимум тремя способами.</span>
+            <span>Одинаковые слова не показываются подряд.</span>
+            <span>
+              Узнавание: ручной ввод 35% · четыре варианта 30% · контекст 20%
+              · аудио 15%.
+            </span>
+          </div>
+        </details>
+      </section>
       <details className="srs-timing-note">
-        <summary>Как реально работают сроки повторения</summary>
+        <summary>Почему слова появляются именно сейчас</summary>
         <p>
           «Не помню» ставит точное время через 10 минут, «Трудно» — минимум
           через 12 часов, первый ответ «Хорошо» — через 1 день, «Легко» — через
@@ -8733,7 +8779,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           </h2>
           <p>
             {awaitingStart
-              ? 'Выберите уровень, тему и формат выше. Прогресс отменённой сессии не сохранён.'
+              ? 'Выберите уровень, тему и формат выше. Автопродолжение включается после двух выполненных заданий.'
               : mode === 'errors'
               ? waitingErrors
                 ? `Ближайшая карточка откроется по таймеру. После «Не помню» — ровно через 10 минут.`
@@ -8839,8 +8885,30 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
             state={revealed ? (correct ? 'happy' : 'wrong') : 'thinking'}
           />
           <header>
-            <div>
+            <div className="practice-card-heading">
               <span>{skillLabels[card.skill]}</span>
+              <details className="practice-reason-help">
+                <summary
+                  aria-label="Почему показано это задание"
+                  title="Почему показано это задание"
+                >
+                  ?
+                </summary>
+                <div>
+                  <em className="review-reason">
+                    <b>Почему сейчас</b>
+                    {reviewReason(records[card.key])}
+                  </em>
+                  <em className="format-reason">
+                    <b>Почему такой формат</b>
+                    {practiceFormatReason(
+                      card,
+                      records[card.key],
+                      responseKind,
+                    )}
+                  </em>
+                </div>
+              </details>
               <small>
                 {card.core ? '⭐ Ядро A1–A2 · ' : card.level ? `${card.level} · ` : ''}{card.topic} ·{' '}
                 {responseKind === 'choice'
@@ -8861,15 +8929,8 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                         ? 'самопроверка'
                         : 'самостоятельный ввод'}
               </small>
-              <em className="review-reason">
-                Почему сейчас: {reviewReason(records[card.key])}
-              </em>
-              <em className="format-reason">
-                Почему такой формат:{' '}
-                {practiceFormatReason(card, records[card.key], responseKind)}
-              </em>
             </div>
-            <b>
+            <b className="practice-card-progress">
               {index + 1} / {session.length}
             </b>
             <button className="practice-exit" onClick={leaveSessionWithoutSaving}>Сменить сессию</button>

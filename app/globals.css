@@ -3519,7 +3519,10 @@ input {
   background-position: 100% 0;
 }
 .cat-mascot.wrong {
-  background-position: 0 100%;
+  background: url('/mascots/ritmo-cat-sprite.png') 0 100% / 300% 200%
+    no-repeat !important;
+  border-color: transparent !important;
+  color: inherit !important;
 }
 .cat-mascot.sleeping {
   background-position: 50% 100%;
@@ -4216,6 +4219,168 @@ input {
   }
   .mobile-nav span {
     font-size: 8px;
+  }
+}
+
+/* Practice: keep the exercise and answer comparison visually dominant. */
+.practice-card-heading {
+  position: relative;
+  grid-template-columns: auto 25px;
+  align-items: center;
+  column-gap: 7px !important;
+}
+.practice-card-heading > span {
+  min-width: 0;
+  font-size: 15px;
+}
+.practice-card-heading > small {
+  grid-column: 1 / -1;
+  opacity: 0.62;
+}
+.practice-card-progress {
+  white-space: nowrap;
+  font-size: 18px;
+}
+.practice-reason-help {
+  position: relative;
+  z-index: 20;
+}
+.practice-reason-help > summary {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
+}
+.practice-reason-help > summary::-webkit-details-marker {
+  display: none;
+}
+.practice-reason-help[open] > summary {
+  border-color: var(--purple);
+  color: var(--purple);
+}
+.practice-reason-help > div {
+  position: absolute;
+  top: 29px;
+  left: 0;
+  width: min(310px, calc(100vw - 54px));
+  display: grid;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+.practice-reason-help .review-reason,
+.practice-reason-help .format-reason {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.practice-reason-help em > b {
+  color: var(--text);
+  font-size: 10px;
+  font-style: normal;
+}
+.srs-view.active-exercise .recall-result > b:first-child {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+.srs-view.active-exercise .answer-analysis,
+.srs-view.active-exercise .answer-analysis.article,
+.srs-view.active-exercise .answer-analysis.ending,
+.srs-view.active-exercise .answer-analysis.accent {
+  position: relative;
+  grid-template-columns: auto 1fr;
+  margin: 4px 0;
+  padding: 2px 0 2px 19px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.srs-view.active-exercise .answer-analysis::before {
+  content: 'ⓘ';
+  position: absolute;
+  top: 2px;
+  left: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.srs-view.active-exercise .spelling-diff {
+  margin: 5px 0;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--soft) 82%, var(--panel));
+}
+.srs-view.active-exercise .spelling-diff > small {
+  margin-bottom: 2px;
+  font-weight: 800;
+}
+.srs-view.active-exercise .spelling-answer-row {
+  padding: 5px 0;
+}
+.srs-view.active-exercise .answer-examples {
+  gap: 5px;
+  margin: 4px 0;
+  opacity: 0.72;
+}
+.srs-view.active-exercise .answer-examples > div {
+  gap: 2px;
+  padding: 5px 0 5px 8px;
+  border-left: 2px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.srs-view.active-exercise .answer-examples .example-audio {
+  min-height: 25px;
+  padding-block: 3px;
+}
+.srs-view.active-exercise .srs-card > footer {
+  gap: 9px;
+  padding: 7px 14px;
+  opacity: 0.48;
+  font-size: 10px;
+}
+
+@media (max-width: 680px) {
+  .practice-card-heading > span {
+    font-size: 14px;
+  }
+  .practice-card-progress {
+    font-size: 16px;
+  }
+  .practice-reason-help > div {
+    left: -110px;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .spelling-diff {
+    display: block;
+  }
+  .srs-view.active-exercise .spelling-answer-row {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 6px;
+  }
+  .srs-view.active-exercise .spelling-answer-row b {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    padding: 5px 7px;
+    font-size: 12px;
+  }
+  .srs-view.active-exercise .srs-card > footer span:nth-child(2),
+  .srs-view.active-exercise .srs-card > footer span:nth-child(4) {
+    display: none;
   }
 }
 
@@ -6761,6 +6926,108 @@ input {
   }
 }
 
+/* Final Practice hierarchy: learner-facing summary first, details on demand. */
+.practice-session-overview {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 3px 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--panel);
+}
+.practice-session-overview > strong {
+  font-size: 15px;
+}
+.practice-session-overview > small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.practice-session-how {
+  grid-column: 1 / -1;
+}
+.practice-session-how > summary {
+  width: max-content;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: var(--purple);
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  list-style: none;
+}
+.practice-session-how > summary::-webkit-details-marker {
+  display: none;
+}
+.practice-session-how > summary svg {
+  width: 14px;
+  transition: transform 0.2s ease;
+}
+.practice-session-how[open] > summary svg {
+  transform: rotate(90deg);
+}
+.practice-session-how > div {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.practice-session-how > div span::before {
+  content: '•';
+  margin-right: 7px;
+  color: var(--aqua);
+}
+
+/* These overrides intentionally come last so compact answer feedback wins. */
+.srs-view.active-exercise .answer-analysis,
+.srs-view.active-exercise .answer-analysis.article,
+.srs-view.active-exercise .answer-analysis.ending,
+.srs-view.active-exercise .answer-analysis.accent {
+  margin: 4px 0;
+  padding: 2px 0 2px 19px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.srs-view.active-exercise .answer-examples > div {
+  gap: 2px;
+  padding: 5px 0 5px 8px;
+  border-left: 2px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.srs-view.active-exercise .srs-card > footer {
+  gap: 9px;
+  padding: 7px 14px;
+  opacity: 0.48;
+  font-size: 10px;
+}
+
+@media (max-width: 680px) {
+  .practice-session-overview {
+    grid-template-columns: 1fr;
+    padding: 12px 13px;
+  }
+  .practice-session-how {
+    grid-column: 1;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .spelling-diff {
+    display: block;
+  }
+  .srs-view.active-exercise .srs-card > footer span:nth-child(2),
+  .srs-view.active-exercise .srs-card > footer span:nth-child(4) {
+    display: none;
+  }
+}
+
 /* Final lesson overrides: later shared rules must not restore phone overflow. */
 @media (max-width: 700px) {
   .theory-toc {
@@ -7358,6 +7625,7 @@ input {
 .srs-view.active-exercise > .view-header,
 .srs-view.active-exercise > .srs-summary,
 .srs-view.active-exercise > .daily-mix,
+.srs-view.active-exercise > .practice-session-overview,
 .srs-view.active-exercise > .srs-timing-note,
 .srs-view.active-exercise > .review-calendar {
   display: none;
@@ -10990,10 +11258,11 @@ body {
   position: relative;
 }
 .srs-view.active-exercise .srs-card > section.answered .recall-result {
-  height: 100%;
+  height: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   padding-bottom: 66px;
 }
 .srs-view.active-exercise .srs-card > section.answered .grade-grid {
