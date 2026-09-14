@@ -7446,6 +7446,176 @@ input {
   }
 }
 
+/* Final listening overrides must win over the legacy responsive cascade. */
+.srs-view.active-exercise .srs-card > section.audio-task > h2 {
+  margin: 8px 0 13px;
+  font-size: clamp(30px, 3vw, 36px);
+  font-weight: 650;
+  line-height: 1.18;
+}
+.srs-view.active-exercise .audio-task .practice-audio-block .audio-speed-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.srs-view.active-exercise .audio-task .practice-audio-play {
+  width: 100%;
+  min-height: 50px;
+  height: auto;
+  border-radius: 13px;
+}
+
+@media (max-width: 680px) {
+  .srs-view.active-exercise .srs-card > section.audio-task > h2 {
+    margin: 4px 0 8px;
+    font-size: clamp(18px, 5.2vw, 22px);
+  }
+  .srs-view.active-exercise .audio-task .practice-audio-block {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .srs-view.active-exercise .audio-task .practice-audio-play {
+    min-height: 44px;
+    padding: 7px 8px;
+  }
+}
+
+/* Compact listening flow: instruction -> audio -> answer. */
+.srs-view.active-exercise .audio-task > h2 {
+  max-width: 760px;
+  margin: 8px 0 13px;
+  font-size: clamp(30px, 3vw, 36px);
+  font-weight: 650;
+}
+.practice-audio-block {
+  width: min(720px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+}
+.practice-voice-setting {
+  position: relative;
+  z-index: 18;
+  max-width: 100%;
+}
+.practice-voice-setting > summary {
+  max-width: min(420px, 100%);
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--muted);
+  list-style: none;
+  cursor: pointer;
+}
+.practice-voice-setting > summary::-webkit-details-marker { display: none; }
+.practice-voice-setting > summary svg {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--purple);
+}
+.practice-voice-setting > summary span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 750;
+}
+.practice-voice-setting > summary b {
+  flex: none;
+  color: var(--purple);
+  font-size: 10px;
+}
+.practice-voice-setting > div {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 50%;
+  width: min(360px, calc(100vw - 34px));
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+.practice-voice-setting select {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 30px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--soft);
+  color: var(--text);
+}
+.practice-audio-block .audio-speed-controls {
+  width: min(560px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.practice-audio-play {
+  min-width: 0;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid color-mix(in srgb, var(--purple) 40%, var(--line));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--purple) 10%, var(--panel));
+  color: var(--purple);
+  cursor: pointer;
+}
+.practice-audio-play:first-child {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--purple), #9250e9);
+  color: #fff;
+}
+.practice-audio-play b {
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.srs-view.active-exercise .audio-task .answer-entry-with-keys {
+  width: min(850px, 100%);
+  margin-top: 0;
+}
+
+@media (max-width: 680px) {
+  .srs-view.active-exercise .audio-task > h2 {
+    margin: 4px 0 8px;
+    font-size: clamp(18px, 5.2vw, 22px);
+    line-height: 1.18;
+  }
+  .practice-audio-block {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .practice-voice-setting > summary {
+    min-height: 30px;
+    padding-block: 3px;
+  }
+  .practice-audio-block .audio-speed-controls {
+    gap: 6px;
+  }
+  .practice-audio-play {
+    min-height: 44px;
+    padding: 7px 8px;
+  }
+  .practice-audio-play b { font-size: 10px; }
+}
+
 /* Keep authenticated account controls inside narrow phone screens. */
 @media (max-width: 760px) {
   .account-panel,

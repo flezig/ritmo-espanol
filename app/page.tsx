@@ -8406,10 +8406,10 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
               : card.skill === 'production'
                 ? `Напишите по-испански «${card.ru}» для контекста: ${card.exampleRu || card.ru}`
                 : card.prompt
-            : responseKind === 'correction'
+              : responseKind === 'correction'
               ? `Найдите ошибку и напишите только исправленное слово: ${correctionTask?.sentence || card.example}`
               : responseKind === 'audioWord'
-                ? 'Прослушайте слово и напишите его перевод по-русски'
+                ? 'Прослушайте слово и напишите его перевод'
               : responseKind === 'audioSentence'
                 ? 'Прослушайте предложение и напишите его полностью'
                 : card.prompt,
@@ -8528,9 +8528,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     speed = 1,
     target = responseKind === 'audioSentence'
       ? 'sentence'
-      : responseKind === 'audioWord'
-        ? 'word'
-        : audioTarget,
+      : 'word',
   ) => {
     if (card)
       speakText(
@@ -9013,66 +9011,11 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           <div className="srs-track">
             <span style={{ width: `${(index / session.length) * 100}%` }} />
           </div>
-          <section className={revealed ? 'answered' : ''}>
-            {audio && (
-              <>
-                <p className="audio-label">АУДИО БЕЗ ТЕКСТА</p>
-                <div className="speech-settings">
-                  {responseKind === 'audioSentence' ? (
-                    <div className="sentence-audio-mode">
-                      <span>🎧 Предложение целиком</span>
-                    </div>
-                  ) : responseKind === 'audioWord' ? (
-                    <div className="sentence-audio-mode">
-                      <span>🎧 Слово без текста</span>
-                    </div>
-                  ) : (
-                    <div>
-                      <button
-                        className={audioTarget === 'word' ? 'active' : ''}
-                        onClick={() => setAudioTarget('word')}
-                      >
-                        Слово
-                      </button>
-                      <button
-                        className={audioTarget === 'sentence' ? 'active' : ''}
-                        onClick={() => setAudioTarget('sentence')}
-                      >
-                        Предложение
-                      </button>
-                    </div>
-                  )}
-                  {voices.length > 1 && (
-                    <select
-                      value={voiceIndex}
-                      onChange={(event) =>
-                        setVoiceIndex(Number(event.target.value))
-                      }
-                      aria-label="Голос озвучивания"
-                    >
-                      {voices.map((voice, index) => (
-                        <option value={index} key={`${voice.name}-${index}`}>
-                          {voiceDisplayName(voice)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  {voiceError && <output className="voice-error">⚠ {voiceError}</output>}
-                </div>
-                <div className="audio-speed-controls">
-                  <button className="listen-orb" onClick={() => speak(1)}>
-                    <Volume2 />
-                    <span>Обычная</span>
-                  </button>
-                  <button className="slow-listen" onClick={() => speak(0.5)}>
-                    <Volume2 />
-                    <span>Медленно · 0.5×</span>
-                  </button>
-                </div>
-              </>
-            )}
+          <section className={`${revealed ? 'answered' : ''}${audio ? ' audio-task' : ''}`}>
             <small>
-              {responseKind === 'choice'
+              {audio
+                ? 'АУДИО БЕЗ ТЕКСТА'
+                : responseKind === 'choice'
                 ? 'ВЫБЕРИТЕ ПРАВИЛЬНЫЙ ОТВЕТ'
                 : responseKind === 'order'
                   ? 'СОБЕРИТЕ ПРЕДЛОЖЕНИЕ ИЗ СЛОВ'
@@ -9082,15 +9025,56 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                       ? 'ОПРЕДЕЛИТЕ СЛОВО ПО КОНТЕКСТУ'
                       : responseKind === 'correction'
                         ? 'НАПИШИТЕ ТОЛЬКО ИСПРАВЛЕННОЕ СЛОВО'
-                        : responseKind === 'audioWord'
-                          ? 'ПРОСЛУШАЙТЕ СЛОВО И НАПИШИТЕ ПЕРЕВОД'
-                          : responseKind === 'audioSentence'
-                            ? 'ДИКТАНТ ПО ЦЕЛОМУ ПРЕДЛОЖЕНИЮ'
-                    : responseKind === 'self'
-                      ? 'ОТВЕТЬТЕ ВСЛУХ И ПРОВЕРЬТЕ СЕБЯ'
-                      : 'НАПИШИТЕ ОТВЕТ БЕЗ ВАРИАНТОВ'}
+                        : responseKind === 'self'
+                          ? 'ОТВЕТЬТЕ ВСЛУХ И ПРОВЕРЬТЕ СЕБЯ'
+                          : 'НАПИШИТЕ ОТВЕТ БЕЗ ВАРИАНТОВ'}
             </small>
             <h2>{taskPrompt}</h2>
+            {audio && (
+              <div className="practice-audio-block">
+                <details className="practice-voice-setting">
+                  <summary>
+                    <Volume2 />
+                    <span>
+                      Голос: {voices[voiceIndex]?.name || 'системный'}
+                    </span>
+                    <b>Изменить</b>
+                  </summary>
+                  <div>
+                    {voices.length > 1 ? (
+                      <select
+                        value={voiceIndex}
+                        onChange={(event) =>
+                          setVoiceIndex(Number(event.target.value))
+                        }
+                        aria-label="Голос озвучивания"
+                      >
+                        {voices.map((voice, index) => (
+                          <option value={index} key={`${voice.name}-${index}`}>
+                            {voiceDisplayName(voice)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <small>Используется доступный системный голос</small>
+                    )}
+                    {voiceError && (
+                      <output className="voice-error">⚠ {voiceError}</output>
+                    )}
+                  </div>
+                </details>
+                <div className="audio-speed-controls">
+                  <button className="practice-audio-play" onClick={() => speak(1)}>
+                    <span aria-hidden="true">▶</span>
+                    <b>Обычная скорость</b>
+                  </button>
+                  <button className="practice-audio-play slow" onClick={() => speak(0.5)}>
+                    <span aria-hidden="true">▶</span>
+                    <b>Медленно · 0.5×</b>
+                  </button>
+                </div>
+              </div>
+            )}
             {responseKind === 'choice' ? (
               <div className="srs-choice-grid">
                 {options.map((option) => (
