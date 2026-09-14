@@ -7446,6 +7446,53 @@ input {
   }
 }
 
+/* Keep authenticated account controls inside narrow phone screens. */
+@media (max-width: 760px) {
+  .account-panel,
+  .account-connected,
+  .account-connected > *,
+  .account-security,
+  .account-security > div,
+  .account-security form,
+  .account-security label {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .account-panel {
+    overflow: hidden;
+    padding: 17px 14px;
+  }
+  .account-connected > div:nth-child(2) h2,
+  .account-connected > div:nth-child(2) p,
+  .account-connected > div:nth-child(2) small {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .account-security > div,
+  .account-security form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .account-security input,
+  .account-security button {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* The help popover must keep its content at every compact-height breakpoint. */
+.srs-view.active-exercise .practice-reason-help .review-reason,
+.srs-view.active-exercise .practice-reason-help .format-reason {
+  display: grid !important;
+}
+.srs-view.active-exercise .practice-reason-help > div {
+  max-height: min(240px, calc(100dvh - 120px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
 /* Final Practice hierarchy: learner-facing summary first, details on demand. */
 .practice-session-overview {
   display: grid;
@@ -9604,7 +9651,6 @@ body {
   transform: translateY(-1px);
 }
 
-.vocabulary-status-guide,
 .memory-rules {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -9614,11 +9660,9 @@ body {
   border-radius: 18px;
   background: var(--panel);
 }
-.vocabulary-status-guide > b,
 .memory-rules > small {
   grid-column: 1 / -1;
 }
-.vocabulary-status-guide > span,
 .memory-rules > div {
   padding: 11px;
   border-radius: 12px;
@@ -9627,18 +9671,85 @@ body {
   font-size: 12px;
   line-height: 1.45;
 }
-.vocabulary-status-guide > .core-guide {
+.vocabulary-status-guide {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+}
+.vocabulary-status-guide > summary {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+.vocabulary-status-guide > summary::-webkit-details-marker,
+.vocabulary-voice-picker > summary::-webkit-details-marker {
+  display: none;
+}
+.vocabulary-status-guide > summary > span {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.vocabulary-status-guide > summary b {
+  font-size: 14px;
+}
+.vocabulary-status-guide > summary small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.vocabulary-status-guide > summary small i {
+  display: inline;
+  margin: 0 3px;
+  color: var(--muted);
+  font-style: normal;
+}
+.vocabulary-status-guide > summary small em {
+  margin-left: 7px;
+  color: #d58a29;
+  font-style: normal;
+  font-weight: 800;
+}
+.vocabulary-status-guide > summary strong {
+  flex: none;
+  color: var(--purple);
+  font-size: 12px;
+}
+.vocabulary-status-guide[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.vocabulary-status-details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  padding: 14px;
+}
+.vocabulary-status-details > span {
+  padding: 11px;
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.vocabulary-status-details > .core-guide {
   grid-column: 1 / -1;
   border: 1px solid #e8b72f55;
   background: linear-gradient(110deg, #ffd84a22, var(--soft));
 }
-.vocabulary-status-guide > .core-guide i {
+.vocabulary-status-details > .core-guide i {
   color: #9b6b05;
 }
-.dark .vocabulary-status-guide > .core-guide i {
+.dark .vocabulary-status-details > .core-guide i {
   color: #ffda67;
 }
-.vocabulary-status-guide i,
+.vocabulary-status-details i,
 .memory-rules b {
   display: block;
   margin-bottom: 4px;
@@ -9752,7 +9863,7 @@ body {
   cursor: not-allowed;
 }
 @media (max-width: 800px) {
-  .vocabulary-status-guide,
+  .vocabulary-status-details,
   .memory-rules,
   .similar-words-guide > div {
     grid-template-columns: 1fr;
@@ -10268,36 +10379,63 @@ body {
 }
 
 .vocabulary-voice-picker {
-  display: grid;
-  grid-template-columns: minmax(230px, 1fr) minmax(260px, 1.4fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 15px 18px;
+  width: fit-content;
+  max-width: 100%;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--card);
 }
-.vocabulary-voice-picker > div {
+.vocabulary-voice-picker > summary {
+  min-height: 46px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 8px 12px;
+  list-style: none;
+  cursor: pointer;
 }
-.vocabulary-voice-picker svg { width: 22px; color: var(--purple); }
-.vocabulary-voice-picker span { display: grid; gap: 2px; }
-.vocabulary-voice-picker small,
-.vocabulary-voice-picker p { color: var(--muted); font-size: 12px; }
+.vocabulary-voice-picker svg { width: 17px; color: var(--purple); }
+.vocabulary-voice-picker summary span {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.vocabulary-voice-picker summary b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.vocabulary-voice-picker small { color: var(--muted); font-size: 11px; }
+.vocabulary-voice-settings {
+  min-width: min(520px, calc(100vw - 40px));
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px 12px;
+}
 .vocabulary-voice-picker select,
 .vocabulary-voice-picker button {
   min-width: 0;
-  min-height: 42px;
-  padding: 0 13px;
+  min-height: 38px;
+  padding: 0 11px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--soft);
   color: var(--text);
 }
-.vocabulary-voice-picker button { cursor: pointer; font-weight: 850; }
-.vocabulary-voice-picker p { grid-column: 1 / -1; margin: 0; }
+.vocabulary-voice-picker button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 850;
+}
+.vocabulary-voice-settings > small,
+.vocabulary-voice-settings > output { grid-column: 1 / -1; }
 .daily-answer-goal b {
   padding: 8px 12px;
   border-radius: 999px;
@@ -10603,11 +10741,14 @@ body {
   .practice-mode-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  .vocabulary-voice-picker,
   .practice-mode-picker,
   .rush-scoreboard { grid-template-columns: 1fr; }
-  .vocabulary-voice-picker select,
-  .vocabulary-voice-picker button {
+  .vocabulary-voice-settings {
+    min-width: 0;
+    grid-template-columns: 1fr;
+  }
+  .vocabulary-voice-settings select,
+  .vocabulary-voice-settings button {
     width: 100%;
   }
   .detective-question > div { grid-template-columns: 1fr; }
@@ -11889,8 +12030,37 @@ body {
 .srs-view.active-exercise .recall-result.bad .answer-analysis > b { color: var(--muted); }
 .srs-view.active-exercise .answer-examples { margin-top: 16px; }
 .srs-view.active-exercise .answer-examples > div {
-  padding-left: 0;
+  padding-left: 7px;
   border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--line) 38%, transparent);
+}
+
+/* Vocabulary is a working screen, so its heading and settings stay compact. */
+.vocabulary-view > .view-header h1 {
+  font-size: clamp(25px, 3.2vw, 46px);
+}
+
+@media (max-width: 680px) {
+  .vocabulary-status-guide > summary {
+    align-items: flex-start;
+    padding: 11px 12px;
+  }
+  .vocabulary-status-guide > summary small {
+    display: block;
+  }
+  .vocabulary-status-guide > summary strong {
+    padding-top: 2px;
+    font-size: 11px;
+  }
+  .vocabulary-status-details {
+    padding: 10px;
+  }
+  .vocabulary-voice-picker {
+    width: 100%;
+  }
+  .vocabulary-voice-picker summary b {
+    max-width: min(68vw, 310px);
+  }
 }
 
 @media (min-width: 681px) and (max-width: 820px) {

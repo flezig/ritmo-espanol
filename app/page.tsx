@@ -4132,64 +4132,77 @@ function VocabularyView() {
   return (
     <div className="view-stack vocabulary-view">
       <ViewHead
-        over={`${vocabularyCount} СЛОВ · A1–A2 И B1–B2`}
+        over={`${vocabularyCount.toLocaleString('ru-RU')} слов · A1–B2`}
         title="Слова, которые пригодятся."
-        copy="Статусы связаны с Practice и считаются одинаково во Vocabulary и Progress. После входа они синхронизируются с аккаунтом."
+        copy="Прогресс синхронизируется с тренировками."
       />
-      <section className="vocabulary-status-guide">
-        <b>Как меняется статус</b>
-        <span className="core-guide">
-          <i>Ядро A1–A2</i> — {coreCount} наиболее нужных слов и выражений для
-          повседневного общения. Начинайте с них.
-        </span>
-        <span>
-          <i>Новое</i> — ещё не было ответов.
-        </span>
-        <span>
-          <i>Учу</i> — началась хотя бы одна активная проверка.
-        </span>
-        <span>
-          <i>Сложное</i> — накопились минимум две ошибки или вы отметили слово
-          сами.
-        </span>
-        <span>
-          <i>Выучено</i> — узнавание и перевод без вариантов проверены минимум
-          по 3 раза, серия верных ответов 2+, точность 75%+.
-        </span>
-      </section>
-      <section className="vocabulary-voice-picker">
-        <div>
-          <Volume2 />
+      <CustomWordsPanel />
+      <details className="vocabulary-status-guide">
+        <summary>
           <span>
-            <b>Голос словаря</b>
-            <small>Выбор действует также в Practice и диктанте</small>
+            <b>Статусы слов</b>
+            <small>
+              Новое <i aria-hidden="true">→</i> Учу <i aria-hidden="true">→</i>{' '}
+              Выучено <em>+ Сложное</em>
+            </small>
+          </span>
+          <strong>Как это работает?</strong>
+        </summary>
+        <div className="vocabulary-status-details">
+          <span className="core-guide">
+            <i>Ядро A1–A2</i> — {coreCount} наиболее нужных слов и выражений для
+            повседневного общения. Начинайте с них.
+          </span>
+          <span>
+            <i>Новое</i> — ещё не было ответов.
+          </span>
+          <span>
+            <i>Учу</i> — началась хотя бы одна активная проверка.
+          </span>
+          <span>
+            <i>Выучено</i> — узнавание и перевод без вариантов проверены минимум
+            по 3 раза, серия верных ответов 2+, точность 75%+.
+          </span>
+          <span>
+            <i>Сложное</i> — дополнительная отметка: накопились минимум две
+            ошибки или вы отметили слово сами.
           </span>
         </div>
-        {voices.length ? (
-          <select
-            value={voiceIndex}
-            onChange={(event) => setVoiceIndex(Number(event.target.value))}
-            aria-label="Выбрать испанский голос словаря"
-          >
-            {voices.map((voice, index) => (
-              <option value={index} key={`${voice.name}-${index}`}>
-                {voiceDisplayName(voice)}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <small>Испанские системные голоса не найдены</small>
-        )}
-        <button onClick={() => speakText('Hola, ¿cómo estás?', 1)}>
-          Прослушать голос
-        </button>
-        <p>
-          Сначала показываются Paulina и Mónica, затем два мужских голоса — если
-          они установлены в системе. Остальные доступные голоса остаются в списке.
-        </p>
-        {voiceError && <output className="voice-error">⚠ {voiceError}</output>}
-      </section>
-      <CustomWordsPanel />
+      </details>
+      <details className="vocabulary-voice-picker">
+        <summary>
+          <Volume2 />
+          <span>
+            <b>
+              Голос: {voices[voiceIndex]?.name || 'системный'}
+              {voices[voiceIndex]?.lang ? ` (${voices[voiceIndex].lang})` : ''}
+            </b>
+            <small>Изменить</small>
+          </span>
+        </summary>
+        <div className="vocabulary-voice-settings">
+          {voices.length ? (
+            <select
+              value={voiceIndex}
+              onChange={(event) => setVoiceIndex(Number(event.target.value))}
+              aria-label="Выбрать испанский голос словаря"
+            >
+              {voices.map((voice, index) => (
+                <option value={index} key={`${voice.name}-${index}`}>
+                  {voiceDisplayName(voice)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <small>Испанские системные голоса не найдены</small>
+          )}
+          <button onClick={() => speakText('Hola, ¿cómo estás?', 1)}>
+            <Volume2 /> Прослушать
+          </button>
+          <small>Выбор действует также в Practice и диктанте.</small>
+          {voiceError && <output className="voice-error">⚠ {voiceError}</output>}
+        </div>
+      </details>
       <label className="search-box">
         <Search />
         <input
@@ -4338,7 +4351,7 @@ function VocabularyView() {
                     onClick={() => speakText(entry.example, 1)}
                     aria-label={`Прослушать пример: ${entry.example}`}
                   >
-                    <Volume2 /> Озвучить пример
+                    <Volume2 /> Прослушать
                   </button>
                   <ReportExampleButton
                     id={`vocabulary-${key}`}
@@ -8215,7 +8228,9 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     [awaitingStart, setAwaitingStart] = useState(true),
     [sessionBaseline, setSessionBaseline] = useState<PracticeProgressBaseline | null>(null);
   const answerLock = useRef(false),
-    gradeLock = useRef(false);
+    gradeLock = useRef(false),
+    reasonHelpRef = useRef<HTMLDetailsElement>(null),
+    moreActionsRef = useRef<HTMLDetailsElement>(null);
   const deckReady = customHydrated && deck.length > 0;
   useEffect(() => {
     if (!customHydrated) return;
@@ -8632,6 +8647,10 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         responseKind === 'audioSentence'),
     examples = card ? studyExamples(card) : [];
   const needsSpanishKeys = /[a-záéíóúüñ¿¡]/i.test(expectedAnswer);
+  const closePracticePopovers = () => {
+    if (reasonHelpRef.current) reasonHelpRef.current.open = false;
+    if (moreActionsRef.current) moreActionsRef.current.open = false;
+  };
   return (
     <div
       className={`view-stack srs-view ${card && !finished ? 'active-exercise' : ''}`}
@@ -8887,7 +8906,14 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
           <header>
             <div className="practice-card-heading">
               <span>{skillLabels[card.skill]}</span>
-              <details className="practice-reason-help">
+              <details
+                className="practice-reason-help"
+                ref={reasonHelpRef}
+                onToggle={(event) => {
+                  if (event.currentTarget.open && moreActionsRef.current)
+                    moreActionsRef.current.open = false;
+                }}
+              >
                 <summary
                   aria-label="Почему показано это задание"
                   title="Почему показано это задание"
@@ -8942,7 +8968,14 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                 <span className="practice-exit-full">Сменить сессию</span>
                 <span className="practice-exit-short" aria-hidden="true">Сменить</span>
               </button>
-              <details className="practice-more-actions">
+              <details
+                className="practice-more-actions"
+                ref={moreActionsRef}
+                onToggle={(event) => {
+                  if (event.currentTarget.open && reasonHelpRef.current)
+                    reasonHelpRef.current.open = false;
+                }}
+              >
                 <summary aria-label="Другие действия" title="Другие действия">
                   •••
                 </summary>
@@ -9142,7 +9175,11 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                 <div className="recall-input">
                   <input
                     value={typed}
-                    onChange={(event) => setTyped(event.target.value)}
+                    onFocus={closePracticePopovers}
+                    onChange={(event) => {
+                      closePracticePopovers();
+                      setTyped(event.target.value);
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' && !revealed) check(typed);
                     }}
@@ -9271,7 +9308,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                         onClick={() => speakText(example.es, 1)}
                         aria-label={`Прослушать пример: ${example.es}`}
                       >
-                        <Volume2 /> Озвучить
+                        <Volume2 /> Прослушать
                       </button>
                       <ReportExampleButton
                         id={`practice-${card.key}-${exampleIndex}`}
