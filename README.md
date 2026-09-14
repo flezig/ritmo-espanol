@@ -79,11 +79,13 @@ pnpm dev
    `supabase/migrations/0001_user_progress.sql`, затем целиком
    `supabase/migrations/0002_safe_sync.sql`, затем
    `supabase/migrations/0003_client_errors.sql`, затем
-   `supabase/migrations/0004_teacher_student.sql`. Первый файл создаёт таблицы и
+   `supabase/migrations/0004_teacher_student.sql`, затем
+   `supabase/migrations/0005_restrict_teacher_role.sql`. Первый файл создаёт таблицы и
    правила доступа, второй добавляет безопасную синхронизацию между несколькими
    устройствами и надёжную очередь жалоб, третий — защищённый журнал ошибок.
    Четвёртый создаёт роли, связи учитель–ученик, задания, проверки, комментарии,
-   уведомления и строгие политики RLS.
+   уведомления и строгие политики RLS. Пятый запрещает пользователям самостоятельно
+   выдавать себе роль учителя.
 3. В `Authentication → URL Configuration` укажите публичный адрес сайта как
    `Site URL` и добавьте этот же адрес в `Redirect URLs`. Для локальной проверки
    добавьте `http://localhost:3000`. Эти адреса используются также ссылками

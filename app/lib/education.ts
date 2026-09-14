@@ -22,9 +22,9 @@ const unwrap = <T>(data: T | null, error: { message: string } | null): T => {
   return data as T;
 };
 
-export async function ensureRole(client: SupabaseClient, role: Role) {
-  const { error } = await client.rpc('enable_my_role', { p_role: role });
-  if (error) throw new Error(error.message);
+export async function loadMyRoles(client: SupabaseClient) {
+  const { data, error } = await client.from('user_roles').select('role');
+  return unwrap<Array<{ role: Role }>>(data, error).map((item) => item.role);
 }
 
 export async function loadProfiles(client: SupabaseClient, ids: string[]) {

@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const migrationPath = new URL('../supabase/migrations/0004_teacher_student.sql', import.meta.url);
 const sql = readFileSync(migrationPath, 'utf8');
+const roleLockSql = readFileSync(new URL('../supabase/migrations/0005_restrict_teacher_role.sql', import.meta.url), 'utf8');
 
 test('teacher/student migration contains the complete durable model', () => {
   for (const table of [
@@ -52,4 +53,10 @@ test('assignment lifecycle is enforced in the database', () => {
   assert.match(sql, /p_decision not in \('completed', 'revision_requested'\)/);
   assert.match(sql, /update public\.assignments set status = 'submitted'/);
   assert.match(sql, /update public\.assignments set status = p_decision/);
+});
+
+test('teacher role cannot be self-issued after the restriction migration', () => {
+  assert.match(roleLockSql, /revoke execute on function public\.enable_my_role\(text\) from authenticated/i);
+  assert.match(roleLockSql, /drop function if exists public\.enable_my_role\(text\)/i);
+  assert.match(roleLockSql, /delete from public\.user_roles where role = 'teacher'/i);
 });

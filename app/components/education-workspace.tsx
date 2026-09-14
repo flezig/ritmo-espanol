@@ -6,9 +6,9 @@ import { useAccount } from './account-provider';
 import { getCloudClient } from '../lib/cloud-progress';
 import { courseLessons } from '../lessons';
 import {
-  addAssignmentComment, createAssignment, ensureRole, inviteStudent, loadAssignmentDetail,
+  addAssignmentComment, createAssignment, inviteStudent, loadAssignmentDetail, loadMyRoles,
   loadStudentLearningSummary, loadStudentWorkspace, loadTeacherWorkspace, markNotificationRead, respondInvitation, reviewAssignment, submitAssignment,
-  type AppNotification, type Assignment, type AssignmentComment, type Invitation, type Profile, type Review,
+  type AppNotification, type Assignment, type AssignmentComment, type Invitation, type Profile, type Review, type Role,
 } from '../lib/education';
 
 type WorkspaceMode = 'teacher' | 'student' | 'teacher-student' | 'teacher-assignment' | 'student-assignment';
@@ -35,6 +35,10 @@ function WorkspaceFrame({ role, children }: { role: 'teacher' | 'student'; child
 
 function EmptyAuth({ role }: { role: 'teacher' | 'student' }) {
   return <WorkspaceFrame role={role}><section className="education-empty"><GraduationCap /><h1>Войдите в аккаунт</h1><p>Кабинет доступен после входа по почте и паролю.</p><a className="edu-button primary" href="/#profile">Открыть профиль</a></section></WorkspaceFrame>;
+}
+
+function AccessDenied() {
+  return <WorkspaceFrame role="teacher"><section className="education-empty"><GraduationCap /><h1>Нет доступа</h1><p>Роль учителя назначает администратор сайта.</p><a className="edu-button primary" href="/student">Открыть кабинет ученика</a></section></WorkspaceFrame>;
 }
 
 function Busy({ role }: { role: 'teacher' | 'student' }) {
@@ -66,7 +70,7 @@ function AssignmentRows({ assignments, profiles, perspective }: { assignments: A
 function TeacherDashboard() {
   const client = getCloudClient()!;
   const [data, setData] = useState<TeacherData | null>(null), [error, setError] = useState(''), [email, setEmail] = useState(''), [message, setMessage] = useState(''), [busy, setBusy] = useState(false);
-  const refresh = useCallback(async () => { setError(''); try { await ensureRole(client, 'teacher'); setData(await loadTeacherWorkspace(client)); } catch (e) { setError((e as Error).message); } }, [client]);
+  const refresh = useCallback(async () => { setError(''); try { setData(await loadTeacherWorkspace(client)); } catch (e) { setError((e as Error).message); } }, [client]);
   useEffect(() => { void refresh(); }, [refresh]);
   const sendInvite = async (event: FormEvent) => { event.preventDefault(); setBusy(true); setMessage(''); try { await inviteStudent(client, email); setEmail(''); setMessage('Приглашение отправлено.'); await refresh(); } catch (e) { setMessage((e as Error).message.includes('not found') ? 'Пользователь с такой почтой ещё не зарегистрирован.' : (e as Error).message); } finally { setBusy(false); } };
   if (!data && !error) return <Busy role="teacher" />;
@@ -88,7 +92,7 @@ function TeacherDashboard() {
 function TeacherStudent({ studentId }: { studentId: string }) {
   const client = getCloudClient()!, [data, setData] = useState<TeacherData | null>(null), [summary, setSummary] = useState<Awaited<ReturnType<typeof loadStudentLearningSummary>> | null>(null), [error, setError] = useState(''), [saving, setSaving] = useState(false), [notice, setNotice] = useState('');
   const [form, setForm] = useState({ title: '', description: '', type: 'manual' as Assignment['assignment_type'], dueAt: '', maxScore: '10', materialUrl: '', contentId: '' });
-  const refresh = useCallback(async () => { try { await ensureRole(client, 'teacher'); const workspace = await loadTeacherWorkspace(client); setData(workspace); if (workspace.relationships.some((r) => r.student_id === studentId)) setSummary(await loadStudentLearningSummary(client, studentId)); } catch (e) { setError((e as Error).message); } }, [client, studentId]);
+  const refresh = useCallback(async () => { try { const workspace = await loadTeacherWorkspace(client); setData(workspace); if (workspace.relationships.some((r) => r.student_id === studentId)) setSummary(await loadStudentLearningSummary(client, studentId)); } catch (e) { setError((e as Error).message); } }, [client, studentId]);
   useEffect(() => { void refresh(); }, [refresh]);
   const linked = data?.relationships.some((r) => r.student_id === studentId);
   const contentOptions = useMemo(() => [
@@ -122,7 +126,7 @@ function TeacherStudent({ studentId }: { studentId: string }) {
 
 function StudentDashboard() {
   const client = getCloudClient()!, [data, setData] = useState<StudentData | null>(null), [error, setError] = useState(''), [busyId, setBusyId] = useState('');
-  const refresh = useCallback(async () => { setError(''); try { await ensureRole(client, 'student'); setData(await loadStudentWorkspace(client)); } catch (e) { setError((e as Error).message); } }, [client]);
+  const refresh = useCallback(async () => { setError(''); try { setData(await loadStudentWorkspace(client)); } catch (e) { setError((e as Error).message); } }, [client]);
   useEffect(() => { void refresh(); }, [refresh]);
   const respond = async (invite: Invitation, accept: boolean) => { setBusyId(invite.id); try { await respondInvitation(client, invite.id, accept); await refresh(); } catch (e) { setError((e as Error).message); } finally { setBusyId(''); } };
   if (!data && !error) return <Busy role="student" />;
@@ -136,7 +140,7 @@ function StudentDashboard() {
 
 function AssignmentDetail({ id, role }: { id: string; role: 'teacher' | 'student' }) {
   const client = getCloudClient()!, [data, setData] = useState<DetailData | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [text, setText] = useState(''), [link, setLink] = useState(''), [reviewComment, setReviewComment] = useState(''), [chatComment, setChatComment] = useState(''), [score, setScore] = useState('');
-  const refresh = useCallback(async () => { setError(''); try { await ensureRole(client, role); setData(await loadAssignmentDetail(client, id)); } catch (e) { setError((e as Error).message); } }, [client, id, role]);
+  const refresh = useCallback(async () => { setError(''); try { setData(await loadAssignmentDetail(client, id)); } catch (e) { setError((e as Error).message); } }, [client, id]);
   useEffect(() => { void refresh(); }, [refresh]);
   const send = async (event: FormEvent) => { event.preventDefault(); setBusy(true); try { await submitAssignment(client, id, text, link); setText(''); setLink(''); await refresh(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } };
   const review = async (decision: Review['decision']) => { setBusy(true); try { await reviewAssignment(client, id, decision, score ? Number(score) : null, reviewComment); setReviewComment(''); await refresh(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } };
@@ -160,7 +164,15 @@ function AssignmentDetail({ id, role }: { id: string; role: 'teacher' | 'student
 export default function EducationWorkspace({ mode, id }: { mode: WorkspaceMode; id?: string }) {
   const { user, configured } = useAccount();
   const role = mode.startsWith('teacher') ? 'teacher' : 'student';
+  const [roles, setRoles] = useState<Role[] | null>(null);
+  useEffect(() => {
+    const client = getCloudClient();
+    if (!client || !user) { setRoles(null); return; }
+    void loadMyRoles(client).then(setRoles).catch(() => setRoles([]));
+  }, [user]);
   if (!configured || !user) return <EmptyAuth role={role} />;
+  if (roles === null) return <Busy role={role} />;
+  if (!roles.includes(role)) return role === 'teacher' ? <AccessDenied /> : <EmptyAuth role="student" />;
   if (mode === 'teacher') return <TeacherDashboard />;
   if (mode === 'student') return <StudentDashboard />;
   if (mode === 'teacher-student' && id) return <TeacherStudent studentId={id} />;
