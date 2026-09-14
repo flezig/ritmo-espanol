@@ -4222,6 +4222,223 @@ input {
   }
 }
 
+/* Final responsive Practice cascade. Keep this after legacy responsive rules. */
+.practice-card-controls {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.srs-view.active-exercise .srs-card > header > .practice-card-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.practice-exit-short { display: none; }
+.srs-view.active-exercise .recall-result.bad {
+  border-color: color-mix(in srgb, #fb5870 58%, var(--line));
+  background: color-mix(in srgb, var(--panel) 96%, #fb5870);
+}
+.srs-view.active-exercise .recall-result.bad > b:first-child { color: #e76377; }
+.srs-view.active-exercise .recall-result.bad .answer-analysis,
+.srs-view.active-exercise .recall-result.bad .answer-analysis.article,
+.srs-view.active-exercise .recall-result.bad .answer-analysis.ending {
+  margin-block: 4px;
+  padding: 2px 0 2px 19px;
+  border: 0;
+  background: transparent;
+}
+.srs-view.active-exercise .recall-result.bad .answer-analysis::before,
+.srs-view.active-exercise .recall-result.bad .answer-analysis > b { color: var(--muted); }
+.srs-view.active-exercise .answer-examples { margin-top: 16px; }
+.srs-view.active-exercise .answer-examples > div {
+  padding-left: 0;
+  border: 0;
+}
+
+@media (min-width: 681px) and (max-width: 820px) {
+  .main:has(.srs-view.active-exercise) .content { padding: 12px 12px 88px; }
+  .srs-view.active-exercise .srs-card,
+  .srs-view.active-exercise .word-introduction {
+    height: calc(100dvh - 164px);
+    max-height: none;
+  }
+  .srs-view.active-exercise .srs-card > section { padding: 12px 4%; }
+  .srs-view.active-exercise .srs-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .srs-view.active-exercise .srs-choice-grid button {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 680px) {
+  .main:has(.srs-view.active-exercise) .content { padding: 5px 6px 82px; }
+  .srs-view.active-exercise .srs-card,
+  .srs-view.active-exercise .word-introduction {
+    height: calc(100dvh - 137px);
+    max-height: none;
+    border-radius: 17px;
+  }
+  .srs-view.active-exercise .srs-card > .cat-peek,
+  .srs-view.active-exercise .word-introduction > .cat-peek,
+  .srs-view.active-exercise .srs-card > .cat-peek .cat-mascot,
+  .srs-view.active-exercise .word-introduction > .cat-peek .cat-mascot {
+    width: 38px;
+    height: 38px;
+  }
+  .srs-view.active-exercise .srs-card > .cat-peek,
+  .srs-view.active-exercise .word-introduction > .cat-peek {
+    top: 7px;
+    left: 8px;
+  }
+  .srs-view.active-exercise .srs-card > header {
+    min-height: 52px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 7px 6px 54px;
+  }
+  .srs-view.active-exercise .srs-card > header > div:first-child { grid-column: auto; }
+  .srs-view.active-exercise .practice-card-heading {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .srs-view.active-exercise .practice-card-heading > span {
+    min-width: 0;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .srs-view.active-exercise .practice-card-heading > small { display: none; }
+  .srs-view.active-exercise .practice-card-controls {
+    gap: 4px;
+    margin-left: 0;
+    white-space: nowrap;
+  }
+  .srs-view.active-exercise .practice-card-progress { font-size: 11px; }
+  .srs-view.active-exercise .practice-exit-full { display: none; }
+  .srs-view.active-exercise .practice-exit-short { display: inline; }
+  .srs-view.active-exercise .practice-card-controls .practice-exit {
+    width: auto;
+    min-width: 52px;
+    min-height: 30px;
+    height: 30px;
+    padding: 0 5px;
+    font-size: 9px;
+  }
+  .srs-view.active-exercise .practice-card-controls .practice-exit::after { content: none; }
+  .srs-view.active-exercise .practice-more-actions > summary {
+    width: 34px;
+    height: 30px;
+  }
+  .srs-view.active-exercise .srs-card > section {
+    padding: 7px 9px 9px;
+    overflow: hidden;
+  }
+  .srs-view.active-exercise .srs-card > section:not(.answered) { justify-content: center; }
+  .srs-view.active-exercise .srs-card > section > small,
+  .srs-view.active-exercise .audio-label {
+    font-size: 9px !important;
+    letter-spacing: .07em;
+  }
+  .srs-view.active-exercise .srs-card > section > h2 {
+    margin: 5px 0 9px;
+    font-size: clamp(16px, 4.8vw, 20px);
+    line-height: 1.18;
+  }
+  .srs-view.active-exercise .srs-card > footer { display: none; }
+  .srs-view.active-exercise .speech-settings {
+    gap: 5px;
+    margin: 2px 0 5px;
+  }
+  .srs-view.active-exercise .sentence-audio-mode {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+  .srs-view.active-exercise .speech-settings select {
+    width: min(190px, 100%);
+    height: 31px;
+    padding-left: 8px;
+    font-size: 10px;
+  }
+  .srs-view.active-exercise .audio-speed-controls {
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .srs-view.active-exercise .listen-orb {
+    width: 54px;
+    height: 54px;
+    flex: 0 0 54px;
+  }
+  .srs-view.active-exercise .listen-orb svg { width: 18px; }
+  .srs-view.active-exercise .listen-orb span { font-size: 8px; }
+  .srs-view.active-exercise .slow-listen {
+    min-height: 38px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 10px;
+  }
+  .srs-view.active-exercise .srs-choice-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .srs-view.active-exercise .srs-choice-grid button {
+    min-width: 0;
+    min-height: 50px;
+    padding: 7px 6px;
+    font-size: 12px;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .srs-view.active-exercise .recall-input {
+    flex-direction: row;
+    gap: 6px;
+  }
+  .srs-view.active-exercise .recall-input input,
+  .srs-view.active-exercise .recall-input button { height: 50px; }
+  .srs-view.active-exercise .recall-input input {
+    padding: 0 12px;
+    font-size: 15px;
+  }
+  .srs-view.active-exercise .recall-input button {
+    min-width: 94px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .srs-view.active-exercise .dont-know {
+    margin-top: 6px !important;
+    padding: 7px 10px !important;
+    font-size: 10px !important;
+  }
+  .srs-view.active-exercise .practice-order-builder {
+    gap: 6px;
+    margin-top: 5px;
+  }
+  .srs-view.active-exercise .practice-order-answer,
+  .srs-view.active-exercise .practice-word-bank {
+    min-height: 42px;
+    gap: 5px;
+    padding: 6px;
+  }
+  .srs-view.active-exercise .practice-order-answer button,
+  .srs-view.active-exercise .practice-word-bank button {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}
+
 /* Practice result: keep the decision close to the answer being assessed. */
 .srs-view.active-exercise .recall-result.confirmed-answer > b:first-child {
   color: #2fae84;
@@ -4267,6 +4484,261 @@ input {
   }
   .srs-view.active-exercise .srs-card > section.answered .grade-grid {
     margin-top: 13px;
+  }
+}
+
+/* Practice error feedback: the mistake is a signal, not the whole surface. */
+.srs-view.active-exercise .recall-result.bad {
+  border-color: color-mix(in srgb, #fb5870 58%, var(--line));
+  background: color-mix(in srgb, var(--panel) 94%, #fb5870);
+}
+.srs-view.active-exercise .recall-result.bad > b:first-child {
+  color: #e76377;
+}
+.srs-view.active-exercise .recall-result.bad .answer-analysis,
+.srs-view.active-exercise .recall-result.bad .answer-analysis.article,
+.srs-view.active-exercise .recall-result.bad .answer-analysis.ending {
+  margin-block: 4px;
+  padding: 2px 0 2px 19px;
+  border: 0;
+  background: transparent;
+}
+.srs-view.active-exercise .recall-result.bad .answer-analysis > b {
+  color: var(--muted);
+}
+.srs-view.active-exercise .recall-result.bad .answer-analysis::before {
+  color: var(--muted);
+}
+.srs-view.active-exercise .answer-examples {
+  margin-top: 16px;
+}
+.srs-view.active-exercise .answer-examples > div {
+  padding-left: 0;
+  border: 0;
+}
+
+/* Tablet Practice: use the full safe area and keep all choices on one screen. */
+@media (min-width: 681px) and (max-width: 820px) {
+  .main:has(.srs-view.active-exercise) .content {
+    padding: 12px 12px 88px;
+  }
+  .srs-view.active-exercise .srs-card,
+  .srs-view.active-exercise .word-introduction {
+    height: calc(100dvh - 164px);
+    max-height: none;
+  }
+  .srs-view.active-exercise .srs-card > section {
+    padding: 12px 4%;
+  }
+  .srs-view.active-exercise .srs-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .srs-view.active-exercise .srs-choice-grid button {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+/* Phone Practice: compact chrome, larger task area, no hidden answer choices. */
+@media (max-width: 680px) {
+  .main:has(.srs-view.active-exercise) .content {
+    padding: 5px 6px 82px;
+  }
+  .srs-view.active-exercise .srs-card,
+  .srs-view.active-exercise .word-introduction {
+    height: calc(100dvh - 137px);
+    border-radius: 17px;
+  }
+  .srs-view.active-exercise .srs-card > .cat-peek,
+  .srs-view.active-exercise .word-introduction > .cat-peek,
+  .srs-view.active-exercise .srs-card > .cat-peek .cat-mascot,
+  .srs-view.active-exercise .word-introduction > .cat-peek .cat-mascot {
+    width: 38px;
+    height: 38px;
+  }
+  .srs-view.active-exercise .srs-card > .cat-peek,
+  .srs-view.active-exercise .word-introduction > .cat-peek {
+    top: 7px;
+    left: 8px;
+  }
+  .srs-view.active-exercise .srs-card > header {
+    min-height: 52px;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 7px 6px 54px;
+  }
+  .srs-view.active-exercise .srs-card > header > div:first-child {
+    grid-column: auto;
+  }
+  .srs-view.active-exercise .practice-card-heading {
+    gap: 5px;
+  }
+  .srs-view.active-exercise .practice-card-heading > span {
+    font-size: 11px;
+  }
+  .srs-view.active-exercise .practice-card-heading > small {
+    display: none;
+  }
+  .srs-view.active-exercise .practice-card-progress {
+    font-size: 11px;
+  }
+  .srs-view.active-exercise .srs-card > header > .practice-exit {
+    min-height: 30px;
+    width: 58px;
+    height: 30px;
+    padding: 0 5px;
+    font-size: 0;
+  }
+  .srs-view.active-exercise .srs-card > header > .practice-exit::after {
+    content: 'Сменить';
+    font-size: 9px;
+  }
+  .srs-view.active-exercise .practice-more-actions > summary {
+    width: 34px;
+    height: 30px;
+  }
+  .srs-view.active-exercise .srs-card > section {
+    padding: 7px 9px 9px;
+    overflow: hidden;
+  }
+  .srs-view.active-exercise .srs-card > section > small,
+  .srs-view.active-exercise .audio-label {
+    font-size: 9px !important;
+    letter-spacing: .07em;
+  }
+  .srs-view.active-exercise .srs-card > section > h2 {
+    margin: 5px 0 9px;
+    font-size: clamp(16px, 4.8vw, 20px);
+    line-height: 1.18;
+  }
+  .srs-view.active-exercise .srs-card > footer {
+    display: none;
+  }
+  .srs-view.active-exercise .speech-settings {
+    gap: 5px;
+    margin: 2px 0 5px;
+  }
+  .srs-view.active-exercise .sentence-audio-mode {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+  .srs-view.active-exercise .speech-settings select {
+    width: min(190px, 100%);
+    height: 31px;
+    padding-left: 8px;
+    font-size: 10px;
+  }
+  .srs-view.active-exercise .audio-speed-controls {
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .srs-view.active-exercise .listen-orb {
+    width: 54px;
+    height: 54px;
+    flex: 0 0 54px;
+  }
+  .srs-view.active-exercise .listen-orb svg {
+    width: 18px;
+  }
+  .srs-view.active-exercise .listen-orb span {
+    font-size: 8px;
+  }
+  .srs-view.active-exercise .slow-listen {
+    min-height: 38px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 10px;
+  }
+  .srs-view.active-exercise .srs-choice-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .srs-view.active-exercise .srs-choice-grid button {
+    min-width: 0;
+    min-height: 50px;
+    padding: 7px 6px;
+    font-size: 12px;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .srs-view.active-exercise .recall-input {
+    flex-direction: row;
+    gap: 6px;
+  }
+  .srs-view.active-exercise .recall-input input,
+  .srs-view.active-exercise .recall-input button {
+    height: 50px;
+  }
+  .srs-view.active-exercise .recall-input input {
+    padding: 0 12px;
+    font-size: 15px;
+  }
+  .srs-view.active-exercise .recall-input button {
+    min-width: 94px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .srs-view.active-exercise .dont-know {
+    margin-top: 6px !important;
+    padding: 7px 10px !important;
+    font-size: 10px !important;
+  }
+  .srs-view.active-exercise .practice-order-builder {
+    gap: 6px;
+    margin-top: 5px;
+  }
+  .srs-view.active-exercise .practice-order-answer,
+  .srs-view.active-exercise .practice-word-bank {
+    min-height: 42px;
+    gap: 5px;
+    padding: 6px;
+  }
+  .srs-view.active-exercise .practice-order-answer button,
+  .srs-view.active-exercise .practice-word-bank button {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}
+
+.practice-card-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.practice-exit-short {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .srs-view.active-exercise .srs-card > header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .srs-view.active-exercise .practice-card-controls {
+    gap: 4px;
+    margin-left: 0;
+  }
+  .srs-view.active-exercise .practice-exit-full {
+    display: none;
+  }
+  .srs-view.active-exercise .practice-exit-short {
+    display: inline;
+  }
+  .srs-view.active-exercise .practice-card-controls .practice-exit {
+    width: auto;
+    min-width: 52px;
+    font-size: 9px;
+  }
+  .srs-view.active-exercise .practice-card-controls .practice-exit::after {
+    content: none;
+  }
+  .srs-view.active-exercise .srs-card > section:not(.answered) {
+    justify-content: center;
   }
 }
 
@@ -11377,6 +11849,228 @@ body {
   .placement-test > h3,
   .quiz.cat-card > p {
     padding-right: 38px;
+  }
+}
+
+/* Final responsive Practice cascade. Keep after all legacy Practice rules. */
+.srs-view.active-exercise .recall-result.bad .answer-analysis {
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+.srs-view.active-exercise .srs-card > header > .practice-card-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.practice-card-controls {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.practice-exit-short { display: none; }
+.srs-view.active-exercise .recall-result.bad {
+  border-color: color-mix(in srgb, #fb5870 58%, var(--line));
+  background: color-mix(in srgb, var(--panel) 96%, #fb5870);
+}
+.srs-view.active-exercise .recall-result.bad > b:first-child { color: #e76377; }
+.srs-view.active-exercise .recall-result.bad .answer-analysis,
+.srs-view.active-exercise .recall-result.bad .answer-analysis.article,
+.srs-view.active-exercise .recall-result.bad .answer-analysis.ending {
+  margin-block: 4px;
+  padding: 2px 0 2px 19px;
+  border: 0;
+  background: transparent;
+}
+.srs-view.active-exercise .recall-result.bad .answer-analysis::before,
+.srs-view.active-exercise .recall-result.bad .answer-analysis > b { color: var(--muted); }
+.srs-view.active-exercise .answer-examples { margin-top: 16px; }
+.srs-view.active-exercise .answer-examples > div {
+  padding-left: 0;
+  border: 0;
+}
+
+@media (min-width: 681px) and (max-width: 820px) {
+  .main:has(.srs-view.active-exercise) .content { padding: 12px 12px 88px; }
+  .srs-view.active-exercise .srs-card,
+  .srs-view.active-exercise .word-introduction {
+    height: calc(100dvh - 164px);
+    max-height: none;
+  }
+  .srs-view.active-exercise .srs-card > section { padding: 12px 4%; }
+  .srs-view.active-exercise .srs-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .srs-view.active-exercise .srs-choice-grid button {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 680px) {
+  .main:has(.srs-view.active-exercise) .content { padding: 5px 6px 82px; }
+  .srs-view.active-exercise .srs-card,
+  .srs-view.active-exercise .word-introduction {
+    height: calc(100dvh - 137px);
+    max-height: none;
+    border-radius: 17px;
+  }
+  .srs-view.active-exercise .srs-card > .cat-peek,
+  .srs-view.active-exercise .word-introduction > .cat-peek,
+  .srs-view.active-exercise .srs-card > .cat-peek .cat-mascot,
+  .srs-view.active-exercise .word-introduction > .cat-peek .cat-mascot {
+    width: 38px;
+    height: 38px;
+  }
+  .srs-view.active-exercise .srs-card > .cat-peek,
+  .srs-view.active-exercise .word-introduction > .cat-peek {
+    top: 7px;
+    left: 8px;
+  }
+  .srs-view.active-exercise .srs-card > header {
+    min-height: 52px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 7px 6px 54px;
+  }
+  .srs-view.active-exercise .srs-card > header > div:first-child { grid-column: auto; }
+  .srs-view.active-exercise .practice-card-heading {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .srs-view.active-exercise .practice-card-heading > span {
+    min-width: 0;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .srs-view.active-exercise .practice-card-heading > small { display: none; }
+  .srs-view.active-exercise .practice-card-controls {
+    gap: 4px;
+    margin-left: 0;
+    white-space: nowrap;
+  }
+  .srs-view.active-exercise .practice-card-progress { font-size: 11px; }
+  .srs-view.active-exercise .practice-exit-full { display: none; }
+  .srs-view.active-exercise .practice-exit-short { display: inline; }
+  .srs-view.active-exercise .practice-card-controls .practice-exit {
+    width: auto;
+    min-width: 52px;
+    min-height: 30px;
+    height: 30px;
+    padding: 0 5px;
+    font-size: 9px;
+  }
+  .srs-view.active-exercise .practice-card-controls .practice-exit::after { content: none; }
+  .srs-view.active-exercise .practice-more-actions > summary {
+    width: 34px;
+    height: 30px;
+  }
+  .srs-view.active-exercise .srs-card > section {
+    padding: 7px 9px 9px;
+    overflow: hidden;
+  }
+  .srs-view.active-exercise .srs-card > section:not(.answered) { justify-content: center; }
+  .srs-view.active-exercise .srs-card > section > small,
+  .srs-view.active-exercise .audio-label {
+    font-size: 9px !important;
+    letter-spacing: .07em;
+  }
+  .srs-view.active-exercise .srs-card > section > h2 {
+    margin: 5px 0 9px;
+    font-size: clamp(16px, 4.8vw, 20px);
+    line-height: 1.18;
+  }
+  .srs-view.active-exercise .srs-card > footer { display: none; }
+  .srs-view.active-exercise .speech-settings {
+    gap: 5px;
+    margin: 2px 0 5px;
+  }
+  .srs-view.active-exercise .sentence-audio-mode {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+  .srs-view.active-exercise .speech-settings select {
+    width: min(190px, 100%);
+    height: 31px;
+    padding-left: 8px;
+    font-size: 10px;
+  }
+  .srs-view.active-exercise .audio-speed-controls {
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .srs-view.active-exercise .listen-orb {
+    width: 54px;
+    height: 54px;
+    flex: 0 0 54px;
+  }
+  .srs-view.active-exercise .listen-orb svg { width: 18px; }
+  .srs-view.active-exercise .listen-orb span { font-size: 8px; }
+  .srs-view.active-exercise .slow-listen {
+    min-height: 38px;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 10px;
+  }
+  .srs-view.active-exercise .srs-choice-grid {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .srs-view.active-exercise .srs-choice-grid button {
+    min-width: 0;
+    min-height: 50px;
+    padding: 7px 6px;
+    font-size: 12px;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .srs-view.active-exercise .recall-input {
+    flex-direction: row;
+    gap: 6px;
+  }
+  .srs-view.active-exercise .recall-input input,
+  .srs-view.active-exercise .recall-input button { height: 50px; }
+  .srs-view.active-exercise .recall-input input {
+    padding: 0 12px;
+    font-size: 15px;
+  }
+  .srs-view.active-exercise .recall-input button {
+    min-width: 94px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .srs-view.active-exercise .dont-know {
+    margin-top: 6px !important;
+    padding: 7px 10px !important;
+    font-size: 10px !important;
+  }
+  .srs-view.active-exercise .practice-order-builder {
+    gap: 6px;
+    margin-top: 5px;
+  }
+  .srs-view.active-exercise .practice-order-answer,
+  .srs-view.active-exercise .practice-word-bank {
+    min-height: 42px;
+    gap: 5px;
+    padding: 6px;
+  }
+  .srs-view.active-exercise .practice-order-answer button,
+  .srs-view.active-exercise .practice-word-bank button {
+    padding: 6px 8px;
+    font-size: 11px;
   }
 }
 

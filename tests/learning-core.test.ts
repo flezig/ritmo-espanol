@@ -26,6 +26,13 @@ test('article errors are identified separately', () => {
   assert.equal(result.kind, 'article');
 });
 
+test('a very short unrelated answer gets a concrete explanation', () => {
+  const result = analyzeAnswer('a', 'концерт');
+  assert.equal(result.kind, 'wrong');
+  assert.match(result.message, /слишком короткий/i);
+  assert.match(result.message, /концерт/i);
+});
+
 test('again really schedules a card ten minutes later', () => {
   const now = Date.UTC(2026, 8, 6, 10);
   assert.equal(scheduleReview(undefined, 'again', now).nextReview, now + 10 * 60_000);

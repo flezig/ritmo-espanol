@@ -8930,43 +8930,52 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
                         : 'самостоятельный ввод'}
               </small>
             </div>
-            <b className="practice-card-progress">
-              {index + 1} / {session.length}
-            </b>
-            <button className="practice-exit" onClick={leaveSessionWithoutSaving}>Сменить сессию</button>
-            <details className="practice-more-actions">
-              <summary aria-label="Другие действия" title="Другие действия">
-                •••
-              </summary>
-              <div>
-                <button type="button" onClick={resetAsNew}>
-                  <span>↺</span>
-                  <b>Отметить новым</b>
-                </button>
-                <button
-                  type="button"
-                  className={records[card.key]?.favorite ? 'active' : ''}
-                  onClick={() => toggleFavorite(card)}
-                >
-                  <Heart fill="currentColor" />
-                  <b>
-                    {records[card.key]?.favorite
-                      ? 'Убрать из избранного'
-                      : 'Добавить в избранное'}
-                  </b>
-                </button>
-                <div className="practice-report-action">
-                  <b>Сообщить о задании</b>
-                  <ReportExerciseButton
-                    id={`practice:${card.key}:${responseKind}:${normalizeText(taskPrompt)}`}
-                    section={`Practice: ${card.topic}`}
-                    prompt={taskPrompt}
-                    answer={expectedAnswer}
-                    options={responseKind === 'choice' ? options : undefined}
-                  />
+            <div className="practice-card-controls">
+              <b className="practice-card-progress">
+                {index + 1} / {session.length}
+              </b>
+              <button
+                className="practice-exit"
+                aria-label="Сменить сессию"
+                onClick={leaveSessionWithoutSaving}
+              >
+                <span className="practice-exit-full">Сменить сессию</span>
+                <span className="practice-exit-short" aria-hidden="true">Сменить</span>
+              </button>
+              <details className="practice-more-actions">
+                <summary aria-label="Другие действия" title="Другие действия">
+                  •••
+                </summary>
+                <div>
+                  <button type="button" onClick={resetAsNew}>
+                    <span>↺</span>
+                    <b>Отметить новым</b>
+                  </button>
+                  <button
+                    type="button"
+                    className={records[card.key]?.favorite ? 'active' : ''}
+                    onClick={() => toggleFavorite(card)}
+                  >
+                    <Heart fill="currentColor" />
+                    <b>
+                      {records[card.key]?.favorite
+                        ? 'Убрать из избранного'
+                        : 'Добавить в избранное'}
+                    </b>
+                  </button>
+                  <div className="practice-report-action">
+                    <b>Сообщить о задании</b>
+                    <ReportExerciseButton
+                      id={`practice:${card.key}:${responseKind}:${normalizeText(taskPrompt)}`}
+                      section={`Practice: ${card.topic}`}
+                      prompt={taskPrompt}
+                      answer={expectedAnswer}
+                      options={responseKind === 'choice' ? options : undefined}
+                    />
+                  </div>
                 </div>
-              </div>
-            </details>
+              </details>
+            </div>
           </header>
           <div className="srs-track">
             <span style={{ width: `${(index / session.length) * 100}%` }} />

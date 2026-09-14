@@ -121,10 +121,16 @@ export const analyzeAnswer = (value: string, answer: string): AnswerAnalysis => 
           ? 'Почти верно: одна буква отличается.'
           : 'Похоже на опечатку: отличаются две буквы.',
     };
+  if (plain.length <= 2 && expected.length >= 5)
+    return {
+      correct: false,
+      kind: 'wrong',
+      message: `Ответ слишком короткий. Ожидается «${answer}».`,
+    };
   return {
     correct: false,
     kind: 'wrong',
-    message: 'Ответ отличается по смыслу или форме. Сравните его с образцом.',
+    message: `Введённый ответ не соответствует «${answer}».`,
   };
 };
 
