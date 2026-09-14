@@ -7491,7 +7491,13 @@ input {
 }
 .welcome-row.time-morning > div > p:last-child,
 .welcome-row.time-day > div > p:last-child {
-  color: #5b5368;
+  width: fit-content;
+  max-width: min(100%, 680px);
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .62);
+  color: #3f374d;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .7);
 }
 .welcome-row.time-morning .streak-pill,
 .welcome-row.time-day .streak-pill {
