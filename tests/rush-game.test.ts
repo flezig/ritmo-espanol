@@ -16,6 +16,14 @@ test('Spanish Rush has a substantial grammar bank and randomizes every launch', 
   assert.match(rushSource, /crypto\.randomUUID/);
 });
 
+test('Rush translation distractors use the same part of speech', () => {
+  assert.match(rushSource, /targetPartOfSpeech = inferWordPartOfSpeech/);
+  assert.match(
+    rushSource,
+    /inferWordPartOfSpeech\(item\.es, item\.ru, item\.example\) !==\s*targetPartOfSpeech/,
+  );
+});
+
 test('Rush context always asks a question and word history stays hidden until answer', () => {
   assert.match(rushSource, /Какое слово пропущено\?/);
   assert.match(rushSource, /Как по-испански/);

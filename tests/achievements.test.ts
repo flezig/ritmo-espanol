@@ -141,7 +141,7 @@ test('every achievement has a unique id, positive target and progress rule', () 
     targets = [...catalog.matchAll(/target: (\d+)/g)].map((match) =>
       Number(match[1]),
     );
-  assert.equal(ids.length, 97);
+  assert.equal(ids.length, 101);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal((catalog.match(/progress:/g) || []).length, ids.length);
   assert.equal(targets.length, ids.length);

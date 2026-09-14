@@ -55,6 +55,11 @@ import {
   type AchievementStats,
 } from './lib/achievements';
 import { STANDARD_RECOGNITION_DISTRIBUTION } from './lib/practice-distribution';
+import { inferWordPartOfSpeech } from './lib/word-part-of-speech';
+import {
+  profileRankForXp,
+  type ProfileGender,
+} from './lib/profile-ranks';
 import {
   createArticlePracticeSession,
   type ArticlePracticeQuestion,
@@ -225,6 +230,7 @@ type WordHistoryRecord = {
 };
 type DeviceProfile = {
   name: string;
+  gender: ProfileGender;
   level: string;
   dailyGoal: 5 | 15;
   streak: number;
@@ -246,6 +252,7 @@ const skillLabels: Record<SkillType, string> = {
 };
 const defaultProfile: DeviceProfile = {
   name: '',
+  gender: 'H',
   level: 'A1',
   dailyGoal: 15,
   streak: 0,
@@ -268,9 +275,13 @@ const russianDayWord = (count: number) => {
 };
 const loadProfile = (): DeviceProfile => {
   try {
+    const stored = JSON.parse(
+      localStorage.getItem('ritmo-device-profile') || '{}',
+    );
     return {
       ...defaultProfile,
-      ...JSON.parse(localStorage.getItem('ritmo-device-profile') || '{}'),
+      ...stored,
+      gender: stored.gender === 'M' ? 'M' : 'H',
     };
   } catch {
     return defaultProfile;
@@ -492,6 +503,10 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: 'xp-10000', category: 'Прогресс', icon: '🌟', name: 'Diez Mil Estrellas', lockedMotto: '«Todavía queda cielo por descubrir.»', unlockedMotto: '«Diez mil puntos brillan en tu perfil.»', description: 'Заработать 10 000 XP в упражнениях.', target: 10000, progress: ({ profile }) => profile.xp },
   { id: 'xp-25000', category: 'Прогресс', icon: '☄️', name: 'Cometa', lockedMotto: '«Deja una estela más larga.»', unlockedMotto: '«Veinticinco mil puntos cruzaron el cielo.»', description: 'Заработать 25 000 XP в упражнениях.', target: 25000, progress: ({ profile }) => profile.xp },
   { id: 'xp-50000', category: 'Прогресс', icon: '🌌', name: 'Galaxia', lockedMotto: '«Cada respuesta enciende una estrella.»', unlockedMotto: '«Cincuenta mil puntos forman tu galaxia.»', description: 'Заработать 50 000 XP в упражнениях.', target: 50000, progress: ({ profile }) => profile.xp },
+  { id: 'rank-viajero', category: 'Прогресс', icon: '🧭', name: 'Viajero', lockedMotto: '«El camino acaba de empezar.»', unlockedMotto: '«Ya llevas el español en la mochila.»', description: 'Получить 5-й уровень профиля.', target: 700, progress: ({ profile }) => profile.xp },
+  { id: 'rank-senor', category: 'Прогресс', icon: '🎩', name: 'Señor', lockedMotto: '«La confianza se gana palabra a palabra.»', unlockedMotto: '«Tu español ya camina con confianza.»', description: 'Получить 10-й уровень профиля.', target: 3200, progress: ({ profile }) => profile.xp },
+  { id: 'rank-maestro', category: 'Мастерство', icon: '🎓', name: 'Maestro', lockedMotto: '«Todavía quedan matices por dominar.»', unlockedMotto: '«La práctica se ha convertido en maestría.»', description: 'Получить 15-й уровень профиля.', target: 9200, progress: ({ profile }) => profile.xp },
+  { id: 'rank-ritmo', category: 'Мастерство', icon: '👑', name: 'Maestro del Ritmo', lockedMotto: '«El último título espera su momento.»', unlockedMotto: '«El ritmo del español ya es tuyo.»', description: 'Получить максимальный, 20-й уровень профиля.', target: 22000, progress: ({ profile }) => profile.xp },
   { id: 'answers-25', category: 'Мастерство', icon: '🎯', name: 'Buen Comienzo', lockedMotto: '«Apunta con calma.»', unlockedMotto: '«Veinticinco respuestas dieron en el blanco.»', description: 'Дать 25 правильных ответов на сайте.', target: 25, progress: ({ profile }) => profile.totalCorrect },
   { id: 'perfecto', category: 'Мастерство', icon: '💯', name: 'Perfecto', secret: true, lockedMotto: '???', unlockedMotto: '«Ni un solo error.»', description: 'Завершить сессию Practice без ошибок.', target: 1, progress: ({ stats }) => stats.perfectSessions },
   { id: 'perfect-5', category: 'Мастерство', icon: '💎', name: 'Cinco Diamantes', lockedMotto: '«La precisión deja huellas.»', unlockedMotto: '«Cinco sesiones brillaron sin errores.»', description: 'Завершить 5 сессий Practice без ошибок.', target: 5, progress: ({ stats }) => stats.perfectSessions },
@@ -540,6 +555,24 @@ const achievementDefinitions: AchievementDefinition[] = [
   { id: 'madrugador', category: 'Секретные', icon: '☀️', name: 'Madrugador', secret: true, lockedMotto: '???', unlockedMotto: '«El español llegó antes del desayuno.»', description: 'Завершить сессию с 05:00 до 07:00.', target: 1, progress: ({ stats }) => stats.morningSessions },
   { id: 'rush-30', category: 'Секретные', icon: '⚡', name: 'Rayo', secret: true, lockedMotto: '???', unlockedMotto: '«Nadie alcanza tu velocidad.»', description: 'Набрать 30 очков в Spanish Rush.', target: 30, progress: ({ rushBest }) => rushBest },
 ];
+const achievementForGender = (
+  achievement: AchievementDefinition,
+  gender: ProfileGender,
+): AchievementDefinition => {
+  if (gender !== 'M') return achievement;
+  const femaleNames: Record<string, string> = {
+    'palabras-50': 'Romántica',
+    madrugador: 'Madrugadora',
+    'articles-20': 'Maestra de Artículos',
+    'rank-viajero': 'Viajera',
+    'rank-senor': 'Señora',
+    'rank-maestro': 'Maestra',
+    'rank-ritmo': 'Maestra del Ritmo',
+  };
+  return femaleNames[achievement.id]
+    ? { ...achievement, name: femaleNames[achievement.id] }
+    : achievement;
+};
 const achievementContext = (stats = loadAchievementStats()): AchievementContext => {
   let learnedWords = 0,
     rushBest = 0;
@@ -588,7 +621,7 @@ const evaluateAchievements = (notify = true) => {
         () =>
           window.dispatchEvent(
             new CustomEvent('ritmo-achievement-unlocked', {
-              detail: achievement,
+              detail: achievementForGender(achievement, context.profile.gender),
             }),
           ),
         index * 5200,
@@ -2260,7 +2293,7 @@ function useAchievements() {
   const context = achievementContext(),
     unlocks = loadAchievementUnlocks();
   return achievementDefinitions.map((achievement) => ({
-    ...achievement,
+    ...achievementForGender(achievement, context.profile.gender),
     current: Math.min(
       achievement.target,
       Math.max(0, achievement.progress(context)),
@@ -7350,21 +7383,30 @@ const maskedSpanishWord = (value: string, seed: string) => {
 };
 const choicesFor = (card: StudyCard, deck: StudyCard[]) => {
   if (card.skill === 'article') return ['el', 'la'];
-  const topicAlternatives = deck
+  const targetPartOfSpeech = inferWordPartOfSpeech(card.es, card.ru, card.example),
+    topicAlternatives = deck
     .filter(
       (item) =>
         item.skill === card.skill &&
         item.topic === card.topic &&
         item.key !== card.key &&
-        normalizeText(item.ru) !== normalizeText(card.ru),
+        normalizeText(item.ru) !== normalizeText(card.ru) &&
+        inferWordPartOfSpeech(item.es, item.ru, item.example) ===
+          targetPartOfSpeech,
     )
-    .map((item) => ({ answer: item.answer, ru: item.ru })),
+    .map((item) => ({ answer: item.answer, es: item.es, ru: item.ru })),
     spanishAnswer = !['recognition', 'listening'].includes(card.skill),
     vocabularyAlternatives = vocabularyTopics.flatMap((topic) =>
       topic.entries
-        .filter((entry) => normalizeText(entry.ru) !== normalizeText(card.ru))
+        .filter(
+          (entry) =>
+            normalizeText(entry.ru) !== normalizeText(card.ru) &&
+            inferWordPartOfSpeech(entry.es, entry.ru, entry.example) ===
+              targetPartOfSpeech,
+        )
         .map((entry) => ({
           answer: spanishAnswer ? entry.es : entry.ru,
+          es: entry.es,
           ru: entry.ru,
         })),
     ),
@@ -7892,13 +7934,34 @@ function SpanishRushGame() {
       grammarOrder[grammarRound % Math.max(1, grammarOrder.length)] ?? 0,
     grammarTask = rushGrammar[grammarIndex],
     isGrammar = round % 3 === 2,
-    distractors = [1, 2, 3]
-      .map(
-        (offset) =>
-          wordOrder[(round + offset) % Math.max(1, wordOrder.length)],
-      )
+    targetPartOfSpeech = inferWordPartOfSpeech(
+      wordCard.es,
+      wordCard.ru,
+      wordCard.example,
+    ),
+    seenRushOptions = new Set([
+      normalizeText(round % 3 === 0 ? wordCard.ru : wordCard.es),
+    ]),
+    distractors = wordOrder
       .map((itemIndex) => deck[itemIndex])
-      .filter((item): item is StudyCard => !!item && item.key !== wordCard.key),
+      .filter(
+        (item): item is StudyCard => {
+          if (
+            !item ||
+            item.key === wordCard.key ||
+            inferWordPartOfSpeech(item.es, item.ru, item.example) !==
+              targetPartOfSpeech
+          )
+            return false;
+          const displayed = normalizeText(
+            round % 3 === 0 ? item.ru : item.es,
+          );
+          if (seenRushOptions.has(displayed)) return false;
+          seenRushOptions.add(displayed);
+          return true;
+        },
+      )
+      .slice(0, 3),
     maskedExample = maskExactTerm(wordCard.example, wordCard.es),
     wantsContext = round % 3 === 1,
     hasRealBlank =
@@ -10216,6 +10279,8 @@ function ProgressView({ go }: { go: (s: Section) => void }) {
 
 function AchievementsView({ go }: { go: (section: Section) => void }) {
   const [showAllAchievements, setShowAllAchievements] = useState(false),
+    { profile } = useDeviceProfile(),
+    rank = profileRankForXp(profile.xp, profile.gender),
     achievements = useAchievements(),
     unlocked = achievements.filter((item) => item.unlocked),
     categories: AchievementCategory[] = [
@@ -10295,10 +10360,18 @@ function AchievementsView({ go }: { go: (section: Section) => void }) {
             выученные слова, аудирование и регулярность.
           </p>
         </div>
-        <div className="achievement-total">
-          <Award />
-          <b>{unlocked.length}</b>
-          <span>из {achievements.length} открыто</span>
+        <div className="achievement-hero-summary">
+          <div className={`achievement-rank gender-${profile.gender.toLowerCase()}`}>
+            <Sparkles />
+            <span>УРОВЕНЬ {rank.level}</span>
+            <b>{rank.title}</b>
+            <small>{profile.xp.toLocaleString('ru-RU')} XP</small>
+          </div>
+          <div className="achievement-total">
+            <Award />
+            <b>{unlocked.length}</b>
+            <span>из {achievements.length} открыто</span>
+          </div>
         </div>
       </header>
       <div className="achievement-overview">
@@ -11005,26 +11078,61 @@ function ProfileView() {
     }),
     accuracy = profile.totalReviews
       ? Math.round((profile.totalCorrect / profile.totalReviews) * 100)
-      : 0;
+      : 0,
+    rank = profileRankForXp(profile.xp, profile.gender);
   return (
     <div className="view-stack profile-view">
       <header className="profile-hero">
         <div className="profile-avatar">
           {profile.name ? profile.name.slice(0, 1).toUpperCase() : <UserRound />}
         </div>
-        <div>
+        <div className="profile-identity">
           <p className="eyebrow">
             {account.user ? 'ОБЛАЧНЫЙ ПРОФИЛЬ' : 'ПРОФИЛЬ НА УСТРОЙСТВЕ'} · {profile.level}
           </p>
-          {editing ? (
-            <input
-              className="profile-name-input"
-              value={draftName}
-              onChange={(event) => setDraftName(event.target.value)}
-            />
-          ) : (
-            <h1>{profile.name || 'Без имени'}</h1>
-          )}
+          <div className="profile-name-row">
+            {editing ? (
+              <input
+                className="profile-name-input"
+                value={draftName}
+                onChange={(event) => setDraftName(event.target.value)}
+              />
+            ) : (
+              <h1>{profile.name || 'Без имени'}</h1>
+            )}
+            <div className="gender-choice" role="radiogroup" aria-label="Пол профиля">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={profile.gender === 'H'}
+                className={profile.gender === 'H' ? 'male active' : 'male'}
+                onClick={() => update({ gender: 'H' })}
+                title="Hombre — мужчина"
+              >
+                H <small>Hombre</small>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={profile.gender === 'M'}
+                className={profile.gender === 'M' ? 'female active' : 'female'}
+                onClick={() => update({ gender: 'M' })}
+                title="Mujer — женщина"
+              >
+                M <small>Mujer</small>
+              </button>
+            </div>
+          </div>
+          <div className={`profile-rank gender-${profile.gender.toLowerCase()}`}>
+            <b>Уровень {rank.level} · {rank.title}</b>
+            <span>{profile.xp.toLocaleString('ru-RU')} XP</span>
+            <i><span style={{ width: `${rank.progress}%` }} /></i>
+            <small>
+              {rank.next
+                ? `Ещё ${rank.remaining.toLocaleString('ru-RU')} XP до звания ${rank.nextTitle}`
+                : 'Получено высшее звание'}
+            </small>
+          </div>
           <p>
             {account.user
               ? `Прогресс привязан к ${account.user.email} и синхронизируется между устройствами.`
@@ -11032,6 +11140,7 @@ function ProfileView() {
           </p>
         </div>
         <button
+          className="profile-edit-button"
           onClick={() => {
             if (editing) update({ name: draftName.trim() });
             setEditing(!editing);
@@ -11054,9 +11163,13 @@ function ProfileView() {
           <Sparkles />
           <div>
             <b>{profile.xp}</b>
-            <span>XP</span>
+            <span>XP · {rank.title}</span>
           </div>
-          <small>{profile.totalReviews} ответов</small>
+          <small>
+            {rank.next
+              ? `${rank.remaining} до уровня ${rank.level + 1}`
+              : 'максимальный уровень'}
+          </small>
         </article>
         <article>
           <Award />
@@ -11612,7 +11725,7 @@ function RitmoApp() {
     [open, setOpen] = useState(false),
     [loading, setLoading] = useState(true);
   const { profile } = useDeviceProfile(true);
-  const account = useAccount(),
+  const rank = profileRankForXp(profile.xp, profile.gender),
     { preferences } = useSitePreferences();
   const navigate = (next: Section, replace = false) => {
     const hash = `#${next.toLowerCase()}`;
@@ -11764,7 +11877,7 @@ function RitmoApp() {
             </span>
             <div>
               <b>{profile.name || 'Без имени'}</b>
-              <small>{profile.level} · {account.user ? 'в облаке' : 'локально'}</small>
+              <small>{profile.level} · {rank.title}</small>
             </div>
             <ChevronRight />
           </button>
@@ -11783,7 +11896,8 @@ function RitmoApp() {
             <div className="top-actions">
               <button className="xp-pill" aria-label="Открыть прогресс" onClick={() => navigate('Progress')}>
                 <Sparkles />
-                {profile.xp} XP
+                <span>{profile.xp} XP</span>
+                <strong>{rank.title}</strong>
               </button>
               <button className="icon-btn" aria-label={dark ? 'Включить светлую тему' : 'Включить тёмную тему'} onClick={() => setDark(!dark)}>
                 {dark ? <Sun /> : <Moon />}

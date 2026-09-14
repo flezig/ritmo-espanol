@@ -16,6 +16,239 @@
   --aqua: #12d8c4;
   --shadow: 0 20px 55px #22163917;
 }
+
+/* Profile identity: Spanish H/M marker and XP-based rank. */
+.profile-identity {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+.gender-choice {
+  display: inline-flex;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 12px;
+  background: rgba(22, 16, 40, .16);
+}
+.profile-hero .gender-choice button {
+  width: auto;
+  height: 30px;
+  min-width: 38px;
+  margin: 0;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, .74);
+  font: 850 12px/1 var(--font-manrope), sans-serif;
+}
+.profile-hero .gender-choice button small {
+  display: none;
+}
+.profile-hero .gender-choice .male.active {
+  border-color: #a7d9ff;
+  background: #2386d8;
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(20, 111, 196, .28);
+}
+.profile-hero .gender-choice .female.active {
+  border-color: #ffc0d0;
+  background: #e64f79;
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(201, 48, 97, .3);
+}
+.profile-rank {
+  width: min(100%, 520px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 12px;
+  margin-top: 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 12px;
+  background: rgba(27, 17, 50, .18);
+}
+.profile-rank > b,
+.profile-rank > span {
+  font-size: 12px;
+  line-height: 1.25;
+}
+.profile-rank > span {
+  font-weight: 850;
+  white-space: nowrap;
+}
+.profile-rank > i {
+  grid-column: 1 / -1;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .2);
+}
+.profile-rank > i > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #63b9ff;
+}
+.profile-rank.gender-m > i > span {
+  background: #ff779b;
+}
+.profile-rank > small {
+  grid-column: 1 / -1;
+  color: rgba(255, 255, 255, .78);
+  font-size: 10px;
+}
+.xp-pill strong {
+  max-width: 150px;
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.xp-pill span {
+  white-space: nowrap;
+}
+.achievement-hero-summary {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+.achievement-rank {
+  min-width: 170px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .09);
+  text-align: center;
+}
+.achievement-rank svg {
+  width: 24px;
+  color: #72c2ff;
+}
+.achievement-rank.gender-m svg {
+  color: #ff86a7;
+}
+.achievement-rank span,
+.achievement-rank small {
+  color: #d7d2eb;
+  font-size: 10px;
+}
+.achievement-rank b {
+  max-width: 180px;
+  margin: 4px 0 2px;
+  font-size: 15px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .achievement-hero-summary {
+    width: 100%;
+  }
+  .achievement-rank,
+  .achievement-total {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .profile-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px;
+    padding: 20px 16px;
+  }
+  .profile-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+  }
+  .profile-identity {
+    width: 100%;
+  }
+  .profile-name-row {
+    align-items: flex-start;
+  }
+  .profile-name-row h1,
+  .profile-name-input {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .profile-rank {
+    grid-template-columns: 1fr;
+  }
+  .profile-rank > span,
+  .profile-rank > i,
+  .profile-rank > small {
+    grid-column: 1;
+  }
+  .profile-rank > span {
+    white-space: normal;
+  }
+  .profile-hero .profile-edit-button {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .top-actions .xp-pill {
+    display: flex;
+    max-width: 116px;
+    height: 34px;
+    padding: 0 8px;
+    gap: 5px;
+  }
+  .top-actions .xp-pill span {
+    display: none;
+  }
+  .top-actions .xp-pill strong {
+    max-width: 76px;
+    font-size: 10px;
+  }
+  .achievement-hero-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .achievement-rank,
+  .achievement-total {
+    padding: 13px 9px;
+    border-radius: 16px;
+  }
+  .achievement-total b {
+    font-size: 34px;
+  }
+}
+
+@media (max-width: 390px) {
+  .profile-hero {
+    grid-template-columns: 1fr;
+  }
+  .profile-avatar {
+    width: 52px;
+    height: 52px;
+  }
+  .profile-name-row {
+    justify-content: space-between;
+  }
+  .top-actions .xp-pill {
+    max-width: 92px;
+  }
+  .top-actions .xp-pill strong {
+    max-width: 54px;
+  }
+}
 .dark {
   --bg: #0e0c18;
   --panel: #191625;
@@ -12644,4 +12877,62 @@ body {
     width: auto;
     transform: none;
   }
+}
+
+/* Profile ranks — intentionally last so mobile controls cannot be hidden by legacy rules. */
+@media (max-width: 700px) {
+  .profile-hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px;
+    padding: 20px 16px;
+  }
+  .profile-hero .profile-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+  }
+  .profile-hero .profile-edit-button {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 0;
+  }
+  .profile-rank { grid-template-columns: 1fr; }
+  .profile-rank > span,
+  .profile-rank > i,
+  .profile-rank > small { grid-column: 1; }
+  .achievement-hero-summary { width: 100%; }
+}
+
+@media (max-width: 560px) {
+  .top-actions .xp-pill {
+    display: flex;
+    max-width: 116px;
+    height: 34px;
+    padding: 0 8px;
+    gap: 5px;
+  }
+  .top-actions .xp-pill > span { display: none; }
+  .top-actions .xp-pill > strong {
+    max-width: 76px;
+    font-size: 10px;
+  }
+  .achievement-hero-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+  .achievement-rank,
+  .achievement-total {
+    min-width: 0;
+    padding: 13px 9px;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 390px) {
+  .profile-hero { grid-template-columns: 1fr; }
+  .profile-name-row { justify-content: space-between; }
+  .top-actions .xp-pill { max-width: 92px; }
+  .top-actions .xp-pill > strong { max-width: 54px; }
 }
