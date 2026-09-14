@@ -38,7 +38,7 @@ import {
 import { vocabularyTopics, type VocabularyLevel } from './vocabulary';
 import { courseLessons } from './lessons';
 import { YouTubeEmbed } from './components/youtube-embed';
-import { AccountProvider, useAccount } from './components/account-provider';
+import { useAccount } from './components/account-provider';
 import { ReportExerciseButton } from './components/report-exercise-button';
 import { trackLocalEvent } from './lib/local-analytics';
 import { recordClientError } from './lib/error-journal';
@@ -10820,6 +10820,10 @@ function AccountPanel({
             Выйти
           </button>
         </div>
+        <div className="account-workspaces">
+          <a href="/student"><GraduationCap /> Мои задания</a>
+          <a href="/teacher"><UserRound /> Кабинет учителя</a>
+        </div>
         <details className="account-security" open={account.recoveryMode || undefined}>
           <summary>{account.recoveryMode ? 'Создайте новый пароль' : 'Почта и пароль'}</summary>
           {account.recoveryMode && <p>Ссылка подтверждена. Введите новый пароль ниже, чтобы завершить восстановление.</p>}
@@ -11947,9 +11951,5 @@ function RitmoApp() {
 }
 
 export default function Page() {
-  return (
-    <AccountProvider>
-      <RitmoApp />
-    </AccountProvider>
-  );
+  return <RitmoApp />;
 }
