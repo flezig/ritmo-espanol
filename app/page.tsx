@@ -2530,7 +2530,16 @@ function HomeView({
     weakTopicErrors = weakTopicEntry?.[1] || 0,
     nextLesson =
       courseLessons.find((item) => !lessonProgress[item.id]?.completed) || null,
-    nextLessonDone = nextLesson ? lessonProgress[nextLesson.id]?.done || 0 : 0;
+    nextLessonDone = nextLesson ? lessonProgress[nextLesson.id]?.done || 0 : 0,
+    weeklyAnswers = currentTime
+      ? Object.entries(profile.dailyReviews || {}).reduce(
+          (sum, [day, count]) =>
+            new Date(`${day}T12:00:00`).getTime() >= currentTime - 6 * 86400000
+              ? sum + count
+              : sum,
+          0,
+        )
+      : 0;
   useEffect(() => {
     const update = () => {
       const date = new Date();
@@ -2612,17 +2621,19 @@ function HomeView({
           : 'night',
     greeting =
       period === 'morning'
-        ? 'Buenos días ☀️'
+        ? 'Buenos días'
         : period === 'day'
-          ? 'Buenas tardes 🌤️'
-          : 'Buenas noches 🌙';
+          ? 'Buenas tardes'
+          : 'Buenas noches',
+    greetingIcon =
+      period === 'morning' ? '☀️' : period === 'day' ? '🌤️' : '🌙';
   return (
     <>
       <section className={`welcome-row time-${period}`}>
         <div>
           <p className="eyebrow">СЕГОДНЯ · УРОВЕНЬ {profile.level}</p>
           <h1>
-            {greeting}{profile.name ? `, ${profile.name}` : ''}
+            ¡{greeting}{profile.name ? `, ${profile.name}` : ''}! {greetingIcon}
           </h1>
           <p>
             Un poco cada día. Сегодняшний ритм уже сохранён в вашем профиле.
@@ -2643,6 +2654,8 @@ function HomeView({
           lessonId={nextLesson?.id || ''}
           lessonTitle={nextLesson?.title || ''}
           lessonDone={nextLessonDone}
+          todayDone={todayDone}
+          dailyTarget={dailyTarget}
           go={go}
           onPlacementComplete={(level) =>
             recordAchievementEvent({ type: 'placement-test-complete', level })
@@ -2660,11 +2673,11 @@ function HomeView({
           <div>
             <span className="mini-label">ЦЕЛЬ НА СЕГОДНЯ</span>
             <b>
-              {todayDone >= dailyTarget ? 'Выполнено!' : 'Продолжайте ритм'}
+              {todayDone >= dailyTarget ? 'Цель выполнена' : 'Продолжайте ритм'}
             </b>
             <p>
               {todayDone >= dailyTarget
-                ? 'Котик гордится вами'
+                ? `${todayDone} реальных ответов сегодня`
                 : `Осталось ${dailyTarget - todayDone} заданий`}
             </p>
           </div>
@@ -2675,8 +2688,8 @@ function HomeView({
           </span>
           <div>
             <span className="mini-label">МОЙ ПРОГРЕСС</span>
-            <b>{profile.xp} XP</b>
-            <p>{due} карточек пора повторить</p>
+            <b>{weeklyAnswers} ответов за 7 дней</b>
+            <p>Уровень {profile.level} · {due} карточек пора повторить</p>
           </div>
           <div className="mini-bars">
             <i />

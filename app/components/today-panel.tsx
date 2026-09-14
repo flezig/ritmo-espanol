@@ -75,6 +75,8 @@ export default function TodayPanel({
   lessonId,
   lessonTitle,
   lessonDone,
+  todayDone,
+  dailyTarget,
   go,
   onPlacementComplete,
 }: {
@@ -85,6 +87,8 @@ export default function TodayPanel({
   lessonId: string;
   lessonTitle: string;
   lessonDone: number;
+  todayDone: number;
+  dailyTarget: number;
   go: (section: 'Practice' | 'Lessons' | 'Grammar') => void;
   onPlacementComplete: (level: PlacementLevel) => void;
 }) {
@@ -153,6 +157,38 @@ export default function TodayPanel({
   const grammarRecommendation = weakTopic
     ? `${weakTopic} · ${weakTopicErrors} ${weakTopicErrors === 1 ? 'ошибка' : weakTopicErrors < 5 ? 'ошибки' : 'ошибок'}`
     : 'Ошибок пока нет — повторить базовые правила';
+  const steps = [
+    {
+      number: 1,
+      title: 'Практика',
+      description: practiceRecommendation,
+      action: due ? 'Повторить' : 'Начать',
+      status: todayDone >= dailyTarget ? 'done' : 'active',
+      statusLabel: todayDone >= dailyTarget ? 'Выполнено' : 'Сейчас',
+      open: () => go('Practice'),
+    },
+    {
+      number: 2,
+      title: 'Следующий урок',
+      description: lessonRecommendation,
+      action: lessonDone ? 'Продолжить' : 'Начать урок',
+      status: lessonDone ? 'active' : 'upcoming',
+      statusLabel: lessonDone ? 'Продолжить' : 'Впереди',
+      open: () => {
+        if (lessonId) sessionStorage.setItem('ritmo-focus-lesson-id', lessonId);
+        go('Lessons');
+      },
+    },
+    {
+      number: 3,
+      title: 'Грамматика',
+      description: grammarRecommendation,
+      action: weakTopic ? 'Разобрать ошибки' : 'Повторить правила',
+      status: weakTopic ? 'active' : 'upcoming',
+      statusLabel: weakTopic ? 'Нужно внимание' : 'Впереди',
+      open: () => go('Grammar'),
+    },
+  ] as const;
   return (
     <section className="today-panel">
       <header>
@@ -165,15 +201,22 @@ export default function TodayPanel({
             setAttemptIndex(placementHistory.length);
           }
           setPlacementOpen((value) => !value);
-        }}>Входной тест (по желанию)</button>
+        }}>Пройти входной тест</button>
       </header>
       <div className="today-actions">
-        <button onClick={() => go('Practice')}><b>1 · Практика</b><span>{practiceRecommendation}</span></button>
-        <button onClick={() => {
-          if (lessonId) sessionStorage.setItem('ritmo-focus-lesson-id', lessonId);
-          go('Lessons');
-        }}><b>2 · Следующий урок</b><span>{lessonRecommendation}</span></button>
-        <button onClick={() => go('Grammar')}><b>3 · Грамматика</b><span>{grammarRecommendation}</span></button>
+        {steps.map((step) => (
+          <article className={`today-step ${step.status}`} key={step.number}>
+            <header>
+              <span className="today-step-number">
+                {step.status === 'done' ? '✓' : step.status === 'active' ? '→' : step.number}
+              </span>
+              <small>{step.statusLabel}</small>
+            </header>
+            <b>{step.number} · {step.title}</b>
+            <p>{step.description}</p>
+            <button onClick={step.open}>{step.action}</button>
+          </article>
+        ))}
       </div>
       {result && (
         <div className="placement-result-card">

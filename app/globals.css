@@ -7480,6 +7480,184 @@ input {
   }
 }
 
+/* Home starts with a clear greeting and a three-step action plan. */
+.welcome-row.time-morning,
+.welcome-row.time-day {
+  color: #201a30;
+}
+.welcome-row.time-morning .eyebrow,
+.welcome-row.time-day .eyebrow {
+  color: #785128;
+}
+.welcome-row.time-morning > div > p:last-child,
+.welcome-row.time-day > div > p:last-child {
+  color: #5b5368;
+}
+.welcome-row.time-morning .streak-pill,
+.welcome-row.time-day .streak-pill {
+  background: rgba(255, 255, 255, .72);
+  color: #201a30;
+}
+.welcome-row.time-morning .streak-pill span,
+.welcome-row.time-day .streak-pill span {
+  color: #5b5368;
+}
+
+.today-panel {
+  padding: clamp(14px, 1.6vw, 19px);
+}
+.today-panel > header > button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .07);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.today-actions {
+  gap: 9px;
+  margin-top: 12px;
+}
+.today-actions .today-step {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 7px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .055);
+}
+.today-step > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.today-step-number {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  font-size: 12px;
+  font-weight: 900;
+}
+.today-step > header small {
+  color: rgba(255, 255, 255, .6);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.today-step > b {
+  font-size: 14px;
+}
+.today-actions .today-step > p {
+  margin: 0;
+  color: rgba(255, 255, 255, .7);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.today-actions .today-step > button {
+  width: max-content;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .09);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.today-step.active {
+  border-color: rgba(125, 219, 255, .48);
+  background: rgba(86, 116, 225, .17);
+}
+.today-step.active .today-step-number {
+  background: #8b71ff;
+  color: #fff;
+}
+.today-step.done {
+  border-color: rgba(77, 224, 178, .45);
+  background: rgba(31, 173, 132, .13);
+}
+.today-step.done .today-step-number {
+  background: #2bc79c;
+  color: #10261f;
+}
+.today-step.upcoming { opacity: .78; }
+.stats-row {
+  margin: 14px 0 34px;
+}
+
+@media (max-width: 760px) {
+  .welcome-row[class*='time-'] > div > p:last-child {
+    display: block;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .today-panel > header {
+    align-items: flex-start;
+  }
+  .today-panel > header > button {
+    flex: none;
+    min-height: 32px;
+    padding-inline: 9px;
+    font-size: 9px;
+  }
+  .today-actions .today-step {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 3px 9px;
+    padding: 10px 11px;
+  }
+  .today-step > header {
+    grid-row: 1 / 3;
+  }
+  .today-step > header small { display: none; }
+  .today-step > b {
+    grid-column: 2;
+    font-size: 13px;
+  }
+  .today-actions .today-step > p {
+    grid-column: 2;
+    font-size: 10px;
+  }
+  .today-actions .today-step > button {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    padding-inline: 9px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 430px) {
+  .welcome-row[class*='time-'] {
+    align-items: flex-start;
+  }
+  .welcome-row[class*='time-'] .streak-pill {
+    padding: 7px 9px;
+    font-size: 10px;
+  }
+  .today-actions .today-step {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .today-actions .today-step > button {
+    width: 100%;
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 4px;
+  }
+}
+
 /* Compact listening flow: instruction -> audio -> answer. */
 .srs-view.active-exercise .audio-task > h2 {
   max-width: 760px;
