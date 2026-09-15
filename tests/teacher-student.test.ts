@@ -9,6 +9,7 @@ const progressSql = readFileSync(new URL('../supabase/migrations/0006_assignment
 const activitySql = readFileSync(new URL('../supabase/migrations/0007_assignment_activity.sql', import.meta.url), 'utf8');
 const attemptsSql = readFileSync(new URL('../supabase/migrations/0008_assignment_attempts.sql', import.meta.url), 'utf8');
 const progressHotfixSql = readFileSync(new URL('../supabase/migrations/0009_fix_assignment_progress_ambiguity.sql', import.meta.url), 'utf8');
+const contextSql = readFileSync(new URL('../supabase/migrations/0010_assignment_context.sql', import.meta.url), 'utf8');
 const assignmentTracking = readFileSync(new URL('../app/lib/assignment-tracking.ts', import.meta.url), 'utf8');
 
 test('teacher/student migration contains the complete durable model', () => {
@@ -118,4 +119,25 @@ test('assignment progress qualifies columns that collide with output variables',
   assert.match(progressHotfixSql, /from public\.assignment_activity_events e/i);
   assert.match(progressHotfixSql, /where e\.assignment_id=item\.id and e\.attempt_no=item\.current_attempt/i);
   assert.doesNotMatch(progressHotfixSql, /from public\.assignment_activity_events where assignment_id=/i);
+});
+
+test('normal learning activity is matched server-side to every relevant assignment', () => {
+  assert.match(contextSql, /function public\.record_learning_activity/i);
+  assert.match(contextSql, /a\.student_id=auth\.uid\(\)/i);
+  assert.match(contextSql, /a\.content_id='all'/i);
+  assert.match(contextSql, /a\.topic_id='all'/i);
+  assert.match(contextSql, /on conflict\(assignment_id,source_event_id\) do nothing/i);
+  assert.match(assignmentTracking, /record_learning_activity/);
+});
+
+test('student workspace cannot expose assignments merely created by the same teacher account', () => {
+  assert.match(contextSql, /function public\.get_my_student_assignments/i);
+  assert.match(contextSql, /a\.student_id = auth\.uid\(\) and a\.status <> 'draft'/i);
+});
+
+test('exercise questions stay scoped to assignment parties', () => {
+  assert.match(contextSql, /create table if not exists public\.exercise_questions/i);
+  assert.match(contextSql, /auth\.uid\(\) in \(teacher_id,student_id\)/i);
+  assert.match(contextSql, /function public\.ask_teacher_question/i);
+  assert.match(contextSql, /function public\.reply_to_exercise_question/i);
 });

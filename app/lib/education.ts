@@ -9,6 +9,7 @@ export type Assignment = {
   assignment_type: 'manual' | 'lesson' | 'practice' | 'dictation' | 'music' | 'mixed';
   status: AssignmentStatus; due_at: string | null; max_score: number | null; material_url: string | null;
   content_type: string | null; content_id: string | null; content_title_snapshot: string | null;
+  topic_id: string | null; topic_title_snapshot: string | null;
   target_count: number; metric_key: string;
   current_attempt: number; tracking_version: number;
   assigned_at: string | null; completed_at: string | null; created_at: string; updated_at: string;
@@ -16,6 +17,8 @@ export type Assignment = {
 export type Submission = { id: string; assignment_id: string; student_id: string; attempt: number; text_answer: string; answers: unknown; link_url: string | null; submitted_at: string };
 export type Review = { id: string; assignment_id: string; submission_id: string; teacher_id: string; decision: 'completed' | 'revision_requested'; score: number | null; comment: string; created_at: string };
 export type AssignmentComment = { id: string; assignment_id: string; author_id: string; body: string; created_at: string };
+export type ExerciseQuestion = { id: string; assignment_id: string; teacher_id: string; student_id: string; context_type: string; content_id: string; topic_id: string | null; item_key: string; prompt: string; status: 'open' | 'answered' | 'closed'; created_at: string };
+export type ExerciseQuestionMessage = { id: number; question_id: string; author_id: string; body: string; created_at: string };
 export type AppNotification = { id: string; kind: string; title: string; body: string; entity_type: string | null; entity_id: string | null; read_at: string | null; created_at: string };
 export type AssignmentProgress = { assignment_id: string; completed_count: number; target_count: number; correct_count: number; answer_count: number; earned_score: number; progress_percent: number };
 export type AssignmentActivity = {
@@ -73,7 +76,7 @@ export async function loadStudentWorkspace(client: SupabaseClient) {
   const [invitations, relationships, assignments, notifications, progress] = await Promise.all([
     client.from('teacher_student_invitations').select('*').order('created_at', { ascending: false }),
     client.from('teacher_student_relationships').select('*').order('created_at', { ascending: false }),
-    client.from('assignments').select('*').neq('status', 'draft').order('created_at', { ascending: false }),
+    client.rpc('get_my_student_assignments'),
     client.from('notifications').select('*').order('created_at', { ascending: false }).limit(30),
     client.rpc('get_visible_assignment_progress'),
   ]);
@@ -98,6 +101,9 @@ export async function loadAssignmentDetail(client: SupabaseClient, id: string) {
     client.rpc('get_visible_assignment_progress'),
     loadAllAssignmentActivity(client, id),
   ]);
+  const questionResult = await client.from('exercise_questions').select('*').eq('assignment_id', id).order('created_at', { ascending: false });
+  const questions = unwrap<ExerciseQuestion[]>(questionResult.data, questionResult.error);
+  const messageResult = questions.length ? await client.from('exercise_question_messages').select('*').in('question_id', questions.map((item) => item.id)).order('created_at') : { data: [], error: null };
   return {
     assignment: unwrap<Assignment>(assignment.data, assignment.error),
     submissions: unwrap<Submission[]>(submissions.data, submissions.error),
@@ -105,7 +111,13 @@ export async function loadAssignmentDetail(client: SupabaseClient, id: string) {
     comments: unwrap<AssignmentComment[]>(comments.data, comments.error),
     progress: unwrap<AssignmentProgress[]>(progress.data, progress.error).find((item) => item.assignment_id === id) || null,
     activity,
+    questions,
+    questionMessages: unwrap<ExerciseQuestionMessage[]>(messageResult.data as ExerciseQuestionMessage[], messageResult.error),
   };
+}
+export async function replyToExerciseQuestion(client: SupabaseClient, questionId: string, body: string) {
+  const { error } = await client.rpc('reply_to_exercise_question', { p_question: questionId, p_body: body });
+  if (error) throw new Error(error.message);
 }
 
 async function loadAllAssignmentActivity(client: SupabaseClient, id: string) {
@@ -131,7 +143,7 @@ export async function respondInvitation(client: SupabaseClient, id: string, acce
 export async function createAssignment(client: SupabaseClient, input: {
   studentId: string; title: string; description: string; type: Assignment['assignment_type']; dueAt?: string;
   maxScore?: number; materialUrl?: string; contentType?: string; contentId?: string; contentTitle?: string;
-  targetCount?: number;
+  targetCount?: number; topicId?: string; topicTitle?: string;
 }) {
   const { data, error } = await client.rpc('create_assignment', {
     p_student: input.studentId, p_title: input.title, p_description: input.description, p_type: input.type,
@@ -139,6 +151,7 @@ export async function createAssignment(client: SupabaseClient, input: {
     p_content_type: input.contentType || null, p_content_id: input.contentId || null,
     p_content_title_snapshot: input.contentTitle || null, p_status: 'assigned',
     p_target_count: input.targetCount || 1,
+    p_topic_id: input.topicId || null, p_topic_title_snapshot: input.topicTitle || null,
   });
   return unwrap<string>(data, error);
 }

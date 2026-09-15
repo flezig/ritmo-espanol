@@ -3741,6 +3741,7 @@ function LessonsView() {
                 prompt={exercise.prompt}
                 answer={exercise.answer}
                 options={exercise.options}
+                learningContext={{ type: 'lesson', contentId: lesson.id }}
               />
               <header>
                 <button
@@ -6548,6 +6549,7 @@ function MusicView() {
             prompt={round.prompt}
             answer={round.answer}
             options={round.options}
+            learningContext={{ type: 'music', contentId: normalizeText(song.title).replace(/\s+/g, '-') }}
           />
           <small>{round.kind.toUpperCase()}</small>
           <h3>{round.prompt}</h3>
@@ -7819,6 +7821,7 @@ function DetectiveGame({ initialLevel = 'A1' }: { initialLevel?: DetectiveLevel 
               prompt={question.prompt}
               answer={question.answer}
               options={question.options}
+              learningContext={{ type: 'practice', contentId: `detective:${level.toLowerCase()}` }}
             />
             <small>{question.kind}</small>
             <h3>{question.prompt}</h3>
@@ -8132,6 +8135,7 @@ function SpanishRushGame() {
             prompt={prompt}
             answer={answer}
             options={options}
+            learningContext={{ type: 'practice', contentId: 'rush' }}
           />
           <header>
             <span>{isGrammar ? 'ГРАММАТИКА' : `${statusLabels[status]} · ${wordCard.topic}`}</span>
@@ -8196,6 +8200,9 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
       correct: isCorrect, score: isCorrect ? 1 : 0,
     });
     setChoice(value);
+    window.requestAnimationFrame(() =>
+      document.querySelector('.article-question > footer')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+    );
     playFeedbackSound(isCorrect);
     recordLearningEvent(isCorrect, isCorrect ? 4 : 1);
     if (isCorrect) setScore((current) => current + 1);
@@ -8248,6 +8255,7 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
           prompt={question.prompt}
           answer={question.answer}
           options={question.options}
+          learningContext={{ type: 'practice', contentId: 'articles' }}
         />
         <small>
           {question.kind === 'article'
@@ -8294,11 +8302,14 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
 
 function PracticeHub() {
   const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush' | 'articles'>('menu'),
-    [assignedMode, setAssignedMode] = useState('');
+    [assignedMode, setAssignedMode] = useState(''), [assignedTopic, setAssignedTopic] = useState('');
   useEffect(() => {
     const requested = sessionStorage.getItem('ritmo-focus-practice-mode') || '';
+    const requestedTopic = sessionStorage.getItem('ritmo-focus-practice-topic') || '';
     sessionStorage.removeItem('ritmo-focus-practice-mode');
+    sessionStorage.removeItem('ritmo-focus-practice-topic');
     setAssignedMode(requested);
+    setAssignedTopic(requestedTopic);
     if (requested.startsWith('words:')) setGame('study');
     else if (requested.startsWith('detective:')) setGame('detective');
     else if (requested === 'rush') setGame('rush');
@@ -8309,20 +8320,21 @@ function PracticeHub() {
   };
   return (
     <div className="view-stack practice-hub">
-      <section className="practice-mode-picker">
-        <button className={game === 'study' ? 'active' : ''} onClick={() => selectGame('study')}>
+      {game === 'menu' && <section className="practice-mode-picker">
+        <button onClick={() => selectGame('study')}>
           <span>🧠</span><b>Учить слова</b><small>Прежняя адаптивная практика</small>
         </button>
-        <button className={game === 'detective' ? 'active' : ''} onClick={() => selectGame('detective')}>
+        <button onClick={() => selectGame('detective')}>
           <span>📖</span><b>Детектив по тексту</b><small>A1 и A2 · по 20 заданий</small>
         </button>
-        <button className={game === 'rush' ? 'active' : ''} onClick={() => selectGame('rush')}>
+        <button onClick={() => selectGame('rush')}>
           <span>⏱️</span><b>Spanish Rush</b><small>60 секунд · combo и бонусы</small>
         </button>
-        <button className={game === 'articles' ? 'active' : ''} onClick={() => selectGame('articles')}>
+        <button onClick={() => selectGame('articles')}>
           <span>📚</span><b>Артикли: el или la</b><small>10 случайных заданий · исключения и значения</small>
         </button>
-      </section>
+      </section>}
+      {game !== 'menu' && <button className="practice-games-back" onClick={() => selectGame('menu')}><ArrowLeft /> Все режимы</button>}
       {game === 'menu' ? (
         <section className="practice-mode-welcome game-panel">
           <span>🐾</span>
@@ -8330,7 +8342,7 @@ function PracticeHub() {
           <p>Учите слова без спешки, читайте истории или устройте минутный спринт.</p>
         </section>
       ) : game === 'study' ? (
-        <AdaptivePracticeView assignedMode={assignedMode.startsWith('words:') ? assignedMode.slice(6) as SessionMode : null} showModes={() => selectGame('menu')} />
+        <AdaptivePracticeView assignedMode={assignedMode.startsWith('words:') ? assignedMode.slice(6) as SessionMode : null} assignedTopic={assignedTopic || null} showModes={() => selectGame('menu')} />
       ) : game === 'detective' ? (
         <DetectiveGame initialLevel={assignedMode === 'detective:a2' ? 'A2' : 'A1'} />
       ) : game === 'articles' ? (
@@ -8342,7 +8354,7 @@ function PracticeHub() {
   );
 }
 
-function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => void; assignedMode: SessionMode | null }) {
+function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { showModes: () => void; assignedMode: SessionMode | null; assignedTopic: string | null }) {
   const { words: customWords, hydrated: customHydrated } = useCustomWords(),
     { records, rate, toggleFavorite, markNew, hydrated: srsHydrated } = useSRS();
   const { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices();
@@ -8594,7 +8606,7 @@ function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => vo
     };
   }, [scopedDeck, records, now]);
   const start = (nextMode: SessionMode, nextTopic = topic, nextLevel = level) => {
-    beginAssignedSession('practice', `words:${nextMode}`);
+    beginAssignedSession('practice', `words:${nextMode}`, nextTopic);
     if (!deckReady) return;
     answerLock.current = false;
     gradeLock.current = false;
@@ -8622,8 +8634,8 @@ function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => vo
   useEffect(() => {
     if (!assignedMode || !deckReady || !sessionHydrated || assignedStarted.current) return;
     assignedStarted.current = true;
-    start(assignedMode);
-  }, [assignedMode, deckReady, sessionHydrated]);
+    start(assignedMode, assignedTopic || topic);
+  }, [assignedMode, assignedTopic, deckReady, sessionHydrated]);
   const leaveSessionWithoutSaving = () => {
     if (
       sessionBaseline &&
@@ -8694,7 +8706,7 @@ function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => vo
     const result = analyzeAnswer(value, expectedAnswer),
       isCorrect = result.correct;
     recordAssignedActivity({
-      type: 'practice', contentId: `words:${mode}`, itemKey: cardBase, prompt: taskPrompt,
+      type: 'practice', contentId: `words:${mode}`, topicId: topic, itemKey: cardBase, prompt: taskPrompt,
       studentAnswer: value, correctAnswer: expectedAnswer,
       correct: isCorrect, score: isCorrect ? 1 : 0,
     });
@@ -8727,7 +8739,7 @@ function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => vo
     if (!card || revealed || answerLock.current) return;
     answerLock.current = true;
     recordAssignedActivity({
-      type: 'practice', contentId: `words:${mode}`, itemKey: cardBase, prompt: taskPrompt,
+      type: 'practice', contentId: `words:${mode}`, topicId: topic, itemKey: cardBase, prompt: taskPrompt,
       studentAnswer: 'Не знаю', correctAnswer: expectedAnswer, correct: false,
     });
     setTyped('');
@@ -8749,7 +8761,7 @@ function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => vo
     if (responseKind === 'self') {
       const remembered = value === 'good' || value === 'easy';
       recordAssignedActivity({
-        type: 'practice', contentId: `words:${mode}`, itemKey: cardBase, prompt: taskPrompt,
+        type: 'practice', contentId: `words:${mode}`, topicId: topic, itemKey: cardBase, prompt: taskPrompt,
         studentAnswer: value === 'again' ? 'Не помню' : value === 'hard' ? 'Трудно' : value === 'good' ? 'Хорошо' : 'Легко',
         correctAnswer: expectedAnswer, correct: remembered, score: remembered ? 1 : 0,
       });
@@ -8764,7 +8776,7 @@ function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => vo
         recordAchievementEvent({ type: 'pronunciation-correct' });
       if (index >= session.length - 1) {
         setFinished(true);
-        completeAssignedSession({ type: 'practice', contentId: `words:${mode}`, correct: Math.max(0, session.length - sessionErrors), total: session.length });
+        completeAssignedSession({ type: 'practice', contentId: `words:${mode}`, topicId: topic, correct: Math.max(0, session.length - sessionErrors), total: session.length });
         setSessionBaseline(null);
         playCelebrationSound('finish');
         recordAchievementEvent({
@@ -9171,6 +9183,7 @@ function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => vo
                       prompt={taskPrompt}
                       answer={expectedAnswer}
                       options={responseKind === 'choice' ? options : undefined}
+                      learningContext={{ type: 'practice', contentId: `words:${mode}`, topicId: topic }}
                     />
                   </div>
                 </div>
@@ -9719,6 +9732,7 @@ function DictationView() {
             section={`Диктант: ${card.topic}`}
             prompt={audioTarget === 'word' ? 'Запишите услышанное слово' : 'Запишите услышанное предложение'}
             answer={expected}
+            learningContext={{ type: 'dictation', contentId: 'learned-words', topicId: topic }}
           />
           <header>
             <span>{card.level && `${card.level} · `}{card.topic}</span>

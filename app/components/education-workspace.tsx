@@ -6,10 +6,11 @@ import { useAccount } from './account-provider';
 import { getCloudClient } from '../lib/cloud-progress';
 import { activateAssignmentTracking } from '../lib/assignment-tracking';
 import { courseLessons } from '../lessons';
+import { vocabularyTopics } from '../vocabulary';
 import {
   addAssignmentComment, createAssignment, inviteStudent, loadAssignmentDetail, loadMyRoles,
-  loadStudentLearningSummary, loadStudentWorkspace, loadTeacherWorkspace, markNotificationRead, respondInvitation, reviewAssignment, submitAssignment,
-  type AppNotification, type Assignment, type AssignmentActivity, type AssignmentComment, type AssignmentProgress, type Invitation, type Profile, type Review, type Role,
+  loadStudentLearningSummary, loadStudentWorkspace, loadTeacherWorkspace, markNotificationRead, replyToExerciseQuestion, respondInvitation, reviewAssignment, submitAssignment,
+  type AppNotification, type Assignment, type AssignmentActivity, type AssignmentComment, type AssignmentProgress, type ExerciseQuestion, type Invitation, type Profile, type Review, type Role,
 } from '../lib/education';
 
 type WorkspaceMode = 'teacher' | 'student' | 'teacher-student' | 'teacher-assignment' | 'student-assignment';
@@ -66,15 +67,24 @@ function NotificationFeed({ items, role, refresh }: { items: AppNotification[]; 
 
 function AssignmentRows({ assignments, profiles, progress, perspective }: { assignments: Assignment[]; profiles?: Map<string, Profile>; progress?: Map<string, AssignmentProgress>; perspective: 'teacher' | 'student' }) {
   if (!assignments.length) return <div className="education-empty compact"><BookOpen /><p>Заданий пока нет.</p></div>;
-  return <div className="assignment-list">{assignments.map((item) => {
+  const ordered = [...assignments].sort((a, b) => {
+    const rank = (x: Assignment) => x.status === 'revision_requested' ? 0 : x.status === 'overdue' ? 1 : x.status === 'assigned' ? 2 : x.status === 'submitted' ? 3 : 4;
+    return rank(a) - rank(b) || new Date(a.due_at || '2999-01-01').getTime() - new Date(b.due_at || '2999-01-01').getTime();
+  });
+  const render = (items: Assignment[]) => <div className="assignment-list">{items.map((item) => {
     const overdue = item.due_at && new Date(item.due_at) < new Date() && !['completed', 'submitted'].includes(item.status);
     const measured = progress?.get(item.id);
+    const started = !!measured?.completed_count || !!measured?.answer_count;
     return <a key={item.id} className="assignment-row" href={`/${perspective}/assignments/${item.id}`}>
-      <div><span className={`assignment-status ${overdue ? 'overdue' : item.status}`}>{overdue ? 'Просрочено' : statusLabel[item.status]}</span><h3>{item.title}</h3>
-        {perspective === 'teacher' && <p>{personName(profiles?.get(item.student_id))}</p>}{measured && <div className="assignment-mini-progress"><i><span style={{ width: `${measured.progress_percent}%` }} /></i><b>{measured.completed_count} / {measured.target_count}</b>{measured.answer_count > 0 && <small>{Math.round(measured.correct_count / measured.answer_count * 100)}% верно</small>}{measured.earned_score > 0 && <small>{measured.earned_score} очков</small>}</div>}</div>
-      <div className="assignment-meta"><span><Clock3 />{dateText(item.due_at)}</span>{item.content_title_snapshot && <span><BookOpen />{item.content_title_snapshot}</span>}</div>
+      <div className="assignment-main"><span className={`assignment-status ${overdue ? 'overdue' : item.status}`}>{overdue ? 'Просрочено' : statusLabel[item.status]}</span><h3>{item.title}</h3>
+        {perspective === 'teacher' ? <p>{personName(profiles?.get(item.student_id))}</p> : <p>{item.content_title_snapshot || item.description || 'Выполните задание преподавателя'}</p>}
+        {item.topic_title_snapshot && <small className="assignment-topic">Тема: {item.topic_title_snapshot}</small>}
+        {measured && <div className="assignment-mini-progress"><i><span style={{ width: `${measured.progress_percent}%` }} /></i><b>{measured.completed_count} / {measured.target_count}</b></div>}</div>
+      <div className="assignment-meta"><span><Clock3 />{dateText(item.due_at)}</span><strong>{perspective === 'teacher' ? 'Открыть результат' : started ? 'Продолжить' : 'Начать'}</strong></div>
     </a>;
   })}</div>;
+  const current = ordered.filter((item) => !['completed','cancelled'].includes(item.status)), completed = ordered.filter((item) => ['completed','cancelled'].includes(item.status));
+  return <>{render(current)}{!!completed.length && <details className="completed-assignments"><summary>Завершённые · {completed.length}</summary>{render(completed)}</details>}</>;
 }
 
 function TeacherDashboard() {
@@ -101,7 +111,7 @@ function TeacherDashboard() {
 
 function TeacherStudent({ studentId }: { studentId: string }) {
   const client = getCloudClient()!, [data, setData] = useState<TeacherData | null>(null), [summary, setSummary] = useState<Awaited<ReturnType<typeof loadStudentLearningSummary>> | null>(null), [error, setError] = useState(''), [saving, setSaving] = useState(false), [notice, setNotice] = useState('');
-  const [form, setForm] = useState({ title: '', description: '', type: 'manual' as Assignment['assignment_type'], dueAt: '', maxScore: '10', materialUrl: '', contentId: '', targetCount: '1' });
+  const [form, setForm] = useState({ title: '', description: '', type: 'manual' as Assignment['assignment_type'], dueAt: '', maxScore: '10', materialUrl: '', contentId: '', topicId: 'all', targetCount: '1' });
   const refresh = useCallback(async () => { try { const workspace = await loadTeacherWorkspace(client); setData(workspace); if (workspace.relationships.some((r) => r.student_id === studentId)) setSummary(await loadStudentLearningSummary(client, studentId)); } catch (e) { setError((e as Error).message); } }, [client, studentId]);
   useAutoRefresh(refresh);
   const linked = data?.relationships.some((r) => r.student_id === studentId);
@@ -123,8 +133,9 @@ function TeacherStudent({ studentId }: { studentId: string }) {
   ], []);
   const save = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setNotice(''); try {
     const selected = contentOptions.find((o) => o.id === form.contentId);
-    await createAssignment(client, { studentId, title: form.title, description: form.description, type: selected?.type || form.type, dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined, maxScore: Number(form.maxScore) || undefined, materialUrl: form.materialUrl, contentType: selected?.type, contentId: selected?.id, contentTitle: selected?.title, targetCount: selected?.type === 'lesson' ? 1 : Number(form.targetCount) || 1 });
-    setForm({ title: '', description: '', type: 'manual', dueAt: '', maxScore: '10', materialUrl: '', contentId: '', targetCount: '1' }); setNotice('Задание назначено.'); await refresh();
+    const chosenTopic = vocabularyTopics.find((item) => item.name === form.topicId);
+    await createAssignment(client, { studentId, title: form.title, description: form.description, type: selected?.type || form.type, dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined, maxScore: Number(form.maxScore) || undefined, materialUrl: form.materialUrl, contentType: selected?.type, contentId: selected?.id, contentTitle: selected?.title, targetCount: selected?.type === 'lesson' ? 1 : Number(form.targetCount) || 1, topicId: selected?.type === 'practice' && selected.id.startsWith('words:') ? form.topicId : undefined, topicTitle: chosenTopic?.name || (form.topicId === 'all' ? 'Все темы' : undefined) });
+    setForm({ title: '', description: '', type: 'manual', dueAt: '', maxScore: '10', materialUrl: '', contentId: '', topicId: 'all', targetCount: '1' }); setNotice('Задание назначено.'); await refresh();
   } catch (e) { setNotice((e as Error).message); } finally { setSaving(false); } };
   if (!data && !error) return <Busy role="teacher" />;
   if (!linked) return <WorkspaceFrame role="teacher"><a className="back-link" href="/teacher"><ArrowLeft />К ученикам</a><ErrorBox message={error || 'Этот ученик не связан с вашим аккаунтом.'} /></WorkspaceFrame>;
@@ -135,6 +146,7 @@ function TeacherStudent({ studentId }: { studentId: string }) {
       <label>Название<input required maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
       <label>Описание<textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
       <label>Материал курса<select value={form.contentId} onChange={(e) => setForm({ ...form, contentId: e.target.value })}><option value="">Без привязки</option>{contentOptions.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}</select></label>
+      {contentOptions.find((item) => item.id === form.contentId)?.type === 'practice' && form.contentId.startsWith('words:') && <label>Тема Practice<select value={form.topicId} onChange={(e) => setForm({ ...form, topicId: e.target.value })}><option value="all">Все темы</option>{vocabularyTopics.map((item) => <option key={`${item.level}-${item.name}`} value={item.name}>{item.level} · {item.name}</option>)}</select></label>}
       {contentOptions.find((item) => item.id === form.contentId)?.type !== 'lesson' && form.contentId && <label>Сколько сессий пройти<input type="number" min="1" max="100" value={form.targetCount} onChange={(e) => setForm({ ...form, targetCount: e.target.value })} /></label>}
       <div className="form-row"><label>Срок<input type="datetime-local" value={form.dueAt} onChange={(e) => setForm({ ...form, dueAt: e.target.value })} /></label><label>Максимальный балл<input type="number" min="1" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} /></label></div>
       <label>Дополнительная ссылка<input type="url" value={form.materialUrl} onChange={(e) => setForm({ ...form, materialUrl: e.target.value })} /></label><button className="edu-button primary" disabled={saving}>{saving ? 'Назначаем…' : 'Назначить ученику'}</button>{notice && <p className="form-message">{notice}</p>}
@@ -157,8 +169,8 @@ function StudentDashboard() {
 }
 
 function AssignmentDetail({ id, role }: { id: string; role: 'teacher' | 'student' }) {
-  const client = getCloudClient()!, [data, setData] = useState<DetailData | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [text, setText] = useState(''), [link, setLink] = useState(''), [reviewComment, setReviewComment] = useState(''), [chatComment, setChatComment] = useState(''), [score, setScore] = useState('');
-  const refresh = useCallback(async () => { setError(''); try { setData(await loadAssignmentDetail(client, id)); } catch (e) { setError((e as Error).message); } }, [client, id]);
+  const client = getCloudClient()!, { user } = useAccount(), [data, setData] = useState<DetailData | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [text, setText] = useState(''), [link, setLink] = useState(''), [reviewComment, setReviewComment] = useState(''), [chatComment, setChatComment] = useState(''), [score, setScore] = useState('');
+  const refresh = useCallback(async () => { setError(''); try { const detail = await loadAssignmentDetail(client, id); if (role === 'student' && detail.assignment.student_id !== user?.id) throw new Error('Это задание не назначено вашему аккаунту.'); setData(detail); } catch (e) { setData(null); setError((e as Error).message); } }, [client, id, role, user?.id]);
   useAutoRefresh(refresh);
   const send = async (event: FormEvent) => { event.preventDefault(); setBusy(true); try { await submitAssignment(client, id, text, link); setText(''); setLink(''); await refresh(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } };
   const review = async (decision: Review['decision']) => { setBusy(true); try { await reviewAssignment(client, id, decision, score ? Number(score) : null, reviewComment); setReviewComment(''); await refresh(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } };
@@ -174,12 +186,17 @@ function AssignmentDetail({ id, role }: { id: string; role: 'teacher' | 'student
       { sessionStorage.setItem('ritmo-focus-lesson-id', assignment.content_id); sessionStorage.setItem('ritmo-assignment-fresh-lesson-id', assignment.content_id); }
     if (assignment.content_type === 'practice' && assignment.content_id)
       sessionStorage.setItem('ritmo-focus-practice-mode', assignment.content_id);
+    if (assignment.content_type === 'practice' && assignment.topic_id)
+      sessionStorage.setItem('ritmo-focus-practice-topic', assignment.topic_id);
     if (assignment.content_type === 'music' && assignment.content_title_snapshot)
       sessionStorage.setItem('ritmo-focus-song-title', assignment.content_title_snapshot.replace(/^Музыка:\s*/, ''));
   };
   return <WorkspaceFrame role={role}><a className="back-link" href={role === 'teacher' ? `/teacher/students/${assignment.student_id}` : '/student'}><ArrowLeft />Назад</a>
     <div className="education-heading assignment-heading"><div><span className={`assignment-status ${assignment.status}`}>{statusLabel[assignment.status]}</span><h1>{assignment.title}</h1><p>{assignment.description || 'Без дополнительного описания.'}</p></div><div className="education-notice"><Clock3 /><b>{dateText(assignment.due_at)}</b><span>срок выполнения</span></div></div>
-    {error && <ErrorBox message={error} />}{data.progress && <section className="assignment-live-progress"><div><span>Выполнение</span><b>{data.progress.completed_count} из {data.progress.target_count}</b></div><i><span style={{ width: `${data.progress.progress_percent}%` }} /></i><div className="progress-facts"><span>{data.progress.progress_percent}% цели</span>{data.progress.answer_count > 0 && <span>{data.progress.correct_count} из {data.progress.answer_count} ответов верно</span>}{data.progress.earned_score > 0 && <span>{data.progress.earned_score} очков</span>}</div></section>}{assignment.content_title_snapshot && <a className="content-reference" onClick={focusContent} href={`/#${assignment.content_type === 'lesson' ? 'lessons' : assignment.content_type}`}><BookOpen /><div><b>{assignment.content_title_snapshot}</b><span>Открыть назначенный материал</span></div></a>}{assignment.material_url && <a className="external-material" href={assignment.material_url} target="_blank" rel="noreferrer">Открыть дополнительный материал</a>}
+    {error && <ErrorBox message={error} />}{data.progress && <section className="assignment-live-progress"><div><span>Выполнение</span><b>{data.progress.completed_count} из {data.progress.target_count}</b></div><i><span style={{ width: `${data.progress.progress_percent}%` }} /></i><div className="progress-facts"><span>{data.progress.progress_percent}% цели</span>{data.progress.answer_count > 0 && <span>{data.progress.correct_count} из {data.progress.answer_count} ответов верно</span>}{data.progress.earned_score > 0 && <span>{data.progress.earned_score} очков</span>}</div></section>}
+    {role === 'student' && assignment.status === 'revision_requested' && latestReview && <aside className="revision-callout"><MessageCircle /><div><b>Преподаватель:</b><p>{latestReview.comment || 'Откройте работу и исправьте отмеченные ошибки.'}</p></div></aside>}
+    {assignment.content_title_snapshot && <a className="content-reference" onClick={focusContent} href={`/#${assignment.content_type === 'lesson' ? 'lessons' : assignment.content_type}`}><BookOpen /><div><b>{assignment.content_title_snapshot}</b>{assignment.topic_title_snapshot && <small>Тема: {assignment.topic_title_snapshot}</small>}<span>{data.progress?.completed_count ? 'Продолжить с места остановки' : 'Начать выполнение'}</span></div></a>}{assignment.material_url && <a className="external-material" href={assignment.material_url} target="_blank" rel="noreferrer">Открыть дополнительный материал</a>}
+    {!!data.questions.length && <QuestionThreads questions={data.questions} messages={data.questionMessages} userId={user?.id || ''} refresh={refresh} />}
     {role === 'teacher' && <AssignmentActivityPanel items={data.activity} />}
     <div className="education-columns"><section className="education-card"><h2>{role === 'student' ? 'Ваш ответ' : 'Последняя работа'}</h2>
       {latest && <article className="submission-box"><span>Попытка {latest.attempt} · {dateText(latest.submitted_at)}</span><p>{latest.text_answer || 'Текстовый ответ не добавлен.'}</p>{latest.link_url && <a href={latest.link_url} target="_blank" rel="noreferrer">Ссылка ученика</a>}</article>}
@@ -189,6 +206,12 @@ function AssignmentDetail({ id, role }: { id: string; role: 'teacher' | 'student
       {latestReview && <article className="review-box"><b>{latestReview.decision === 'completed' ? 'Работа принята' : 'Учитель просит доработать'}</b>{latestReview.score !== null && <strong>{latestReview.score}{assignment.max_score ? ` / ${assignment.max_score}` : ''}</strong>}<p>{latestReview.comment || 'Без комментария.'}</p></article>}
     </section><section className="education-card"><div className="card-title"><div><h2>Обсуждение</h2><p>Сообщения видны только вам и второй стороне.</p></div><MessageCircle /></div><div className="comment-list">{data.comments.map((item: AssignmentComment) => <article key={item.id} className={item.author_id === assignment.teacher_id ? 'teacher-comment' : ''}><p>{item.body}</p><span>{item.author_id === assignment.teacher_id ? 'Учитель' : 'Ученик'} · {dateText(item.created_at)}</span></article>)}{!data.comments.length && <p className="muted">Комментариев пока нет.</p>}</div><form className="comment-form" onSubmit={postComment}><textarea aria-label="Комментарий" rows={3} value={chatComment} onChange={(e) => setChatComment(e.target.value)} placeholder="Написать сообщение…" /><button className="edu-button" disabled={busy}>Отправить</button></form></section></div>
   </WorkspaceFrame>;
+}
+
+function QuestionThreads({ questions, messages, userId, refresh }: { questions: ExerciseQuestion[]; messages: DetailData['questionMessages']; userId: string; refresh: () => Promise<void> }) {
+  const client = getCloudClient()!, [drafts, setDrafts] = useState<Record<string,string>>({}), [busy, setBusy] = useState('');
+  const send = async (id: string) => { const body = drafts[id]?.trim(); if (!body || busy) return; setBusy(id); try { await replyToExerciseQuestion(client,id,body); setDrafts((value) => ({...value,[id]:''})); await refresh(); } finally { setBusy(''); } };
+  return <section className="education-card question-threads"><div className="card-title"><div><h2>Вопросы по упражнениям</h2><p>Короткое обсуждение остаётся привязано к конкретному заданию.</p></div><MessageCircle /></div>{questions.map((question) => <details key={question.id} open={question.status === 'open'}><summary><span className={`question-state ${question.status}`}>{question.status === 'answered' ? 'Отвечено' : 'Ждёт ответа'}</span><b>{question.prompt}</b></summary><div className="question-messages">{messages.filter((item) => item.question_id === question.id).map((item) => <p className={item.author_id === userId ? 'mine' : ''} key={item.id}><span>{item.body}</span><small>{dateText(item.created_at)}</small></p>)}</div><div className="question-reply"><input value={drafts[question.id] || ''} onChange={(event) => setDrafts((value) => ({...value,[question.id]:event.target.value}))} placeholder="Ответить по этому упражнению" /><button disabled={busy === question.id || !drafts[question.id]?.trim()} onClick={() => void send(question.id)}>Отправить</button></div></details>)}</section>;
 }
 
 function AssignmentActivityPanel({ items }: { items: AssignmentActivity[] }) {
