@@ -83,7 +83,8 @@ pnpm dev
    `supabase/migrations/0005_restrict_teacher_role.sql`, затем
    `supabase/migrations/0006_assignment_progress.sql`, затем
    `supabase/migrations/0007_assignment_activity.sql`, затем
-   `supabase/migrations/0008_assignment_attempts.sql`. Первый файл создаёт таблицы и
+   `supabase/migrations/0008_assignment_attempts.sql`, затем
+   `supabase/migrations/0009_fix_assignment_progress_ambiguity.sql`. Первый файл создаёт таблицы и
    правила доступа, второй добавляет безопасную синхронизацию между несколькими
    устройствами и надёжную очередь жалоб, третий — защищённый журнал ошибок.
    Четвёртый создаёт роли, связи учитель–ученик, задания, проверки, комментарии,

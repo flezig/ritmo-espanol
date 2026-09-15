@@ -72,7 +72,7 @@ begin
       select count(*) filter(where event_kind='session_complete'), count(*) filter(where event_kind='answer' and is_correct),
         count(*) filter(where event_kind='answer'), coalesce(sum(score_delta) filter(where event_kind='answer'),0)
       into current_count, correct_count, answer_count, earned_score
-      from public.assignment_activity_events where assignment_id=item.id and attempt_no=item.current_attempt;
+      from public.assignment_activity_events e where e.assignment_id=item.id and e.attempt_no=item.current_attempt;
     elsif item.metric_key = 'manual' then
       current_count := case when item.status in ('submitted','completed') then 1 else 0 end;
       correct_count := 0; answer_count := 0; earned_score := 0;
