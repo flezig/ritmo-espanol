@@ -99,6 +99,28 @@ test('completed Spanish Rush sessions track runs, score and real play time', () 
   assert.equal(second.rushSeconds, 121);
 });
 
+test('assignment-facing counters track every learning mode separately', () => {
+  let stats = applyAchievementEvent(defaultAchievementStats, {
+    type: 'practice-session', topic: 'Музыка', perfect: false, mode: 'five', correct: 13, total: 16,
+  }, 12);
+  stats = applyAchievementEvent(stats, {
+    type: 'dictation-session', correct: 17, total: 20,
+  }, 12);
+  stats = applyAchievementEvent(stats, {
+    type: 'song-session', songId: 'veneno', correct: 8, total: 10,
+  }, 12);
+  stats = applyAchievementEvent(stats, {
+    type: 'detective-session', level: 'A2', correct: 16, total: 20,
+  }, 12);
+  assert.equal(stats.practiceModeSessions.five, 1);
+  assert.equal(stats.practiceCorrectByMode.five, 13);
+  assert.equal(stats.dictationSessions, 1);
+  assert.equal(stats.songSessionsById.veneno, 1);
+  assert.equal(stats.songCorrectById.veneno, 8);
+  assert.equal(stats.detectiveSessions.A2, 1);
+  assert.equal(stats.detectiveCorrectByLevel.A2, 16);
+});
+
 test('daily achievements count calendar days once', () => {
   let stats = applyAchievementEvent(
     defaultAchievementStats,

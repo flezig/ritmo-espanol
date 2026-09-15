@@ -15,6 +15,7 @@ import { mergeProgress, type ProgressData } from '../lib/progress-merge';
 import { migrateLocalProgress } from '../lib/storage-version';
 import { BACKUP_VERSION } from '../lib/backup';
 import { flushClientErrors, recordClientError } from '../lib/error-journal';
+import { clearAssignmentTracking, flushAssignmentActivity, hasPendingAssignmentActivity } from '../lib/assignment-tracking';
 
 type AuthResult = { ok: true; confirmationRequired?: boolean } | { ok: false; message: string };
 type AccountContextValue = {
@@ -365,12 +366,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       if (inflight.current) await inflight.current;
       if (!await syncUser(userRef.current)) return;
       if (!await syncUser(userRef.current)) return;
+      await flushAssignmentActivity();
+      if (hasPendingAssignmentActivity(userRef.current.id)) {
+        setStatus('error'); setMessage('Ответы по заданию ещё не отправлены. Проверьте интернет и повторите выход.'); return;
+      }
       const meta = cloudSyncMeta.read();
       if (cloudProgressHash() !== cloudProgressHash(currentProgressFields(meta?.baseline.data || {})) || pendingContentReports().length) {
         setStatus('error'); setMessage('Последние изменения ещё не отправлены. Повторите выход после сохранения.'); return;
       }
       const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) throw error;
+      clearAssignmentTracking(userRef.current.id);
       offlineAccount.remove(userRef.current.id);
       localStorage.removeItem('ritmo-sync-recovery-' + userRef.current.id);
       clearCloudProgress();

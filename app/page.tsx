@@ -42,6 +42,7 @@ import { useAccount } from './components/account-provider';
 import { ReportExerciseButton } from './components/report-exercise-button';
 import { trackLocalEvent } from './lib/local-analytics';
 import { recordClientError } from './lib/error-journal';
+import { beginAssignedSession, completeAssignedSession, recordAssignedActivity } from './lib/assignment-tracking';
 import {
   parsePracticeSnapshot,
   reconcilePracticeCards,
@@ -3319,6 +3320,7 @@ function LessonsView() {
           sessionStorage.getItem('ritmo-focus-first-lesson') === 'true';
       if (requestedIndex < 0 && !shouldFocusFirst) return;
       if (requestedIndex >= 0) setLessonIndex(requestedIndex);
+      if (requestedLessonId && sessionStorage.getItem('ritmo-assignment-fresh-lesson-id') === requestedLessonId) setQuestion(0);
       if (
         requestedIndex >= 0 &&
         Number.isInteger(requestedTheoryIndex) &&
@@ -3389,6 +3391,11 @@ function LessonsView() {
         ? storedErrorIds.filter((id) => id !== exerciseId)
         : [...new Set([...storedErrorIds, exerciseId])];
     setAnswer(value);
+    recordAssignedActivity({
+      type: 'lesson', contentId: lesson.id, itemKey: exerciseId, prompt: exercise.prompt,
+      studentAnswer: value, correctAnswer: exercise.answer, correct,
+      score: correct ? 1 : 0,
+    });
     playFeedbackSound(correct);
     setCatState(
       question === exerciseTotal - 1 ? 'love' : correct ? 'happy' : 'wrong',
@@ -3411,9 +3418,11 @@ function LessonsView() {
     recordLearningEvent(correct, correct ? 6 : 2);
     if (
       !mistakeMode &&
-      question === lesson.exercises.length - 1 &&
-      !lessonState.completed
+      question === lesson.exercises.length - 1
     ) {
+      completeAssignedSession({ type: 'lesson', contentId: lesson.id, correct: lessonState.correct + (correct ? 1 : 0), total: lesson.exercises.length });
+    }
+    if (!mistakeMode && question === lesson.exercises.length - 1 && !lessonState.completed) {
       playCelebrationSound('finish');
       recordAchievementEvent({ type: 'lesson-complete', lessonId: lesson.id });
     }
@@ -3454,7 +3463,9 @@ function LessonsView() {
     setMode('practice');
     setMistakeMode(false);
     setMistakeQueue([]);
-    setQuestion(resumeIndex(lesson, lessonState));
+    const assignedFresh = sessionStorage.getItem('ritmo-assignment-fresh-lesson-id') === lesson.id;
+    setQuestion(assignedFresh ? 0 : resumeIndex(lesson, lessonState));
+    if (assignedFresh) sessionStorage.removeItem('ritmo-assignment-fresh-lesson-id');
     setAnswer('');
     setTypedAnswer('');
     setSelectedWords([]);
@@ -6383,6 +6394,7 @@ function MusicView() {
     setHintLevel(0);
   };
   const selectSong = (index: number) => {
+    beginAssignedSession('music', normalizeText(songs[index].title).replace(/\s+/g, '-'));
     setSelected(index);
     setGame(0);
     resetRound();
@@ -6392,6 +6404,11 @@ function MusicView() {
     if (choice || answerLock.current) return;
     answerLock.current = true;
     const correct = normalizeText(option) === normalizeText(round.answer);
+    recordAssignedActivity({
+      type: 'music', contentId: normalizeText(song.title).replace(/\s+/g, '-'), itemKey: `${normalizeText(song.title)}:${game}`,
+      prompt: round.prompt, studentAnswer: option, correctAnswer: round.answer,
+      correct, score: correct ? 1 : 0,
+    });
     setChoice(option);
     playFeedbackSound(correct);
     recordLearningEvent(correct, correct ? 5 : 2);
@@ -6404,9 +6421,15 @@ function MusicView() {
       setGame(finished ? 0 : game + 1);
       resetRound();
       if (finished) {
+        completeAssignedSession({ type: 'music', contentId: normalizeText(song.title).replace(/\s+/g, '-'), correct: score, total: song.games.length, score });
         setScore(0);
         playCelebrationSound('finish');
-        recordAchievementEvent({ type: 'song-session' });
+        recordAchievementEvent({
+          type: 'song-session',
+          songId: normalizeText(song.title).replace(/\s+/g, '-'),
+          correct: score,
+          total: song.games.length,
+        });
       }
     });
   const clipTime = round.clip
@@ -7632,8 +7655,8 @@ const detectiveCases: Record<DetectiveLevel, DetectiveCase[]> = {
   ],
 };
 
-function DetectiveGame() {
-  const [level, setLevel] = useState<DetectiveLevel>('A1'),
+function DetectiveGame({ initialLevel = 'A1' }: { initialLevel?: DetectiveLevel }) {
+  const [level, setLevel] = useState<DetectiveLevel>(initialLevel),
     [caseIndex, setCaseIndex] = useState(0),
     [questionIndex, setQuestionIndex] = useState(0),
     [lives, setLives] = useState(3),
@@ -7652,6 +7675,7 @@ function DetectiveGame() {
       `${level}-${caseIndex}-${questionIndex}`,
     );
   const restart = (nextLevel = level) => {
+    beginAssignedSession('practice', `detective:${nextLevel.toLowerCase()}`);
     answerLock.current = false;
     setLevel(nextLevel);
     setCaseIndex(0);
@@ -7667,6 +7691,11 @@ function DetectiveGame() {
     if (choice || answerLock.current) return;
     answerLock.current = true;
     const isCorrect = value === question.answer;
+    recordAssignedActivity({
+      type: 'practice', contentId: `detective:${level.toLowerCase()}`, itemKey: `${level}:${caseIndex}:${questionIndex}`,
+      prompt: question.prompt, studentAnswer: value,
+      correctAnswer: question.answer, correct: isCorrect, score: isCorrect ? 1 : 0,
+    });
     setChoice(value);
     playFeedbackSound(isCorrect);
     recordLearningEvent(isCorrect, isCorrect ? 5 : 1);
@@ -7686,6 +7715,7 @@ function DetectiveGame() {
     answerLock.current = false;
     if (caseIndex === detectiveCases[level].length - 1) {
       setFinished(true);
+      completeAssignedSession({ type: 'practice', contentId: `detective:${level.toLowerCase()}`, correct: stars, total: detectiveCases[level].length * 5, score: stars });
       const saved = JSON.parse(
         localStorage.getItem('ritmo-detective-progress') || '{}',
       );
@@ -7694,6 +7724,12 @@ function DetectiveGame() {
         JSON.stringify({ ...saved, [level]: Math.max(saved[level] || 0, stars) }),
       );
       window.dispatchEvent(new Event('ritmo-detective-progress'));
+      recordAchievementEvent({
+        type: 'detective-session',
+        level,
+        correct: stars,
+        total: detectiveCases[level].length * 5,
+      });
       return;
     }
     setCaseIndex((current) => current + 1);
@@ -7872,6 +7908,8 @@ function SpanishRushGame() {
     [running, setRunning] = useState(false),
     [timeLeft, setTimeLeft] = useState(60),
     [score, setScore] = useState(0),
+    [sessionCorrect, setSessionCorrect] = useState(0),
+    [sessionAnswers, setSessionAnswers] = useState(0),
     [combo, setCombo] = useState(0),
     [round, setRound] = useState(0),
     [choice, setChoice] = useState(''),
@@ -7909,6 +7947,7 @@ function SpanishRushGame() {
   useEffect(() => {
     if (running && timeLeft === 0) {
       setRunning(false);
+      completeAssignedSession({ type: 'practice', contentId: 'rush', correct: sessionCorrect, total: sessionAnswers, score });
       const today = localDateKey(),
         saved = JSON.parse(localStorage.getItem('ritmo-rush-records') || '{}'),
         nextBest = Math.max(Number(saved.best) || 0, score),
@@ -7926,7 +7965,7 @@ function SpanishRushGame() {
         ),
       });
     }
-  }, [running, timeLeft, score]);
+  }, [running, timeLeft, score, sessionCorrect, sessionAnswers]);
   const wordIndex = wordOrder[round % Math.max(1, wordOrder.length)] ?? 0,
     wordCard = deck[wordIndex] || deck[0],
     grammarRound = Math.floor(round / 3),
@@ -7999,6 +8038,7 @@ function SpanishRushGame() {
             ? 'очка'
             : 'очков';
   const start = () => {
+    beginAssignedSession('practice', 'rush');
     answerLock.current = false;
     startedAt.current = Date.now();
     if (transitionTimer.current !== null)
@@ -8013,6 +8053,8 @@ function SpanishRushGame() {
     setRunning(true);
     setTimeLeft(60);
     setScore(0);
+    setSessionCorrect(0);
+    setSessionAnswers(0);
     setCombo(0);
     setRound(0);
     setChoice('');
@@ -8027,10 +8069,16 @@ function SpanishRushGame() {
       nextCombo = correct ? combo + 1 : 0,
       multiplier = doubleLeft > 0 ? 2 : 1,
       gained = correct ? Math.max(1, Math.min(4, nextCombo)) * multiplier : 0;
+    recordAssignedActivity({
+      type: 'practice', contentId: 'rush', itemKey: isGrammar ? `grammar:${grammarIndex}` : wordCard.key, prompt,
+      studentAnswer: value, correctAnswer: answer, correct, score: gained,
+    });
     setChoice(value);
     playFeedbackSound(correct);
     recordLearningEvent(correct, correct ? gained + 2 : 1);
+    setSessionAnswers((current) => current + 1);
     if (correct) {
+      setSessionCorrect((current) => current + 1);
       const praises = ['¡Increíble!', '¡Genial!', '¡Brutal!', '¡Excelente!', '¡Eso es!', '¡Muy bien!'];
       setPraise(praises[round % praises.length]);
       setScore((current) => current + gained);
@@ -8130,6 +8178,7 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
   const question = session[index],
     correct = choice === question?.answer;
   const restart = () => {
+    beginAssignedSession('practice', 'articles');
     answerLock.current = false;
     setSession(createArticlePracticeSession());
     setIndex(0);
@@ -8141,6 +8190,11 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
     if (choice || answerLock.current || !question) return;
     answerLock.current = true;
     const isCorrect = value === question.answer;
+    recordAssignedActivity({
+      type: 'practice', contentId: 'articles', itemKey: `${question.kind}:${normalizeText(question.prompt)}`, prompt: question.prompt,
+      studentAnswer: value, correctAnswer: question.answer,
+      correct: isCorrect, score: isCorrect ? 1 : 0,
+    });
     setChoice(value);
     playFeedbackSound(isCorrect);
     recordLearningEvent(isCorrect, isCorrect ? 4 : 1);
@@ -8150,6 +8204,7 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
     answerLock.current = false;
     if (index === session.length - 1) {
       setFinished(true);
+      completeAssignedSession({ type: 'practice', contentId: 'articles', correct: score, total: session.length, score });
       playCelebrationSound('finish');
       recordAchievementEvent({
         type: 'article-session',
@@ -8238,7 +8293,17 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
 }
 
 function PracticeHub() {
-  const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush' | 'articles'>('menu');
+  const [game, setGame] = useState<'menu' | 'study' | 'detective' | 'rush' | 'articles'>('menu'),
+    [assignedMode, setAssignedMode] = useState('');
+  useEffect(() => {
+    const requested = sessionStorage.getItem('ritmo-focus-practice-mode') || '';
+    sessionStorage.removeItem('ritmo-focus-practice-mode');
+    setAssignedMode(requested);
+    if (requested.startsWith('words:')) setGame('study');
+    else if (requested.startsWith('detective:')) setGame('detective');
+    else if (requested === 'rush') setGame('rush');
+    else if (requested === 'articles') setGame('articles');
+  }, []);
   const selectGame = (next: typeof game) => {
     if (next !== game) setGame(next);
   };
@@ -8265,9 +8330,9 @@ function PracticeHub() {
           <p>Учите слова без спешки, читайте истории или устройте минутный спринт.</p>
         </section>
       ) : game === 'study' ? (
-        <AdaptivePracticeView showModes={() => selectGame('menu')} />
+        <AdaptivePracticeView assignedMode={assignedMode.startsWith('words:') ? assignedMode.slice(6) as SessionMode : null} showModes={() => selectGame('menu')} />
       ) : game === 'detective' ? (
-        <DetectiveGame />
+        <DetectiveGame initialLevel={assignedMode === 'detective:a2' ? 'A2' : 'A1'} />
       ) : game === 'articles' ? (
         <ArticlePracticeGame onBack={() => selectGame('menu')} />
       ) : (
@@ -8277,7 +8342,7 @@ function PracticeHub() {
   );
 }
 
-function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
+function AdaptivePracticeView({ showModes, assignedMode }: { showModes: () => void; assignedMode: SessionMode | null }) {
   const { words: customWords, hydrated: customHydrated } = useCustomWords(),
     { records, rate, toggleFavorite, markNew, hydrated: srsHydrated } = useSRS();
   const { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices();
@@ -8303,6 +8368,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     [scopeOpen, setScopeOpen] = useState(false),
     [awaitingStart, setAwaitingStart] = useState(true),
     [sessionBaseline, setSessionBaseline] = useState<PracticeProgressBaseline | null>(null);
+  const assignedStarted = useRef(false);
   const answerLock = useRef(false),
     gradeLock = useRef(false),
     reasonHelpRef = useRef<HTMLDetailsElement>(null),
@@ -8528,6 +8594,7 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     };
   }, [scopedDeck, records, now]);
   const start = (nextMode: SessionMode, nextTopic = topic, nextLevel = level) => {
+    beginAssignedSession('practice', `words:${nextMode}`);
     if (!deckReady) return;
     answerLock.current = false;
     gradeLock.current = false;
@@ -8552,6 +8619,11 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     setSessionBaseline(capturePracticeBaseline(nextSession));
     trackLocalEvent('practice_started', nextTopic);
   };
+  useEffect(() => {
+    if (!assignedMode || !deckReady || !sessionHydrated || assignedStarted.current) return;
+    assignedStarted.current = true;
+    start(assignedMode);
+  }, [assignedMode, deckReady, sessionHydrated]);
   const leaveSessionWithoutSaving = () => {
     if (
       sessionBaseline &&
@@ -8621,6 +8693,11 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
     answerLock.current = true;
     const result = analyzeAnswer(value, expectedAnswer),
       isCorrect = result.correct;
+    recordAssignedActivity({
+      type: 'practice', contentId: `words:${mode}`, itemKey: cardBase, prompt: taskPrompt,
+      studentAnswer: value, correctAnswer: expectedAnswer,
+      correct: isCorrect, score: isCorrect ? 1 : 0,
+    });
     setTyped(value);
     setCorrect(isCorrect);
     setAnalysis(result);
@@ -8649,6 +8726,10 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   const dontKnow = () => {
     if (!card || revealed || answerLock.current) return;
     answerLock.current = true;
+    recordAssignedActivity({
+      type: 'practice', contentId: `words:${mode}`, itemKey: cardBase, prompt: taskPrompt,
+      studentAnswer: 'Не знаю', correctAnswer: expectedAnswer, correct: false,
+    });
     setTyped('');
     setCorrect(false);
     setAnalysis({
@@ -8665,6 +8746,14 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
   const grade = (value: ReviewGrade) => {
     if (!card || leaving || finished || gradeLock.current) return;
     gradeLock.current = true;
+    if (responseKind === 'self') {
+      const remembered = value === 'good' || value === 'easy';
+      recordAssignedActivity({
+        type: 'practice', contentId: `words:${mode}`, itemKey: cardBase, prompt: taskPrompt,
+        studentAnswer: value === 'again' ? 'Не помню' : value === 'hard' ? 'Трудно' : value === 'good' ? 'Хорошо' : 'Легко',
+        correctAnswer: expectedAnswer, correct: remembered, score: remembered ? 1 : 0,
+      });
+    }
     move(() => {
       const applied = responseKind !== 'self' && !correct ? 'again' : value;
       rate(card, applied);
@@ -8675,12 +8764,16 @@ function AdaptivePracticeView({ showModes }: { showModes: () => void }) {
         recordAchievementEvent({ type: 'pronunciation-correct' });
       if (index >= session.length - 1) {
         setFinished(true);
+        completeAssignedSession({ type: 'practice', contentId: `words:${mode}`, correct: Math.max(0, session.length - sessionErrors), total: session.length });
         setSessionBaseline(null);
         playCelebrationSound('finish');
         recordAchievementEvent({
           type: 'practice-session',
           topic,
           perfect: sessionErrors === 0,
+          mode,
+          correct: Math.max(0, session.length - sessionErrors),
+          total: session.length,
         });
         trackLocalEvent('practice_finished', topic);
       }
@@ -9424,6 +9517,7 @@ function DictationView() {
     [index, setIndex] = useState(0),
     [typed, setTyped] = useState(''),
     [checked, setChecked] = useState(false),
+    [sessionCorrect, setSessionCorrect] = useState(0),
     [audioTarget, setAudioTarget] = useState<'word' | 'sentence'>('word');
   const { leaving, move } = useTaskMotion();
   const topics = [...new Set([
@@ -9466,6 +9560,7 @@ function DictationView() {
     answerAnalysis = card ? analyzeAnswer(typed, expected) : null,
     correct = !!card && !!answerAnalysis?.correct;
   const begin = (nextTopic = topic, nextLevel = level) => {
+    beginAssignedSession('dictation', 'learned-words');
     const available = [...lessonCards, ...practiceCards]
       .filter(
         (card, cardIndex, list) =>
@@ -9483,6 +9578,7 @@ function DictationView() {
     setIndex(0);
     setTyped('');
     setChecked(false);
+    setSessionCorrect(0);
   };
   const speak = (speed = 1) => {
     if (card)
@@ -9494,14 +9590,26 @@ function DictationView() {
   const submit = () => {
     if (!card || !typed.trim() || checked) return;
     const correctAnswer = analyzeAnswer(typed, expected).correct;
+    recordAssignedActivity({
+      type: 'dictation', contentId: 'learned-words', itemKey: baseCardKey(card.key),
+      prompt: audioTarget === 'word' ? 'Прослушайте слово и напишите его перевод' : 'Прослушайте предложение и напишите его полностью',
+      studentAnswer: typed, correctAnswer: expected, correct: correctAnswer,
+      score: correctAnswer ? 1 : 0,
+    });
     setChecked(true);
     playFeedbackSound(correctAnswer);
     recordLearningEvent(correctAnswer, correctAnswer ? 6 : 2);
     if (!correctAnswer) recordError('Диктант');
+    else setSessionCorrect((value) => value + 1);
     rate(card, correctAnswer ? 'good' : 'again');
   };
   const dontKnow = () => {
     if (!card || checked) return;
+    recordAssignedActivity({
+      type: 'dictation', contentId: 'learned-words', itemKey: baseCardKey(card.key),
+      prompt: audioTarget === 'word' ? 'Прослушайте слово и напишите его перевод' : 'Прослушайте предложение и напишите его полностью',
+      studentAnswer: 'Не знаю', correctAnswer: expected, correct: false,
+    });
     setTyped('');
     setChecked(true);
     playFeedbackSound(false);
@@ -9512,10 +9620,17 @@ function DictationView() {
   const next = () =>
     move(() => {
       if (index >= cards.length - 1) {
+        completeAssignedSession({ type: 'dictation', contentId: 'learned-words', correct: sessionCorrect, total: cards.length });
+        recordAchievementEvent({
+          type: 'dictation-session',
+          correct: sessionCorrect,
+          total: cards.length,
+        });
         setCards([]);
         setIndex(0);
         setTyped('');
         setChecked(false);
+        setSessionCorrect(0);
       }
       else {
         setIndex((value) => value + 1);
