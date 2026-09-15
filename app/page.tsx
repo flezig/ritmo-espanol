@@ -8170,7 +8170,7 @@ function SpanishRushGame() {
   );
 }
 
-function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
+function ArticlePracticeGame() {
   const [session, setSession] = useState<ArticlePracticeQuestion[]>(() =>
       createArticlePracticeSession(),
     ),
@@ -8232,14 +8232,12 @@ function ArticlePracticeGame({ onBack }: { onBack: () => void }) {
         <p>Новая сессия соберёт другой набор исключений и снова перемешает варианты.</p>
         <div>
           <button className="primary-btn" onClick={restart}>Ещё 10 заданий</button>
-          <button className="article-back" onClick={onBack}>К режимам</button>
         </div>
       </section>
     );
   return (
     <section className="article-practice game-panel">
       <header className="article-practice-head">
-        <button className="article-back" onClick={onBack}><ArrowLeft /> К режимам</button>
         <div>
           <span>АРТИКЛИ · EL ИЛИ LA</span>
           <b>{index + 1} / {session.length}</b>
@@ -8346,7 +8344,7 @@ function PracticeHub() {
       ) : game === 'detective' ? (
         <DetectiveGame initialLevel={assignedMode === 'detective:a2' ? 'A2' : 'A1'} />
       ) : game === 'articles' ? (
-        <ArticlePracticeGame onBack={() => selectGame('menu')} />
+        <ArticlePracticeGame />
       ) : (
         <SpanishRushGame />
       )}

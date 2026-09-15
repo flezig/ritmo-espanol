@@ -290,6 +290,7 @@
 @media(max-width:800px){.education-page{width:min(100% - 24px,720px);padding:25px 0 90px}.education-topbar{min-height:62px;padding:10px 13px}.education-brand b{display:none}.education-topbar nav a{padding:8px;font-size:12px}.education-heading{align-items:flex-start;flex-direction:column}.education-heading h1{font-size:36px}.education-notice{width:100%;box-sizing:border-box}.stats-grid,.education-columns{grid-template-columns:1fr}.education-card{padding:18px;border-radius:20px}.invite-form{grid-template-columns:1fr}.assignment-row{align-items:flex-start;flex-direction:column}.assignment-meta{justify-items:start;text-align:left}.assignment-mini-progress{grid-template-columns:minmax(100px,1fr) auto}.assignment-mini-progress>small{grid-column:1/-1}.invitations article{align-items:flex-start;flex-direction:column}.invitations article>div:last-child{width:100%}.invitations button{flex:1}.form-row{grid-template-columns:1fr}.comment-list article{max-width:94%}}
 @media(max-width:430px){.education-topbar nav a:first-child{display:none}.education-heading h1{font-size:31px}.education-card{padding:15px}.assignment-heading .education-notice{padding:12px}.review-form>div{display:grid}.review-form>div button{width:100%}}
 @media(max-width:560px){.assignment-activity-card .card-title{align-items:flex-start}.activity-error-count{white-space:nowrap}.assignment-error-list{max-height:none;overflow:visible}.assignment-error-list article>div{grid-template-columns:1fr}.assignment-error-list h3{font-size:14px}}
+@media(max-width:560px){.question-threads summary{align-items:flex-start}.question-threads summary b{white-space:normal;overflow-wrap:anywhere}.question-messages p{width:92%}.question-reply{grid-template-columns:1fr}.question-reply button{min-height:44px}.question-threads .card-title>svg{display:none}}
 .dark {
   --bg: #0e0c18;
   --panel: #191625;
@@ -2248,6 +2249,7 @@ input {
 }
 .assignment-context-chip{width:29px;height:29px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--purple) 42%,transparent);border-radius:10px;background:color-mix(in srgb,var(--panel) 88%,transparent);font-size:13px;backdrop-filter:blur(8px)}
 .exercise-question-popover{position:absolute;top:36px;right:0;z-index:30;width:min(320px,calc(100vw - 30px));display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--panel);box-shadow:var(--shadow);color:var(--text)}.exercise-question-popover textarea{width:100%;min-height:76px;resize:vertical;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--text);font:inherit}.exercise-question-popover>span{display:flex;justify-content:flex-end;gap:7px}.exercise-question-popover button{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--text);font-weight:800}.exercise-question-popover button:last-child{background:var(--purple);color:#fff}
+@media(max-width:760px){.exercise-question-popover{position:fixed;inset:auto 10px calc(10px + env(safe-area-inset-bottom));z-index:1000;width:auto;max-height:min(70dvh,460px);overflow:auto;padding:15px;border-radius:17px}.exercise-question-popover textarea{min-height:100px;font-size:16px}.exercise-question-popover>span{display:grid;grid-template-columns:1fr 1fr}.exercise-question-popover button{min-height:44px}}
 .exercise-report-wrap > small {
   position: absolute;
   top: 34px;
@@ -11387,10 +11389,10 @@ body {
   .detective-question footer,
   .rush-task > footer { grid-template-columns: 1fr; display: grid; }
   .game-status-row { align-items: flex-start; flex-direction: column; }
-  .article-practice { min-height: 0; }
+  .article-practice { min-height: min(620px,calc(100dvh - 150px)); }
   .article-practice-head { align-items: stretch; padding: 10px; }
   .article-practice-head > div { justify-content: space-between; flex: 1; }
-  .article-question { gap: 9px; padding: 14px 10px calc(12px + env(safe-area-inset-bottom)); }
+  .article-question { min-height:calc(100dvh - 235px);align-content:start;gap: 12px; padding: clamp(22px,6vh,54px) 10px calc(12px + env(safe-area-inset-bottom)); }
   .article-question h2 { padding-inline: 34px; font-size: 22px; }
   .article-options { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
   .article-options button { min-height: 46px; padding: 8px; font-size:14px; }
