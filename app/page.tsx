@@ -4105,6 +4105,7 @@ function CustomWordsPanel() {
 function VocabularyView() {
   const [query, setQuery] = useState('');
   const [level, setLevel] = useState<VocabularyLevel>('A1–A2');
+  const [vocabularyCollection, setVocabularyCollection] = useState<'topics' | 'units'>('topics');
   const [selected, setSelected] = useState(vocabularyBrowseTopics[0].name);
   const [filter, setFilter] = useState<'all' | 'core' | WordStatus>('all');
   const vocabularyLibraryRef = useRef<HTMLElement>(null);
@@ -4127,6 +4128,7 @@ function VocabularyView() {
       );
       if (requestedTopic) {
         setLevel(requestedTopic.level);
+        setVocabularyCollection(/^Unidad\s/u.test(requestedTopic.name) ? 'units' : 'topics');
         setSelected(requestedTopic.name);
       }
       sessionStorage.removeItem('ritmo-global-vocabulary-query');
@@ -4145,7 +4147,13 @@ function VocabularyView() {
       window.removeEventListener('ritmo-global-search-focus', focusRequestedWord);
   }, []);
   const studyDeck = makeStudyDeck();
-  const levelTopics = vocabularyBrowseTopics.filter((item) => item.level === level),
+  const levelTopics = vocabularyBrowseTopics
+      .filter((item) => item.level === level)
+      .filter((item) =>
+        vocabularyCollection === 'units'
+          ? /^Unidad\s/u.test(item.name)
+          : !/^Unidad\s/u.test(item.name),
+      ),
     topic =
       levelTopics.find((item) => item.name === selected) ??
       levelTopics[0] ??
@@ -4288,7 +4296,12 @@ function VocabularyView() {
                   (topicItem) => topicItem.level === item,
                 );
                 setLevel(item);
-                if (first) setSelected(first.name);
+                setVocabularyCollection('topics');
+                const firstRegular = vocabularyBrowseTopics.find(
+                  (topicItem) =>
+                    topicItem.level === item && !/^Unidad\s/u.test(topicItem.name),
+                );
+                if (firstRegular || first) setSelected((firstRegular || first)!.name);
                 setQuery('');
               }}
             >
@@ -4298,13 +4311,44 @@ function VocabularyView() {
           );
         })}
       </div>
+      {level === 'A1–A2' && !normalized && (
+        <div className="vocabulary-collection-tabs" aria-label="Раздел словаря A1–A2">
+          <button
+            type="button"
+            className={vocabularyCollection === 'topics' ? 'active' : ''}
+            onClick={() => {
+              const first = vocabularyBrowseTopics.find(
+                (item) => item.level === 'A1–A2' && !/^Unidad\s/u.test(item.name),
+              );
+              setVocabularyCollection('topics');
+              if (first) setSelected(first.name);
+            }}
+          >
+            <b>Темы</b>
+            <span>Повседневная лексика по ситуациям</span>
+          </button>
+          <button
+            type="button"
+            className={vocabularyCollection === 'units' ? 'active' : ''}
+            onClick={() => {
+              const first = vocabularyBrowseTopics.find((item) => /^Unidad\s/u.test(item.name));
+              setVocabularyCollection('units');
+              if (first) setSelected(first.name);
+            }}
+          >
+            <b>Unidades</b>
+            <span>Лексика по порядку учебника</span>
+          </button>
+        </div>
+      )}
       <div className="vocab-topic-tabs">
         {levelTopics.map((item, index) => {
           const scene = topicPlaces[item.name] ?? index % 12,
-            a2Scene = a2TopicPlaces[item.name];
+            a2Scene = a2TopicPlaces[item.name],
+            isUnit = /^Unidad\s/u.test(item.name);
           return (
             <button
-              className={`${selected === item.name && !normalized ? 'active' : ''} place-topic`}
+              className={`${selected === item.name && !normalized ? 'active' : ''} ${isUnit ? 'unit-topic' : 'place-topic'}`}
               onClick={() => {
                 setSelected(item.name);
                 setQuery('');
@@ -4319,13 +4363,15 @@ function VocabularyView() {
               }}
               key={item.name}
             >
-              <span
-                className={
-                  a2Scene === undefined
-                    ? `topic-scene scene-${scene}`
-                    : `topic-scene a2-topic-scene a2-scene-${a2Scene}`
-                }
-              />
+              {!isUnit && (
+                <span
+                  className={
+                    a2Scene === undefined
+                      ? `topic-scene scene-${scene}`
+                      : `topic-scene a2-topic-scene a2-scene-${a2Scene}`
+                  }
+                />
+              )}
               <span>{item.icon}</span>
               <b>{item.name}</b>
               <small>

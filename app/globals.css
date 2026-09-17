@@ -8801,6 +8801,42 @@ input {
 }
 .vocabulary-level-tabs b { font: 750 18px var(--font-syne); }
 .vocabulary-level-tabs span { color: var(--muted); font-size: 12px; }
+.vocabulary-collection-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--soft);
+}
+.vocabulary-collection-tabs button {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text);
+  padding: 10px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.vocabulary-collection-tabs button.active {
+  background: var(--panel);
+  box-shadow: 0 7px 20px #1a102018;
+}
+.vocabulary-collection-tabs b { font-size: 14px; }
+.vocabulary-collection-tabs span { color: var(--muted); font-size: 11px; }
+.vocab-topic-tabs button.unit-topic {
+  min-height: 112px;
+  align-content: center;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--panel) 92%, var(--purple)),
+    color-mix(in srgb, var(--panel) 96%, var(--aqua))
+  );
+}
 .level-word-badge {
   width: fit-content;
   border-radius: 999px;
