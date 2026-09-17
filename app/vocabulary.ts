@@ -26,6 +26,7 @@ import { legacyExampleTranslations } from './legacy-translations.ts';
 import { a2VocabularyTopics } from './a2-vocabulary.ts';
 import { b1b2VocabularyTopics } from './b1b2-vocabulary.ts';
 import { unidad2Vocabulary } from './unidad2-vocabulary.ts';
+import { unidad3Vocabulary } from './unidad3-vocabulary.ts';
 
 const legacyVocabularyTopics = [
   {
@@ -3465,6 +3466,7 @@ const mergedTopics = [
   ...deduplicatedLegacyTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
   ...b1b2VocabularyTopics.map((topic) => ({ ...topic, level: 'B1–B2' as const })),
   { name: 'Unidad 2', icon: '📘', level: 'A1–A2' as const, entries: unidad2Vocabulary },
+  { name: 'Unidad 3', icon: '📗', level: 'A1–A2' as const, entries: unidad3Vocabulary },
 ].reduce<
   VocabularyTopic[]
 >((topics, topic) => {
@@ -3482,6 +3484,7 @@ const preferredTopicOrder = [
   'Семья и люди',
   'Мой день и рутина',
   'Unidad 2',
+  'Unidad 3',
   'Время, даты и планы',
   'Биография и события жизни',
   'Дом и жильё',
@@ -3564,7 +3567,17 @@ const coreLimitByTopic: Record<string, number> = {
   'Музыка': 10,
   'Ночная жизнь': 5,
 };
-const unidad2ByWord = new Map(unidad2Vocabulary.map((entry) => [normalizeWord(entry.es), entry]));
+const unitMembership = new Map<string, { entry: VocabularyEntry; units: string[] }>();
+for (const [unit, entries] of [
+  ['Unidad 2', unidad2Vocabulary],
+  ['Unidad 3', unidad3Vocabulary],
+] as const) {
+  for (const entry of entries) {
+    const key = normalizeWord(entry.es), existing = unitMembership.get(key);
+    if (existing) existing.units.push(unit);
+    else unitMembership.set(key, { entry, units: [unit] });
+  }
+}
 export const vocabularyTopics = orderedTopics.map((topic) => ({
   ...topic,
   entries: topic.entries
@@ -3577,14 +3590,14 @@ export const vocabularyTopics = orderedTopics.map((topic) => ({
       return true;
     })
     .map((entry, index) => {
-      const unidadEntry = unidad2ByWord.get(normalizeWord(entry.es));
+      const unitEntry = unitMembership.get(normalizeWord(entry.es));
       const id = vocabularyId(topic.name, entry.es);
       return ({
       ...entry,
-      ...(unidadEntry ? {
-        example: unidadEntry.example, exampleRu: unidadEntry.exampleRu,
-        extraExample: unidadEntry.extraExample, extraExampleRu: unidadEntry.extraExampleRu,
-        units: ['Unidad 2'],
+      ...(unitEntry ? {
+        example: unitEntry.entry.example, exampleRu: unitEntry.entry.exampleRu,
+        extraExample: unitEntry.entry.extraExample, extraExampleRu: unitEntry.entry.extraExampleRu,
+        units: unitEntry.units,
       } : {}),
       id,
       lexemeId: `${topic.name}-${id}`,
@@ -3596,14 +3609,14 @@ export const vocabularyTopics = orderedTopics.map((topic) => ({
 }));
 
 export const vocabularyBrowseTopics: VocabularyTopic[] = vocabularyTopics.map((topic) =>
-  topic.name === 'Unidad 2'
+  /^Unidad\s/u.test(topic.name)
     ? {
         ...topic,
         entries: vocabularyTopics
           .flatMap((item) =>
             item.entries.map((entry) => ({ ...entry, ownerTopic: item.name })),
           )
-          .filter((entry) => entry.units?.includes('Unidad 2')),
+          .filter((entry) => entry.units?.includes(topic.name)),
       }
     : topic,
 );

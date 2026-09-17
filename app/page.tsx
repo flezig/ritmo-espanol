@@ -8415,6 +8415,11 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     [level, setLevel] = useState<PracticeLevel>('A1–A2'),
     [collection, setCollection] = useState<PracticeCollection>('topics'),
     [topic, setTopic] = useState('Все темы'),
+    [scopeSelection, setScopeSelection] = useState<{
+      level: PracticeLevel;
+      collection: PracticeCollection;
+      topic: string;
+    }>({ level: 'A1–A2', collection: 'topics', topic: 'Все темы' }),
     [session, setSession] = useState<StudyCard[]>([]),
     [index, setIndex] = useState(0),
     [typed, setTyped] = useState(''),
@@ -8458,8 +8463,14 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
             : saved.mode;
         setMode(savedMode);
         setLevel(saved.level || (vocabularyBrowseTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'));
-        setCollection(saved.collection || (/^Unidad\s/iu.test(saved.topic) || saved.topic === 'Все unidades' ? 'units' : 'topics'));
+        const savedCollection = saved.collection || (/^Unidad\s/iu.test(saved.topic) || saved.topic === 'Все unidades' ? 'units' : 'topics');
+        setCollection(savedCollection);
         setTopic(saved.topic);
+        setScopeSelection({
+          level: saved.level || (vocabularyBrowseTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'),
+          collection: savedCollection,
+          topic: saved.topic,
+        });
         if (shouldAutoResumePractice(saved)) {
           const {
             session: synchronizedSession,
@@ -8578,6 +8589,10 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     awaitingStart,
   ]);
   const scopedDeck = useMemo(() => topicDeck(deck, level, topic), [deck, level, topic]),
+    selectedScopedDeck = useMemo(
+      () => topicDeck(deck, scopeSelection.level, scopeSelection.topic),
+      [deck, scopeSelection.level, scopeSelection.topic],
+    ),
     card = session[index],
     cardBase = card ? baseCardKey(card.key) : '',
     isIntroduction =
@@ -8639,7 +8654,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       [card, scopedDeck, index],
     );
   const { due, errorCount, waitingErrors, favorites } = useMemo(() => {
-    const allErrors = scopedDeck.filter(
+    const allErrors = selectedScopedDeck.filter(
       (item) =>
         records[item.key]?.reviews &&
         (records[item.key].lapses > 0 ||
@@ -8649,17 +8664,21 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       (item) => records[item.key].nextReview <= now,
     ).length;
     return {
-      due: scopedDeck.filter(
+      due: selectedScopedDeck.filter(
         (item) =>
           records[item.key]?.reviews && records[item.key].nextReview <= now,
       ).length,
       errorCount: readyErrors,
       waitingErrors: allErrors.length - readyErrors,
-      favorites: scopedDeck.filter((item) => records[item.key]?.favorite)
+      favorites: selectedScopedDeck.filter((item) => records[item.key]?.favorite)
         .length,
     };
-  }, [scopedDeck, records, now]);
-  const start = (nextMode: SessionMode, nextTopic = topic, nextLevel = level) => {
+  }, [selectedScopedDeck, records, now]);
+  const start = (
+    nextMode: SessionMode,
+    nextTopic = scopeSelection.topic,
+    nextLevel = scopeSelection.level,
+  ) => {
     beginAssignedSession('practice', `words:${nextMode}`, nextTopic);
     if (!deckReady) return;
     answerLock.current = false;
@@ -8668,12 +8687,13 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       nextSession = buildSession(nextDeck, records, nextMode);
     setMode(nextMode);
     setLevel(nextLevel);
-    setCollection(
+    const nextCollection: PracticeCollection =
       /^Unidad\s/iu.test(nextTopic) || nextTopic === 'Все unidades'
         ? 'units'
-        : 'topics',
-    );
+        : 'topics';
+    setCollection(nextCollection);
     setTopic(nextTopic);
+    setScopeSelection({ level: nextLevel, collection: nextCollection, topic: nextTopic });
     setSession(nextSession);
     setIndex(0);
     setTyped('');
@@ -8905,7 +8925,8 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           aria-expanded={scopeOpen}
           onClick={() => setScopeOpen((value) => !value)}
         >
-          {collection === 'units' ? 'Unidades' : level} · {topic}{' '}
+          {scopeSelection.collection === 'units' ? 'Unidades' : scopeSelection.level} ·{' '}
+          {scopeSelection.topic}{' '}
           <span>{scopeOpen ? 'Закрыть' : 'Сменить'}</span>
         </button>
         <div className="practice-collection-tabs" aria-label="Способ выбора слов">
@@ -8913,37 +8934,43 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           <div>
             <button
               type="button"
-              className={collection === 'topics' ? 'active' : ''}
+              className={scopeSelection.collection === 'topics' ? 'active' : ''}
               onClick={() => {
-                setCollection('topics');
-                start(mode, 'Все темы');
+                setScopeSelection((current) => ({
+                  ...current,
+                  collection: 'topics',
+                  topic: 'Все темы',
+                }));
               }}
             >
               Темы
             </button>
             <button
               type="button"
-              className={collection === 'units' ? 'active' : ''}
+              className={scopeSelection.collection === 'units' ? 'active' : ''}
               onClick={() => {
-                setCollection('units');
-                start(mode, 'Все unidades', 'A1–A2');
+                setScopeSelection({
+                  collection: 'units',
+                  level: 'A1–A2',
+                  topic: 'Все unidades',
+                });
               }}
             >
               Unidades
             </button>
           </div>
         </div>
-        {collection === 'topics' && <div>
+        {scopeSelection.collection === 'topics' && <div>
           <span>УРОВЕНЬ</span>
           <select
-            value={level}
+            value={scopeSelection.level}
             disabled={!deckReady}
             onChange={(event) =>
-              start(
-                mode,
-                'Все темы',
-                event.target.value as PracticeLevel,
-              )
+              setScopeSelection({
+                collection: 'topics',
+                level: event.target.value as PracticeLevel,
+                topic: 'Все темы',
+              })
             }
           >
             <option>A1–A2</option>
@@ -8952,13 +8979,18 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           </select>
         </div>}
         <div>
-          <span>{collection === 'units' ? 'UNIDAD' : 'ТЕМА СЛОВ'}</span>
+          <span>{scopeSelection.collection === 'units' ? 'UNIDAD' : 'ТЕМА СЛОВ'}</span>
           <select
-            value={topic}
+            value={scopeSelection.topic}
             disabled={!deckReady}
-            onChange={(event) => start(mode, event.target.value)}
+            onChange={(event) =>
+              setScopeSelection((current) => ({
+                ...current,
+                topic: event.target.value,
+              }))
+            }
           >
-            {practiceTopics(level, collection).map((item) => (
+            {practiceTopics(scopeSelection.level, scopeSelection.collection).map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
@@ -8966,7 +8998,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       </section>
       <div className="srs-summary">
         <button
-          className={mode === 'five' ? 'active' : ''}
+          className={!awaitingStart && mode === 'five' ? 'active' : ''}
           disabled={!deckReady}
           onClick={() => start('five')}
         >
@@ -8977,7 +9009,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           </span>
         </button>
         <button
-          className={mode === 'errors' ? 'active' : ''}
+          className={!awaitingStart && mode === 'errors' ? 'active' : ''}
           disabled={!deckReady}
           onClick={() => start('errors')}
         >
@@ -8990,7 +9022,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           </span>
         </button>
         <button
-          className={mode === 'favorites' ? 'active' : ''}
+          className={!awaitingStart && mode === 'favorites' ? 'active' : ''}
           disabled={!deckReady}
           onClick={() => start('favorites')}
         >
@@ -9003,7 +9035,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       </div>
       <section className="practice-session-overview">
         <strong>{readyWordsLabel(due)}</strong>
-        <small>{topic}</small>
+        <small>{scopeSelection.topic}</small>
         <details className="practice-session-how">
           <summary>
             Как формируется сессия <ArrowRight />

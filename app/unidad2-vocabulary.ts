@@ -135,6 +135,7 @@ const rows: Row[] = [
   ['sustantivo','существительное','Casa es un sustantivo femenino.','Casa — существительное женского рода.','Subraya el sustantivo de la frase.','Подчеркни существительное в предложении.'],
   ['El Cairo','Каир','El Cairo es la capital de Egipto.','Каир — столица Египта.','Mañana volamos a El Cairo.','Завтра мы летим в Каир.'],
   ['El País','газета «Эль Паис»','Leo El País por la mañana.','Я читаю газету «Эль Паис» по утрам.','El País publicó la entrevista ayer.','Газета «Эль Паис» опубликовала интервью вчера.'],
+  ['español','испанский','Estudio español después del trabajo.','Я учу испанский после работы.','Esta palabra es muy común en español.','Это слово очень распространено в испанском языке.'],
 ];
 
 export const unidad2Vocabulary: VocabularyEntry[] = rows.map(([es,ru,example,exampleRu,extraExample,extraExampleRu], index) => ({
