@@ -7,6 +7,10 @@ export type VocabularyEntry = {
   exampleRu?: string;
   extraExample?: string;
   extraExampleRu?: string;
+  units?: string[];
+  ownerTopic?: string;
+  /** Stable canonical identity used by SRS; collections never alter it. */
+  lexemeId?: string;
 };
 
 export type VocabularyLevel = 'A1–A2' | 'B1–B2';
@@ -21,6 +25,7 @@ import { corpusExamples } from './vocabulary-corpus.ts';
 import { legacyExampleTranslations } from './legacy-translations.ts';
 import { a2VocabularyTopics } from './a2-vocabulary.ts';
 import { b1b2VocabularyTopics } from './b1b2-vocabulary.ts';
+import { unidad2Vocabulary } from './unidad2-vocabulary.ts';
 
 const legacyVocabularyTopics = [
   {
@@ -3459,6 +3464,7 @@ const mergedTopics = [
   ...a2VocabularyTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
   ...deduplicatedLegacyTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
   ...b1b2VocabularyTopics.map((topic) => ({ ...topic, level: 'B1–B2' as const })),
+  { name: 'Unidad 2', icon: '📘', level: 'A1–A2' as const, entries: unidad2Vocabulary },
 ].reduce<
   VocabularyTopic[]
 >((topics, topic) => {
@@ -3475,6 +3481,7 @@ const preferredTopicOrder = [
   'Знакомство и о себе',
   'Семья и люди',
   'Мой день и рутина',
+  'Unidad 2',
   'Время, даты и планы',
   'Биография и события жизни',
   'Дом и жильё',
@@ -3557,6 +3564,7 @@ const coreLimitByTopic: Record<string, number> = {
   'Музыка': 10,
   'Ночная жизнь': 5,
 };
+const unidad2ByWord = new Map(unidad2Vocabulary.map((entry) => [normalizeWord(entry.es), entry]));
 export const vocabularyTopics = orderedTopics.map((topic) => ({
   ...topic,
   entries: topic.entries
@@ -3568,13 +3576,35 @@ export const vocabularyTopics = orderedTopics.map((topic) => ({
       finalWords.add(key);
       return true;
     })
-    .map((entry, index) => ({
+    .map((entry, index) => {
+      const unidadEntry = unidad2ByWord.get(normalizeWord(entry.es));
+      const id = vocabularyId(topic.name, entry.es);
+      return ({
       ...entry,
-      id: vocabularyId(topic.name, entry.es),
+      ...(unidadEntry ? {
+        example: unidadEntry.example, exampleRu: unidadEntry.exampleRu,
+        extraExample: unidadEntry.extraExample, extraExampleRu: unidadEntry.extraExampleRu,
+        units: ['Unidad 2'],
+      } : {}),
+      id,
+      lexemeId: `${topic.name}-${id}`,
       ru:
         translationOverrides[normalizeWord(entry.es)] ||
         primaryRussianTranslation(entry.ru),
       core: index < (coreLimitByTopic[topic.name] || 0),
-    })),
+    });}),
 }));
+
+export const vocabularyBrowseTopics: VocabularyTopic[] = vocabularyTopics.map((topic) =>
+  topic.name === 'Unidad 2'
+    ? {
+        ...topic,
+        entries: vocabularyTopics
+          .flatMap((item) =>
+            item.entries.map((entry) => ({ ...entry, ownerTopic: item.name })),
+          )
+          .filter((entry) => entry.units?.includes('Unidad 2')),
+      }
+    : topic,
+);
 import { vocabularyId, releasedVocabularyTopic } from './lib/vocabulary-identities.ts';

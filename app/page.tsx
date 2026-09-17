@@ -35,7 +35,7 @@ import {
   VolumeX,
   Zap,
 } from 'lucide-react';
-import { vocabularyTopics, type VocabularyLevel } from './vocabulary';
+import { vocabularyBrowseTopics, vocabularyTopics, type VocabularyLevel } from './vocabulary';
 import { courseLessons } from './lessons';
 import { YouTubeEmbed } from './components/youtube-embed';
 import { useAccount } from './components/account-provider';
@@ -190,6 +190,7 @@ type StudyCard = {
   exampleRu?: string;
   extraExample?: string;
   extraExampleRu?: string;
+  units?: string[];
   skill: SkillType;
   answer: string;
   prompt: string;
@@ -1612,7 +1613,7 @@ const lessonCoreVocabulary: Record<string, LessonWord[]> = {
 const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
   ...vocabularyTopics.flatMap((topic) =>
     topic.entries.flatMap((entry) => {
-      const base = `${topic.name}-${entry.id}`,
+      const base = entry.lexemeId || `${topic.name}-${entry.id}`,
         article = inferGenderArticle(
           entry.es,
           entry.example,
@@ -1627,6 +1628,7 @@ const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
           exampleRu: entry.exampleRu,
           extraExample: entry.extraExample,
           extraExampleRu: entry.extraExampleRu,
+          units: entry.units,
         };
       const cards: StudyCard[] = [
         {
@@ -4103,7 +4105,7 @@ function CustomWordsPanel() {
 function VocabularyView() {
   const [query, setQuery] = useState('');
   const [level, setLevel] = useState<VocabularyLevel>('A1–A2');
-  const [selected, setSelected] = useState(vocabularyTopics[0].name);
+  const [selected, setSelected] = useState(vocabularyBrowseTopics[0].name);
   const [filter, setFilter] = useState<'all' | 'core' | WordStatus>('all');
   const vocabularyLibraryRef = useRef<HTMLElement>(null);
   const { progress, update } = useWordProgress();
@@ -4143,11 +4145,11 @@ function VocabularyView() {
       window.removeEventListener('ritmo-global-search-focus', focusRequestedWord);
   }, []);
   const studyDeck = makeStudyDeck();
-  const levelTopics = vocabularyTopics.filter((item) => item.level === level),
+  const levelTopics = vocabularyBrowseTopics.filter((item) => item.level === level),
     topic =
       levelTopics.find((item) => item.name === selected) ??
       levelTopics[0] ??
-      vocabularyTopics[0];
+      vocabularyBrowseTopics[0];
   const normalized = query.trim().toLowerCase();
   const results = vocabularyTopics
     .flatMap((item) =>
@@ -4163,7 +4165,9 @@ function VocabularyView() {
         !normalized ||
         entry.es.toLowerCase().includes(normalized) ||
         entry.ru.toLowerCase().includes(normalized) ||
-        entry.example.toLowerCase().includes(normalized),
+        entry.example.toLowerCase().includes(normalized) ||
+        entry.extraExample?.toLowerCase().includes(normalized) ||
+        entry.extraExampleRu?.toLowerCase().includes(normalized),
     );
   const base = normalized
     ? results
@@ -4174,7 +4178,7 @@ function VocabularyView() {
         level: topic.level,
       }));
   const visible = base.filter((entry) => {
-    const key = `${entry.topic}-${entry.id}`;
+    const key = `${entry.ownerTopic || entry.topic}-${entry.id}`;
     if (filter === 'all') return true;
     if (filter === 'core') return !!entry.core;
     return derivedWordStatus(key, records, progress[key] || 'new') === filter;
@@ -4280,7 +4284,9 @@ function VocabularyView() {
               className={level === item && !normalized ? 'active' : ''}
               key={item}
               onClick={() => {
-                const first = vocabularyTopics.find((topicItem) => topicItem.level === item);
+                const first = vocabularyBrowseTopics.find(
+                  (topicItem) => topicItem.level === item,
+                );
                 setLevel(item);
                 if (first) setSelected(first.name);
                 setQuery('');
@@ -4372,7 +4378,7 @@ function VocabularyView() {
         </header>
         <div className="vocab-table">
           {visible.map((entry, entryIndex) => {
-            const key = `${entry.topic}-${entry.id}`,
+            const key = `${entry.ownerTopic || entry.topic}-${entry.id}`,
               status = derivedWordStatus(key, records, progress[key] || 'new'),
               statusDate =
                 status === 'learned'
@@ -4418,6 +4424,31 @@ function VocabularyView() {
                     translation={entry.exampleRu || ''}
                     source={entry.topic}
                   />
+                  {entry.extraExample && entry.extraExampleRu && (
+                    <details className="vocab-example-secondary">
+                      <summary>Ещё один пример</summary>
+                      <div>
+                        <p className="vocab-example">
+                          <b>{entry.extraExample}</b>
+                          <span>{entry.extraExampleRu}</span>
+                        </p>
+                        <button
+                          className="example-audio"
+                          onClick={() => speakText(entry.extraExample || '', 1)}
+                          aria-label={`Прослушать второй пример: ${entry.extraExample}`}
+                        >
+                          <Volume2 /> Прослушать
+                        </button>
+                        <ReportExampleButton
+                          id={`vocabulary-${key}-extra`}
+                          word={entry.es}
+                          example={entry.extraExample}
+                          translation={entry.extraExampleRu}
+                          source={entry.topic}
+                        />
+                      </div>
+                    </details>
+                  )}
                 </div>
                 <div className="word-status-control">
                   <select
@@ -6682,6 +6713,7 @@ function MusicView() {
 type SessionMode = 'five' | 'errors' | 'favorites';
 type SavedSessionMode = SessionMode | 'fifteen' | 'weak';
 type PracticeLevel = VocabularyLevel | 'Все уровни';
+type PracticeCollection = 'topics' | 'units';
 type PracticeProgressBaseline = {
   srs: Record<string, SRSRecord | null>;
   wordProgress: Record<string, WordStatus | null>;
@@ -6696,6 +6728,7 @@ type SavedPracticeSession = {
   version: 2 | 3 | 4 | 5;
   mode: SavedSessionMode;
   level?: PracticeLevel;
+  collection?: PracticeCollection;
   topic: string;
   session: StudyCard[];
   index: number;
@@ -7230,28 +7263,47 @@ type ResponseKind =
   | 'correction'
   | 'audioWord'
   | 'audioSentence';
-const practiceTopics = (level: PracticeLevel) => [
-  'Все темы',
-  ...vocabularyTopics
-    .filter((topic) => level === 'Все уровни' || topic.level === level)
-    .map((topic) => topic.name),
-  'Мои слова',
-  ...(level === 'Все уровни' || level === 'A1–A2' ? ['Уроки A1'] : []),
+const unitNames = [
+  ...new Set(
+    vocabularyTopics.flatMap((topic) =>
+      topic.entries.flatMap((entry) => entry.units || []),
+    ),
+  ),
 ];
+const practiceTopics = (level: PracticeLevel, collection: PracticeCollection) =>
+  collection === 'units'
+    ? ['Все unidades', ...unitNames]
+    : [
+        'Все темы',
+        ...vocabularyBrowseTopics
+          .filter((topic) => !/^Unidad\s/iu.test(topic.name))
+          .filter((topic) => level === 'Все уровни' || topic.level === level)
+          .map((topic) => topic.name),
+        'Мои слова',
+        ...(level === 'Все уровни' || level === 'A1–A2' ? ['Уроки A1'] : []),
+      ];
 const topicDeck = (deck: StudyCard[], level: PracticeLevel, topic: string) =>
   topic === 'Мои слова'
     ? deck.filter((card) => card.topic === 'Мои слова')
-    : topic === 'Все темы'
-    ? level === 'Все уровни'
-      ? deck
-      : deck.filter((card) => card.level === level)
-    : topic === 'Уроки A1'
+    : topic === 'Все unidades'
       ? deck.filter(
           (card) =>
-            card.topic !== 'Мои слова' &&
-            !vocabularyTopics.some((item) => item.name === card.topic),
+            card.units?.length &&
+            (level === 'Все уровни' || card.level === level),
         )
-      : deck.filter((card) => card.topic === topic);
+      : topic === 'Все темы'
+        ? level === 'Все уровни'
+          ? deck
+          : deck.filter((card) => card.level === level)
+        : topic === 'Уроки A1'
+          ? deck.filter(
+              (card) =>
+                card.topic !== 'Мои слова' &&
+                !vocabularyTopics.some((item) => item.name === card.topic),
+            )
+          : deck.filter(
+              (card) => card.topic === topic || card.units?.includes(topic),
+            );
 const seededNumber = (seed: string) =>
   Array.from(seed).reduce(
     (sum, character) => (sum * 33 + character.charCodeAt(0)) >>> 0,
@@ -8361,6 +8413,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
   const [deck, setDeck] = useState<StudyCard[]>([]),
     [mode, setMode] = useState<SessionMode>('five'),
     [level, setLevel] = useState<PracticeLevel>('A1–A2'),
+    [collection, setCollection] = useState<PracticeCollection>('topics'),
     [topic, setTopic] = useState('Все темы'),
     [session, setSession] = useState<StudyCard[]>([]),
     [index, setIndex] = useState(0),
@@ -8404,7 +8457,8 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
             ? 'five'
             : saved.mode;
         setMode(savedMode);
-        setLevel(saved.level || (vocabularyTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'));
+        setLevel(saved.level || (vocabularyBrowseTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'));
+        setCollection(saved.collection || (/^Unidad\s/iu.test(saved.topic) || saved.topic === 'Все unidades' ? 'units' : 'topics'));
         setTopic(saved.topic);
         if (shouldAutoResumePractice(saved)) {
           const {
@@ -8451,6 +8505,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       version: 5,
       mode,
       level,
+      collection,
       topic,
       session,
       index,
@@ -8478,6 +8533,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     sessionHydrated,
     mode,
     level,
+    collection,
     topic,
     session,
     index,
@@ -8612,6 +8668,11 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       nextSession = buildSession(nextDeck, records, nextMode);
     setMode(nextMode);
     setLevel(nextLevel);
+    setCollection(
+      /^Unidad\s/iu.test(nextTopic) || nextTopic === 'Все unidades'
+        ? 'units'
+        : 'topics',
+    );
     setTopic(nextTopic);
     setSession(nextSession);
     setIndex(0);
@@ -8844,30 +8905,60 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           aria-expanded={scopeOpen}
           onClick={() => setScopeOpen((value) => !value)}
         >
-          {level} · {topic} <span>{scopeOpen ? 'Закрыть' : 'Сменить'}</span>
+          {collection === 'units' ? 'Unidades' : level} · {topic}{' '}
+          <span>{scopeOpen ? 'Закрыть' : 'Сменить'}</span>
         </button>
-        <div>
+        <div className="practice-collection-tabs" aria-label="Способ выбора слов">
+          <span>КОЛЛЕКЦИЯ</span>
+          <div>
+            <button
+              type="button"
+              className={collection === 'topics' ? 'active' : ''}
+              onClick={() => {
+                setCollection('topics');
+                start(mode, 'Все темы');
+              }}
+            >
+              Темы
+            </button>
+            <button
+              type="button"
+              className={collection === 'units' ? 'active' : ''}
+              onClick={() => {
+                setCollection('units');
+                start(mode, 'Все unidades', 'A1–A2');
+              }}
+            >
+              Unidades
+            </button>
+          </div>
+        </div>
+        {collection === 'topics' && <div>
           <span>УРОВЕНЬ</span>
           <select
             value={level}
             disabled={!deckReady}
             onChange={(event) =>
-              start(mode, 'Все темы', event.target.value as PracticeLevel)
+              start(
+                mode,
+                'Все темы',
+                event.target.value as PracticeLevel,
+              )
             }
           >
             <option>A1–A2</option>
             <option>B1–B2</option>
             <option>Все уровни</option>
           </select>
-        </div>
+        </div>}
         <div>
-          <span>ТЕМА СЛОВ</span>
+          <span>{collection === 'units' ? 'UNIDAD' : 'ТЕМА СЛОВ'}</span>
           <select
             value={topic}
             disabled={!deckReady}
             onChange={(event) => start(mode, event.target.value)}
           >
-            {practiceTopics(level).map((item) => (
+            {practiceTopics(level, collection).map((item) => (
               <option key={item}>{item}</option>
             ))}
           </select>
@@ -9533,7 +9624,7 @@ function DictationView() {
   const { leaving, move } = useTaskMotion();
   const topics = [...new Set([
       'Все темы',
-      ...vocabularyTopics
+      ...vocabularyBrowseTopics
         .filter((item) => level === 'Все уровни' || item.level === level)
         .map((item) => item.name),
       ...(customWords.length ? ['Мои слова'] : []),
@@ -9561,7 +9652,7 @@ function DictationView() {
       .filter((card) =>
         card.topic === 'Мои слова' || level === 'Все уровни' || card.level === level,
       )
-      .filter((card) => topic === 'Все темы' || card.topic === topic),
+      .filter((card) => topic === 'Все темы' || card.topic === topic || card.units?.includes(topic)),
     card = cards[index],
     expected = card
       ? audioTarget === 'word'

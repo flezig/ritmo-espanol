@@ -8754,6 +8754,29 @@ input {
   color: var(--purple);
   letter-spacing: 0.1em;
 }
+.practice-collection-tabs > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--soft);
+}
+.practice-collection-tabs button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.practice-collection-tabs button.active {
+  background: var(--panel);
+  color: var(--purple);
+  box-shadow: 0 4px 12px #1a102018;
+}
 .vocabulary-level-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -11780,6 +11803,23 @@ body {
 }
 .vocab-example-wrap .vocab-example {
   margin: 0;
+}
+.vocab-example-secondary {
+  margin-top: 4px;
+  padding-top: 9px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+}
+.vocab-example-secondary > summary {
+  width: fit-content;
+  color: var(--purple);
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.vocab-example-secondary > div {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
 }
 .report-example {
   width: max-content;

@@ -36,7 +36,7 @@ test('A1-A2 core is explicit, substantial and smaller than the full dictionary',
   assert.ok(core.length >= 750, `core is too small: ${core.length}`);
   assert.ok(core.length <= 850, `core is no longer focused: ${core.length}`);
   assert.ok(core.length < entries.length);
-  for (const topic of vocabularyTopics.slice(0, 16))
+  for (const topic of vocabularyTopics.filter((topic) => !/^Unidad\s/u.test(topic.name)).slice(0, 16))
     assert.ok(
       topic.entries.some((entry) => entry.core),
       `${topic.name} has no core vocabulary`,
