@@ -90,13 +90,20 @@ test('B1-B2 is a separate complete corpus with no A1-A2 overlap', () => {
       .flatMap((topic) => topic.entries.map((entry) => entry.es.toLocaleLowerCase('es'))),
   );
   const advancedWords = b1b2VocabularyTopics.flatMap((topic) => topic.entries);
-  assert.equal(advancedWords.length, 100);
+  assert.equal(advancedWords.length, 200);
   assert.equal(b1b2VocabularyTopics.length, 10);
   for (const entry of advancedWords) {
     assert.equal(beginnerWords.has(entry.es.toLocaleLowerCase('es')), false, `${entry.es} overlaps A1–A2`);
     assert.equal(/\s\/\s/.test(entry.ru), false, `${entry.es} has an ambiguous translation`);
     assert.match(entry.example, /[.!?]$/u, `${entry.es} needs a complete Spanish sentence`);
     assert.match(entry.exampleRu, /[.!?]$/u, `${entry.es} needs a complete Russian translation`);
+  }
+  for (const topic of b1b2VocabularyTopics) {
+    assert.equal(topic.entries.length, 20, `${topic.name} needs 20 entries`);
+    for (const entry of topic.entries.slice(10)) {
+      assert.match(entry.extraExample || '', /[.!?]$/u, `${entry.es} needs a second Spanish example`);
+      assert.match(entry.extraExampleRu || '', /[.!?]$/u, `${entry.es} needs a second Russian translation`);
+    }
   }
   const releasedAdvanced = vocabularyTopics.filter((topic) => topic.level === 'B1–B2');
   assert.equal(releasedAdvanced.length, 10);

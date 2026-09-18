@@ -29,7 +29,11 @@ export type AssignmentActivity = {
   session_id: string | null; attempt_no: number; event_kind: 'answer' | 'session_complete';
   item_key: string;
 };
-export type StudentLearningSummary = { level: string; xp: number; streak: number; activeDays: number; totalReviews: number; totalCorrect: number; completedLessons: number };
+export type StudentLearningSummary = {
+  level: string; xp: number; streak: number; activeDays: number; totalReviews: number;
+  totalCorrect: number; completedLessons: number; activeToday: boolean;
+  lastSeenAt: string | null; learningWords: string[];
+};
 
 const unwrap = <T>(data: T | null, error: { message: string } | null): T => {
   if (error) throw new Error(error.message);

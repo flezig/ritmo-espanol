@@ -1,9 +1,13 @@
+import { b2VocabularyExpansion, type B2ExpansionRow } from './b2-vocabulary-expansion.ts';
+
 export type B1B2VocabularyEntry = {
   id: number;
   es: string;
   ru: string;
   example: string;
   exampleRu: string;
+  extraExample?: string;
+  extraExampleRu?: string;
 };
 
 export type B1B2VocabularyTopic = {
@@ -12,17 +16,19 @@ export type B1B2VocabularyTopic = {
   entries: B1B2VocabularyEntry[];
 };
 
-type Row = [es: string, ru: string, example: string, exampleRu: string];
+type Row = B2ExpansionRow;
 
 const topic = (name: string, icon: string, rows: Row[]): B1B2VocabularyTopic => ({
   name,
   icon,
-  entries: rows.map(([es, ru, example, exampleRu], index) => ({
+  entries: [...rows, ...(b2VocabularyExpansion[name] || [])].map(([es, ru, example, exampleRu, extraExample, extraExampleRu], index) => ({
     id: index + 1,
     es,
     ru,
     example,
     exampleRu,
+    extraExample,
+    extraExampleRu,
   })),
 });
 

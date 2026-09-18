@@ -66,8 +66,16 @@ function NotificationFeed({ items, role, refresh }: { items: AppNotification[]; 
 }
 
 function AssignmentRows({ assignments, profiles, progress, perspective }: { assignments: Assignment[]; profiles?: Map<string, Profile>; progress?: Map<string, AssignmentProgress>; perspective: 'teacher' | 'student' }) {
+  const [studentFilter, setStudentFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<Assignment['status'] | 'all'>('all');
+  const [sortMode, setSortMode] = useState<'priority' | 'status' | 'deadline' | 'newest'>('priority');
   if (!assignments.length) return <div className="education-empty compact"><BookOpen /><p>Заданий пока нет.</p></div>;
-  const ordered = [...assignments].sort((a, b) => {
+  const studentIds = [...new Set(assignments.map((item) => item.student_id))];
+  const filtered = assignments.filter((item) => (studentFilter === 'all' || item.student_id === studentFilter) && (statusFilter === 'all' || item.status === statusFilter));
+  const ordered = [...filtered].sort((a, b) => {
+    if (sortMode === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (sortMode === 'deadline') return new Date(a.due_at || '2999-01-01').getTime() - new Date(b.due_at || '2999-01-01').getTime();
+    if (sortMode === 'status') return statusLabel[a.status].localeCompare(statusLabel[b.status], 'ru');
     const rank = (x: Assignment) => x.status === 'revision_requested' ? 0 : x.status === 'overdue' ? 1 : x.status === 'assigned' ? 2 : x.status === 'submitted' ? 3 : 4;
     return rank(a) - rank(b) || new Date(a.due_at || '2999-01-01').getTime() - new Date(b.due_at || '2999-01-01').getTime();
   });
@@ -84,7 +92,11 @@ function AssignmentRows({ assignments, profiles, progress, perspective }: { assi
     </a>;
   })}</div>;
   const current = ordered.filter((item) => !['completed','cancelled'].includes(item.status)), completed = ordered.filter((item) => ['completed','cancelled'].includes(item.status));
-  return <>{render(current)}{!!completed.length && <details className="completed-assignments"><summary>Завершённые · {completed.length}</summary>{render(completed)}</details>}</>;
+  return <><div className="assignment-filters">
+    {perspective === 'teacher' && studentIds.length > 1 && <label>Ученик<select value={studentFilter} onChange={(e) => setStudentFilter(e.target.value)}><option value="all">Все ученики</option>{studentIds.map((id) => <option value={id} key={id}>{personName(profiles?.get(id))}</option>)}</select></label>}
+    <label>Статус<select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as Assignment['status'] | 'all')}><option value="all">Все статусы</option>{Object.entries(statusLabel).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+    <label>Сортировка<select value={sortMode} onChange={(e) => setSortMode(e.target.value as typeof sortMode)}><option value="priority">По важности</option><option value="status">По статусу</option><option value="deadline">По сроку</option><option value="newest">Сначала новые</option></select></label>
+  </div>{!ordered.length ? <p className="assignment-filter-empty">По выбранным фильтрам заданий нет.</p> : <>{render(current)}{!!completed.length && <details className="completed-assignments" open={statusFilter === 'completed' || statusFilter === 'cancelled'}><summary>Завершённые · {completed.length}</summary>{render(completed)}</details>}</>}</>;
 }
 
 function TeacherDashboard() {
@@ -140,8 +152,9 @@ function TeacherStudent({ studentId }: { studentId: string }) {
   if (!data && !error) return <Busy role="teacher" />;
   if (!linked) return <WorkspaceFrame role="teacher"><a className="back-link" href="/teacher"><ArrowLeft />К ученикам</a><ErrorBox message={error || 'Этот ученик не связан с вашим аккаунтом.'} /></WorkspaceFrame>;
   const profile = data?.profiles.get(studentId);
+  const learningWords = summary?.learningWords.map((key) => vocabularyTopics.flatMap((topic) => topic.entries).find((entry) => entry.lexemeId === key)?.es).filter((word): word is string => !!word).slice(0, 12) || [];
   return <WorkspaceFrame role="teacher"><a className="back-link" href="/teacher"><ArrowLeft />К ученикам</a><div className="education-heading"><div><span className="eyebrow">УЧЕНИК</span><h1>{personName(profile)}</h1><p>{profile?.email}</p></div></div>
-    {summary && <section className="education-grid stats-grid student-learning-stats"><article><GraduationCap /><b>{summary.level}</b><span>уровень · {summary.xp} XP</span></article><article><BookOpen /><b>{summary.completedLessons}</b><span>уроков завершено</span></article><article><Check /><b>{summary.totalReviews ? Math.round(summary.totalCorrect / summary.totalReviews * 100) : 0}%</b><span>{summary.totalReviews} ответов · серия {summary.streak}</span></article></section>}
+    {summary && <><section className="education-grid stats-grid student-learning-stats"><article><GraduationCap /><b>{summary.level}</b><span>уровень · {summary.xp} XP</span></article><article><BookOpen /><b>{summary.completedLessons}</b><span>уроков завершено</span></article><article><Check /><b>{summary.totalReviews ? Math.round(summary.totalCorrect / summary.totalReviews * 100) : 0}%</b><span>{summary.totalReviews} ответов · серия {summary.streak}</span></article><article className={summary.activeToday ? 'student-online' : ''}><Clock3 /><b>{summary.activeToday ? 'Сегодня' : 'Не сегодня'}</b><span>{summary.lastSeenAt ? `последняя синхронизация ${dateText(summary.lastSeenAt)}` : 'активности ещё нет'}</span></article></section><section className="learning-words"><div><b>Сейчас учит</b><span>Обновляется после облачной синхронизации</span></div>{learningWords.length ? <ul>{learningWords.map((word) => <li key={word}>{word}</li>)}</ul> : <p>Нет слов со статусом «Учу» или «Сложное».</p>}</section></>}
     <div className="education-columns"><section className="education-card"><h2>Новое задание</h2><form className="assignment-form" onSubmit={save}>
       <label>Название<input required maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
       <label>Описание<textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
