@@ -873,7 +873,10 @@ function useSpanishVoices() {
     const load = () => {
       const spanish = speechSynthesis
           .getVoices()
-          .filter((voice) => voice.lang.toLowerCase().startsWith('es')),
+          .filter((voice) =>
+            voice.lang.toLowerCase().startsWith('es') ||
+            /espa(?:ñ|n)ol|spanish|castilian/i.test(voice.name),
+          ),
         femaleNames =
           /m[oó]nica|paulina|marisol|helena|luciana|soledad|conchita|alba|dalia|lola|paloma|elvira/i,
         maleNames =
@@ -905,9 +908,10 @@ function useSpanishVoices() {
         ].filter(Boolean) as SpeechSynthesisVoice[],
         ordered = [...new Set([...preferred, ...female, ...male, ...other])];
       setVoices(ordered);
-      setVoiceError(
-        ordered.length ? '' : 'Испанский голос не установлен. Добавьте голос Español в настройках системы или продолжите без аудио.',
-      );
+      // Chromium-based browsers (including Yandex Browser) may synthesize the
+      // requested language even when they do not expose that voice in
+      // getVoices(). In that case we intentionally leave utterance.voice unset.
+      setVoiceError('');
       const saved = localStorage.getItem('ritmo-spanish-voice');
       if (saved) {
         const savedIndex = ordered.findIndex((voice) => voice.name === saved);
@@ -915,8 +919,14 @@ function useSpanishVoices() {
       }
     };
     queueMicrotask(load);
+    const retries = [100, 500, 1500, 3000].map((delay) =>
+      window.setTimeout(load, delay),
+    );
     speechSynthesis.addEventListener('voiceschanged', load);
-    return () => speechSynthesis.removeEventListener('voiceschanged', load);
+    return () => {
+      retries.forEach((timer) => window.clearTimeout(timer));
+      speechSynthesis.removeEventListener('voiceschanged', load);
+    };
   }, []);
   const chooseVoice = (index: number) => {
     setVoiceIndex(index);
@@ -928,19 +938,24 @@ function useSpanishVoices() {
       setVoiceError('Озвучивание недоступно в этом браузере.');
       return false;
     }
-    if (!voices.length) {
-      setVoiceError('Испанский голос не найден. Установите системный голос Español или продолжите без аудио.');
-      return false;
-    }
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'es-ES';
     utterance.rate = speed;
     utterance.pitch = 1;
     utterance.volume = 1;
-    if (voices.length) utterance.voice = voices[voiceIndex % voices.length];
+    const currentlyAvailable = speechSynthesis
+      .getVoices()
+      .filter((voice) =>
+        voice.lang.toLowerCase().startsWith('es') ||
+        /espa(?:ñ|n)ol|spanish|castilian/i.test(voice.name),
+      );
+    const selectedVoice = voices[voiceIndex % Math.max(voices.length, 1)] || currentlyAvailable[0];
+    if (selectedVoice) utterance.voice = selectedVoice;
     utterance.onerror = (event) => {
-      setVoiceError('Не удалось включить выбранный голос. Выберите другой голос или продолжите без аудио.');
+      setVoiceError(selectedVoice
+        ? 'Не удалось включить выбранный голос. Попробуйте другой.'
+        : 'Яндекс.Браузер не смог запустить системную озвучку. Разрешите звук для сайта и попробуйте ещё раз.');
       if (event.error !== 'canceled' && event.error !== 'interrupted')
         recordClientError('audio', event.error || 'speech-synthesis-error', {
           voice: utterance.voice?.name || '',
@@ -949,6 +964,7 @@ function useSpanishVoices() {
         });
     };
     utterance.onstart = () => setVoiceError('');
+    speechSynthesis.resume();
     speechSynthesis.speak(utterance);
     return true;
   };
@@ -4264,7 +4280,7 @@ function VocabularyView() {
               ))}
             </select>
           ) : (
-            <small>Испанские системные голоса не найдены</small>
+            <small>Системный голос es-ES · браузер не показывает список голосов</small>
           )}
           <button onClick={() => speakText('Hola, ¿cómo estás?', 1)}>
             <Volume2 /> Прослушать
@@ -8822,7 +8838,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       );
   };
   useEffect(() => {
-    if (card && isIntroduction && voices.length && preferences.autoSpeak)
+    if (card && isIntroduction && preferences.autoSpeak)
       speakText(card.es.split(' / ')[0], 1);
   }, [cardBase, isIntroduction, voiceIndex, voices.length, preferences.autoSpeak]);
   const check = (value: string) => {
@@ -9819,7 +9835,7 @@ function DictationView() {
       }
     });
   useEffect(() => {
-    if (card && !checked && voices.length) speak(1);
+    if (card && !checked) speak(1);
   }, [index, cards, audioTarget, voiceIndex, voices.length]);
   return (
     <div className="view-stack dictation-view">
