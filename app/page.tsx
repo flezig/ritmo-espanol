@@ -864,7 +864,9 @@ function SpellingDiff({ value, answer }: { value: string; answer: string }) {
 function useSpanishVoices() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]),
     [voiceIndex, setVoiceIndex] = useState(0),
-    [voiceError, setVoiceError] = useState('');
+    [voiceError, setVoiceError] = useState(''),
+    utteranceRef = useRef<SpeechSynthesisUtterance | null>(null),
+    watchdogRef = useRef<number | null>(null);
   useEffect(() => {
     if (typeof speechSynthesis === 'undefined') {
       queueMicrotask(() => setVoiceError('Этот браузер не поддерживает озвучивание. Можно продолжить без аудио.'));
@@ -925,6 +927,7 @@ function useSpanishVoices() {
     speechSynthesis.addEventListener('voiceschanged', load);
     return () => {
       retries.forEach((timer) => window.clearTimeout(timer));
+      if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current);
       speechSynthesis.removeEventListener('voiceschanged', load);
     };
   }, []);
@@ -938,21 +941,26 @@ function useSpanishVoices() {
       setVoiceError('Озвучивание недоступно в этом браузере.');
       return false;
     }
+    if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current);
     speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+    utteranceRef.current = utterance;
     utterance.lang = 'es-ES';
     utterance.rate = speed;
     utterance.pitch = 1;
     utterance.volume = 1;
-    const currentlyAvailable = speechSynthesis
-      .getVoices()
-      .filter((voice) =>
+    const allAvailable = speechSynthesis.getVoices(),
+      currentlyAvailable = allAvailable.filter((voice) =>
         voice.lang.toLowerCase().startsWith('es') ||
         /espa(?:ñ|n)ol|spanish|castilian/i.test(voice.name),
-      );
-    const selectedVoice = voices[voiceIndex % Math.max(voices.length, 1)] || currentlyAvailable[0];
+      ),
+      selectedVoice = voices[voiceIndex % Math.max(voices.length, 1)] ||
+        currentlyAvailable[0] || allAvailable.find((voice) => voice.default) ||
+        allAvailable.find((voice) => voice.localService) || allAvailable[0];
     if (selectedVoice) utterance.voice = selectedVoice;
     utterance.onerror = (event) => {
+      if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current);
+      utteranceRef.current = null;
       setVoiceError(selectedVoice
         ? 'Не удалось включить выбранный голос. Попробуйте другой.'
         : 'Яндекс.Браузер не смог запустить системную озвучку. Разрешите звук для сайта и попробуйте ещё раз.');
@@ -963,9 +971,27 @@ function useSpanishVoices() {
           speed,
         });
     };
-    utterance.onstart = () => setVoiceError('');
+    utterance.onstart = () => {
+      if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current);
+      setVoiceError('');
+    };
+    utterance.onend = () => {
+      if (watchdogRef.current !== null) window.clearTimeout(watchdogRef.current);
+      utteranceRef.current = null;
+    };
+    setVoiceError('');
     speechSynthesis.resume();
     speechSynthesis.speak(utterance);
+    watchdogRef.current = window.setTimeout(() => {
+      if (!speechSynthesis.speaking) {
+        setVoiceError('Озвучка не запустилась. Разрешите звук для сайта и установите голос Español в настройках системы.');
+        recordClientError('audio', 'speech-synthesis-silent-timeout', {
+          browser: navigator.userAgent,
+          availableVoices: allAvailable.length,
+          spanishVoices: currentlyAvailable.length,
+        });
+      }
+    }, 1800);
     return true;
   };
   return { voices, voiceIndex, setVoiceIndex: chooseVoice, speakText, voiceError };
