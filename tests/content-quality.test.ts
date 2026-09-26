@@ -274,6 +274,10 @@ test('lesson 2 covers every expanded rule in exactly 60 clear tasks', () => {
   assert.ok(lesson.exercises.filter((exercise) => exercise.kind === 'Указательные').length >= 8);
   assert.ok(lesson.exercises.filter((exercise) => exercise.kind === 'Базовые предлоги').length >= 6);
   assert.equal(lesson.exercises.filter((exercise) => exercise.kind.startsWith('Presente · глаголы на -ar')).length, 10);
+  assert.ok(
+    lesson.exercises.slice(50).every((exercise) => exercise.kind === 'Presente · глаголы на -ar'),
+    'the ten exercises added after the original 50 must stay at positions 51–60',
+  );
   for (const verb of ['hablar', 'trabajar', 'estudiar', 'escuchar', 'viajar', 'comprar', 'necesitar', 'cocinar', 'bailar']) {
     assert.match(theory, new RegExp(verb), `missing -ar verb in theory: ${verb}`);
     assert.match(exercises, new RegExp(verb), `missing -ar verb exercise: ${verb}`);
@@ -289,6 +293,13 @@ test('lesson 2 covers every expanded rule in exactly 60 clear tasks', () => {
     assert.match(exercise.prompt, /Преобразуйте всё словосочетание/);
     assert.equal(exercise.answer, answer);
   }
+});
+
+test('a lesson completed on an older shorter version reopens at the new tasks', () => {
+  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  assert.match(source, /state\.done < lesson\.exercises\.length/);
+  assert.match(source, /current\[lesson\.id\] = \{ \.\.\.state, completed: false \}/);
+  assert.match(source, /state\?\.lastExerciseId/);
 });
 
 test('lesson 2 theory keeps related rules together and explains su/sus by possessed number', () => {

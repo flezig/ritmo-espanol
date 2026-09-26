@@ -2063,9 +2063,21 @@ function useLessonProgress() {
   useEffect(() => {
     const read = () => {
       try {
-        setProgress(
-          JSON.parse(localStorage.getItem('ritmo-lesson-progress') || '{}'),
-        );
+        const stored = JSON.parse(
+          localStorage.getItem('ritmo-lesson-progress') || '{}',
+        ) as LessonProgress;
+        let changed = false;
+        const current = { ...stored };
+        for (const lesson of courseLessons) {
+          const state = current[lesson.id];
+          if (state?.completed && state.done < lesson.exercises.length) {
+            current[lesson.id] = { ...state, completed: false };
+            changed = true;
+          }
+        }
+        if (changed)
+          localStorage.setItem('ritmo-lesson-progress', JSON.stringify(current));
+        setProgress(current);
       } catch {}
     };
     read();
