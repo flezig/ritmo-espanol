@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { vocabularyTopics } from '../app/vocabulary.ts';
 import { b1b2VocabularyTopics } from '../app/b1b2-vocabulary.ts';
 import { courseLessons, type LessonExercise } from '../app/lessons.ts';
+import { matchesAnswerVariant } from '../app/lib/learning-core.ts';
 
 const entries = vocabularyTopics.flatMap((topic) => topic.entries.map((entry) => ({ ...entry, topic: topic.name })));
 
@@ -243,6 +244,80 @@ test('lesson free input is used only when the prompt identifies the answer', () 
       );
     }
   }
+});
+
+test('lesson 3 covers only its three presente rules with varied stable practice', () => {
+  const lesson = courseLessons.find((item) => item.id === 'day');
+  assert.ok(lesson);
+  assert.equal(lesson.title, 'Presente: глаголы в действии');
+  assert.deepEqual(
+    lesson.theory.map((block) => block.title),
+    [
+      'Presente de Indicativo правильных глаголов',
+      'Чередование гласных в корне',
+      'Особые формы yo',
+    ],
+  );
+  assert.equal(lesson.exercises.length, 50, 'the stable lesson length protects saved completion');
+  assert.equal(
+    /возвратн|вопросительн/iu.test(JSON.stringify(lesson)),
+    false,
+  );
+  for (const kind of [
+    'Правильные глаголы',
+    'Чередование в корне',
+    'Особая форма yo',
+  ])
+    assert.ok(
+      lesson.exercises.filter((exercise) => exercise.kind === kind).length >= 11,
+      `not enough coverage for ${kind}`,
+    );
+  const modes = new Set(lesson.exercises.map((exercise) => exercise.mode));
+  assert.deepEqual(modes, new Set(['choice', 'type', 'order', 'truefalse']));
+  assert.ok(
+    lesson.exercises.filter((exercise) => exercise.mode === 'choice').length <
+      lesson.exercises.length / 2,
+  );
+  for (const exercise of lesson.exercises) {
+    assert.ok(exercise.prompt.trim(), 'lesson 3 exercise has an empty prompt');
+    assert.ok(exercise.answer.trim(), `lesson 3 exercise has no answer: ${exercise.prompt}`);
+    if (exercise.mode === 'choice') {
+      assert.ok(exercise.options?.includes(exercise.answer), `answer is not displayed: ${exercise.prompt}`);
+      assert.equal(new Set(exercise.options).size, exercise.options.length, `duplicate choices: ${exercise.prompt}`);
+    }
+    if (exercise.mode === 'order')
+      assert.equal(exercise.options?.join(' '), exercise.answer, `broken word bank: ${exercise.prompt}`);
+    for (const variant of exercise.acceptedAnswers || [])
+      {
+        assert.notEqual(variant, exercise.answer, `duplicate accepted answer: ${exercise.prompt}`);
+        assert.equal(
+          matchesAnswerVariant(variant, exercise.answer, exercise.acceptedAnswers),
+          true,
+          `accepted answer is rejected: ${variant}`,
+        );
+      }
+    assert.equal(
+      matchesAnswerVariant(exercise.answer, exercise.answer, exercise.acceptedAnswers),
+      true,
+      `canonical answer is rejected: ${exercise.prompt}`,
+    );
+  }
+  assert.equal(
+    lesson.exercises.some((exercise) => /vuelvo volver/iu.test(`${exercise.prompt} ${exercise.answer}`)),
+    false,
+  );
+});
+
+test('every core word from lesson 3 exists in the canonical dictionary', () => {
+  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const dayBlock = source.match(/\n  day: \[([\s\S]*?)\n  \],\n  home:/u)?.[1] || '';
+  const lessonWords = [...dayBlock.matchAll(/es: '([^']+)'/gu)].map((match) => match[1]);
+  const dictionaryWords = new Set(entries.map((entry) => entry.es));
+  assert.equal(lessonWords.length, 30);
+  for (const word of lessonWords)
+    assert.ok(dictionaryWords.has(word), `lesson word is missing from dictionary: ${word}`);
+  assert.match(source, /type PracticeCollection = 'topics' \| 'units' \| 'lessons'/);
+  assert.match(source, /lessonIds: lessonIdsForWord\(entry\.es\)/);
 });
 
 test('lesson 2 covers every expanded rule in exactly 60 clear tasks', () => {

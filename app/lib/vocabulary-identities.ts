@@ -272,7 +272,14 @@ const releasedIds: Record<string, Record<string, number>> = {
     "rápido": 79,
     "despacio": 80,
     "ocupado": 81,
-    "libre": 82
+    "libre": 82,
+    "pensar": 83,
+    "repetir": 84,
+    "poner": 85,
+    "traer": 86,
+    "decir": 87,
+    "oír": 88,
+    "dar": 89
   },
   "Дом и жильё": {
     "piso": 1,

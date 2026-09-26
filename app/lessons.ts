@@ -4,6 +4,7 @@ export type LessonExercise = {
   prompt: string;
   options?: string[];
   answer: string;
+  acceptedAnswers?: string[];
   hint: string;
   explanation: string;
 };
@@ -38,11 +39,13 @@ const typed = (
   answer: string,
   hint: string,
   explanation: string,
+  acceptedAnswers?: string[],
 ): LessonExercise => ({
   kind,
   mode: 'type',
   prompt,
   answer,
+  acceptedAnswers,
   hint,
   explanation,
 });
@@ -70,7 +73,7 @@ const truth = (
   prompt,
   options: ['Верно', 'Неверно'],
   answer,
-  hint: 'Проверьте форму глагола, артикль и согласование.',
+  hint: 'Сверьте утверждение с правилом и выберите «Верно» или «Неверно».',
   explanation,
 });
 
@@ -825,276 +828,58 @@ const lesson2TheoryOrder = [
 ] as const;
 
 const lesson3: LessonExercise[] = [
-  ...[
-    [
-      'Yo ___ a las siete. (levantarse)',
-      ['me levanto', 'te levantas', 'se levanta'],
-      'me levanto',
-    ],
-    [
-      'Tú ___ a las ocho. (desayunar)',
-      ['desayunas', 'desayuno', 'desayuna'],
-      'desayunas',
-    ],
-    [
-      'Ella ___ desde casa. (trabajar)',
-      ['trabaja', 'trabajo', 'trabajan'],
-      'trabaja',
-    ],
-    [
-      'Nosotros ___ español. (estudiar)',
-      ['estudiamos', 'estudian', 'estudiáis'],
-      'estudiamos',
-    ],
-    [
-      'Vosotros ___ música. (escuchar)',
-      ['escucháis', 'escuchamos', 'escuchan'],
-      'escucháis',
-    ],
-    ['Ellos ___ a las diez. (cenar)', ['cenan', 'cena', 'cenamos'], 'cenan'],
-    ['Yo ___ café. (beber)', ['bebo', 'bebes', 'bebe'], 'bebo'],
-    ['Tú ___ a las dos. (comer)', ['comes', 'como', 'come'], 'comes'],
-    [
-      'Mi gato ___ en el sofá. (dormir)',
-      ['duerme', 'dormes', 'duermo'],
-      'duerme',
-    ],
-    [
-      'Nosotros ___ en Madrid. (vivir)',
-      ['vivimos', 'viven', 'vivís'],
-      'vivimos',
-    ],
-    ['Ella ___ un libro. (leer)', ['lee', 'lees', 'leo'], 'lee'],
-    [
-      'Yo ___ un correo. (escribir)',
-      ['escribo', 'escribe', 'escribes'],
-      'escribo',
-    ],
-    ['Los niños ___ la puerta. (abrir)', ['abren', 'abre', 'abrimos'], 'abren'],
-    ['Pedro ___ a casa. (volver)', ['vuelve', 'volvo', 'vuelves'], 'vuelve'],
-    ['Yo ___ al trabajo. (ir)', ['voy', 'vas', 'va'], 'voy'],
-  ].map(([p, o, a]) =>
-    choice(
-      'Presente',
-      p as string,
-      o as string[],
-      a as string,
-      'Найдите подлежащее и выберите нужное окончание.',
-      'Глагол в presente согласуется с лицом и числом.',
-    ),
-  ),
-  ...[
-    [
-      'Как сказать «Я не завтракаю дома»?',
-      ['No desayuno en casa.', 'Desayuno no en casa.', 'No desayunar en casa.'],
-      'No desayuno en casa.',
-    ],
-    [
-      'Она не работает по субботам.',
-      [
-        'Ella no trabaja los sábados.',
-        'Ella trabaja no los sábados.',
-        'Ella no trabajar sábados.',
-      ],
-      'Ella no trabaja los sábados.',
-    ],
-    [
-      'Мы не пьём кофе вечером.',
-      [
-        'No bebemos café por la tarde.',
-        'Bebemos no café tarde.',
-        'No beben café nosotros.',
-      ],
-      'No bebemos café por la tarde.',
-    ],
-    [
-      'Кот не спит ночью.',
-      [
-        'El gato no duerme de noche.',
-        'El gato duerme no noche.',
-        'No dormir el gato noche.',
-      ],
-      'El gato no duerme de noche.',
-    ],
-    [
-      'Они не живут здесь.',
-      ['No viven aquí.', 'Viven no aquí.', 'No vivimos aquí.'],
-      'No viven aquí.',
-    ],
-  ].map(([p, o, a]) =>
-    choice(
-      'Отрицание',
-      p as string,
-      o as string[],
-      a as string,
-      'Поставьте no перед спрягаемым глаголом.',
-      'В простом отрицании достаточно no + глагол.',
-    ),
-  ),
-  truth(
-    'В предложении «No trabajo hoy» отрицание стоит правильно.',
-    'Верно',
-    'No стоит непосредственно перед trabajo.',
-  ),
-  truth(
-    'Правильно говорить «Yo no estudiar».',
-    'Неверно',
-    'Нужна личная форма: Yo no estudio.',
-  ),
-  truth(
-    'Двойное отрицание допустимо: No veo nada.',
-    'Верно',
-    'В испанском отрицательные слова могут сочетаться с no.',
-  ),
-  typed(
-    'Отрицание',
-    'Напишите: «Мы сегодня не работаем».',
-    'Hoy no trabajamos.',
-    'hoy + no + trabajar',
-    'Также возможно: No trabajamos hoy.',
-  ),
-  typed(
-    'Кошачья фраза',
-    'Напишите: «Мои коты не спят».',
-    'Mis gatos no duermen.',
-    'no ставится перед duermen',
-    'dormir меняет o → ue, кроме nosotros/vosotros.',
-  ),
-  ...[
-    ['___ te llamas?', ['Cómo', 'Dónde', 'Cuándo'], 'Cómo'],
-    ['¿___ vives? — En Moscú.', ['Dónde', 'Quién', 'Qué'], 'Dónde'],
-    ['¿___ desayunas? — A las ocho.', ['Cuándo', 'Quién', 'Cuál'], 'Cuándo'],
-    ['¿___ es ella? — Mi hermana.', ['Quién', 'Dónde', 'Cómo'], 'Quién'],
-    ['¿___ haces por la mañana?', ['Qué', 'Quién', 'Cuánto'], 'Qué'],
-    ['¿___ años tienes?', ['Cuántos', 'Cómo', 'Dónde'], 'Cuántos'],
-    [
-      '¿___ estudias español? — Porque me gusta.',
-      ['Por qué', 'Para qué', 'Cuándo'],
-      'Por qué',
-    ],
-    ['¿___ libro prefieres?', ['Qué', 'Quién', 'Dónde'], 'Qué'],
-    ['¿___ cuesta el café?', ['Cuánto', 'Cuándo', 'Cómo'], 'Cuánto'],
-    ['¿___ gatos tienes?', ['Cuántos', 'Cuándo', 'Dónde'], 'Cuántos'],
-  ].map(([p, o, a]) =>
-    choice(
-      'Вопросительные слова',
-      p as string,
-      o as string[],
-      a as string,
-      'Смотрите, какую информацию ждут в ответе.',
-      'Вопросительные слова пишутся с графическим ударением.',
-    ),
-  ),
-  ...[
-    [
-      '¿A qué hora te levantas? — ___',
-      ['A las siete.', 'En siete.', 'Por siete horas.'],
-      'A las siete.',
-    ],
-    [
-      'Как спросить «Во сколько ты работаешь?»',
-      ['¿A qué hora trabajas?', '¿Qué hora eres?', '¿Cuánto trabajas hora?'],
-      '¿A qué hora trabajas?',
-    ],
-    ['1:00', ['Es la una.', 'Son la una.', 'Son las uno.'], 'Es la una.'],
-    [
-      '2:15',
-      ['Son las dos y cuarto.', 'Es dos y quince.', 'Son dos menos cuarto.'],
-      'Son las dos y cuarto.',
-    ],
-    [
-      '7:30',
-      [
-        'Son las siete y media.',
-        'Es la siete media.',
-        'Son las ocho menos media.',
-      ],
-      'Son las siete y media.',
-    ],
-    [
-      '8:45',
-      [
-        'Son las nueve menos cuarto.',
-        'Son las ocho y cuarto.',
-        'Es nueve menos quince.',
-      ],
-      'Son las nueve menos cuarto.',
-    ],
-    [
-      '12:00',
-      ['Son las doce en punto.', 'Es la doce punto.', 'Son doce y media.'],
-      'Son las doce en punto.',
-    ],
-    [
-      'Полдень',
-      ['Es mediodía.', 'Es medianoche.', 'Son las tardes.'],
-      'Es mediodía.',
-    ],
-    [
-      'Полночь',
-      ['Es medianoche.', 'Es mediodía.', 'Son las noche.'],
-      'Es medianoche.',
-    ],
-    [
-      'Урок начинается в девять.',
-      [
-        'La clase empieza a las nueve.',
-        'La clase está en nueve.',
-        'La clase empieza por nueve.',
-      ],
-      'La clase empieza a las nueve.',
-    ],
-  ].map(([p, o, a]) =>
-    choice(
-      'Время',
-      p as string,
-      o as string[],
-      a as string,
-      'Для времени используйте a la una / a las dos.',
-      'В вопросе о времени используется ¿A qué hora…?',
-    ),
-  ),
-  typed(
-    'Распорядок',
-    'Напишите: «Я встаю в семь».',
-    'Me levanto a las siete.',
-    'me levanto + a las siete',
-    'Возвратное местоимение me ставится перед глаголом.',
-  ),
-  typed(
-    'Распорядок',
-    'Напишите: «После работы я читаю».',
-    'Después del trabajo leo.',
-    'después del trabajo + leer',
-    'leer для yo → leo.',
-  ),
-  typed(
-    'Кошачья фраза',
-    'Напишите: «Кот ест в шесть».',
-    'El gato come a las seis.',
-    'el gato + comer + время',
-    'Для él используется come.',
-  ),
-  order(
-    'Соберите: обычно / вечером / учусь / я',
-    [
-      'Normalmente estudio por la tarde.',
-      'Estudio normalmente la por tarde.',
-      'Normalmente estudias por tarde.',
-    ],
-    'Normalmente estudio por la tarde.',
-    'Наречие можно поставить в начале, затем личная форма глагола.',
-  ),
-  order(
-    'Соберите вопрос: делаешь / что / утром?',
-    [
-      '¿Qué haces por la mañana?',
-      '¿Haces qué la por mañana?',
-      '¿Qué hacer tú mañana?',
-    ],
-    '¿Qué haces por la mañana?',
-    'Qué ставится в начало вопроса и несёт ударение.',
-  ),
+  choice('Правильные глаголы', 'Yo ___ español cada día. (hablar)', ['hablo', 'hablas', 'habla', 'hablamos'], 'hablo', 'Для yo у правильных глаголов окончание -o.', 'hablar → hablo.'),
+  typed('Правильные глаголы', 'Впишите только форму глагола trabajar для tú.', 'trabajas', 'Уберите -ar и добавьте -as.', 'trabajar → trabajas.'),
+  order('Соберите предложение: мы / живём / в Мадриде.', ['Vivimos en Madrid.', 'Viven en Madrid.', 'Vivimos Madrid en.'], 'Vivimos en Madrid.', 'Для nosotros: vivir → vivimos.'),
+  truth('Форма «comemos» соответствует nosotros.', 'Верно', 'У глаголов на -er для nosotros окончание -emos.'),
+  choice('Правильные глаголы', 'Ana y Luis ___ mucho. (trabajar)', ['trabajan', 'trabaja', 'trabajáis', 'trabajamos'], 'trabajan', 'Подлежащее во множественном числе: ellos.', 'trabajar → trabajan.'),
+  typed('Правильные глаголы', 'Напишите по-испански: «Я пишу письмо». Используйте escribir и una carta.', 'Escribo una carta.', 'escribir → escribo; carta пишется с артиклем una.', 'Правильно: Escribo una carta.', ['Yo escribo una carta.']),
+  typed('Правильные глаголы', 'Впишите только форму глагола beber для vosotros.', 'bebéis', 'Для vosotros у -er окончание -éis.', 'beber → bebéis.'),
+  truth('Форма «vivís» соответствует vosotros.', 'Верно', 'У правильных глаголов на -ir для vosotros окончание -ís.'),
+  choice('Правильные глаголы', 'Nosotros ___ en una escuela. (trabajar)', ['trabajamos', 'trabajan', 'trabajáis', 'trabajo'], 'trabajamos', 'Для nosotros у -ar окончание -amos.', 'trabajar → trabajamos.'),
+  typed('Правильные глаголы', 'Составьте предложение по опорам: ellos / comer / el pan. Личное местоимение можно опустить.', 'Comen el pan.', 'comer → comen; pan пишется с артиклем el.', 'Правильно: Comen el pan.', ['Ellos comen el pan.']),
+  order('Соберите предложение: ты / изучаешь / испанский.', ['Estudias español.', 'Estudia español.', 'Español estudias tú.'], 'Estudias español.', 'Для tú у -ar окончание -as.'),
+  choice('Правильные глаголы', 'Usted ___ aquí. (vivir)', ['vive', 'vives', 'vivo', 'viven'], 'vive', 'Usted требует форму 3-го лица единственного числа.', 'vivir → vive.'),
+  typed('Правильные глаголы', 'Впишите только форму глагола escribir для ella.', 'escribe', 'Для él/ella у -ir окончание -e.', 'escribir → escribe.'),
+  truth('В форме «habláis» ударение обязательно.', 'Верно', 'У правильных -ar глаголов форма vosotros оканчивается на -áis.'),
+  choice('Правильные глаголы', 'Vosotros ___ el café. (beber)', ['bebéis', 'bebemos', 'beben', 'bebes'], 'bebéis', 'Для vosotros у -er окончание -éis.', 'beber → bebéis.'),
+  typed('Правильные глаголы', 'Напишите по-испански: «Мы говорим по-испански». Используйте hablar.', 'Hablamos español.', 'hablar → hablamos. После hablar название языка употребляется без артикля.', 'Правильно: Hablamos español.', ['Nosotros hablamos español.', 'Nosotras hablamos español.']),
+  order('Соберите предложение: она / пишет / книгу.', ['Escribe un libro.', 'Escriben un libro.', 'Un escribe libro.'], 'Escribe un libro.', 'Для ella: escribir → escribe. Libro пишется с артиклем.'),
+  typed('Правильные глаголы', 'Впишите только форму глагола comer для yo.', 'como', 'Для yo окончание -o.', 'comer → como.'),
+
+  choice('Чередование в корне', 'Yo ___ pronto. (volver)', ['vuelvo', 'volvo', 'vuelves', 'volvemos'], 'vuelvo', 'В ударной основе o меняется на ue.', 'volver → vuelvo.'),
+  typed('Чередование в корне', 'Впишите только форму pensar для él.', 'piensa', 'e → ie в ударной основе.', 'pensar → piensa.'),
+  truth('В форме «pensamos» чередования e → ie нет.', 'Верно', 'В nosotros и vosotros корень обычно не чередуется.'),
+  order('Соберите предложение: они / спят / в доме.', ['Duermen en la casa.', 'Dormimos en la casa.', 'Duermen la en casa.'], 'Duermen en la casa.', 'dormir: o → ue; casa пишется с артиклем.'),
+  choice('Чередование в корне', 'Nosotros ___ volver mañana. (poder)', ['podemos', 'puedemos', 'pueden', 'poderemos'], 'podemos', 'В nosotros чередования нет.', 'poder → podemos.'),
+  typed('Чередование в корне', 'Напишите по-испански: «Я предпочитаю чай». Используйте preferir и el té.', 'Prefiero el té.', 'preferir: e → ie; té пишется с артиклем el.', 'Правильно: Prefiero el té.', ['Yo prefiero el té.']),
+  choice('Чередование в корне', 'Tú ___ la comida. (pedir)', ['pides', 'pedes', 'pide', 'pedimos'], 'pides', 'У pedir чередование e → i.', 'pedir → pides.'),
+  typed('Чередование в корне', 'Впишите только форму dormir для nosotros.', 'dormimos', 'В nosotros чередования нет.', 'dormir → dormimos.'),
+  truth('Форма «jugamos» правильная для nosotros.', 'Верно', 'У jugar чередование u → ue не происходит в nosotros.'),
+  choice('Чередование в корне', 'Ella ___ jugar hoy. (querer)', ['quiere', 'quere', 'quieres', 'queremos'], 'quiere', 'У querer чередование e → ie.', 'querer → quiere.'),
+  typed('Чередование в корне', 'Напишите по-испански: «Они возвращаются в дом». Используйте volver и la casa.', 'Vuelven a la casa.', 'volver: o → ue; casa пишется с артиклем la.', 'Правильно: Vuelven a la casa.', ['Ellos vuelven a la casa.', 'Ellas vuelven a la casa.']),
+  order('Соберите предложение: я / понимаю / урок.', ['Entiendo la lección.', 'Entendemos la lección.', 'Entiendo lección la.'], 'Entiendo la lección.', 'entender: e → ie; lección пишется с артиклем.'),
+  typed('Чередование в корне', 'Впишите только форму repetir для vosotros.', 'repetís', 'В vosotros чередования нет.', 'repetir → repetís.'),
+  truth('Форма «duermimos» правильная для nosotros.', 'Неверно', 'Правильно dormimos: в nosotros чередования нет.'),
+  choice('Чередование в корне', 'Vosotros ___ este libro. (preferir)', ['preferís', 'prefierís', 'prefieren', 'preferimos'], 'preferís', 'В vosotros основа не чередуется.', 'preferir → preferís.'),
+  typed('Чередование в корне', 'Напишите по-испански «Кот спит», используя el gato и dormir. Порядок: подлежащее + глагол.', 'El gato duerme.', 'dormir: o → ue; gato пишется с артиклем el.', 'Правильно: El gato duerme.'),
+
+  choice('Особая форма yo', 'Yo ___ la comida. (hacer)', ['hago', 'hazo', 'hace', 'hacemos'], 'hago', 'У hacer особая форма yo.', 'hacer → hago.'),
+  typed('Особая форма yo', 'Впишите только форму poner для yo.', 'pongo', 'Форма yo оканчивается на -go.', 'poner → pongo.'),
+  order('Соберите предложение: я / выхожу / из дома.', ['Salgo de la casa.', 'Salo de la casa.', 'Salgo la de casa.'], 'Salgo de la casa.', 'salir → salgo; casa пишется с артиклем.'),
+  truth('Форма yo глагола conocer — «conozco».', 'Верно', 'У глаголов на -ocer/-ucir часто появляется -zco.'),
+  typed('Особая форма yo', 'Напишите по-испански: «Я приношу книгу». Используйте traer и un libro.', 'Traigo un libro.', 'traer → traigo; libro пишется с артиклем un.', 'Правильно: Traigo un libro.', ['Yo traigo un libro.']),
+  choice('Особая форма yo', 'Yo ___ la verdad. (saber)', ['sé', 'sabo', 'sabe', 'soy'], 'sé', 'Эту короткую форму нужно запомнить.', 'saber → sé.'),
+  typed('Особая форма yo', 'Впишите только форму decir для yo.', 'digo', 'У decir особая форма yo.', 'decir → digo.'),
+  order('Соберите предложение: я / смотрю / фильм.', ['Veo la película.', 'Vo la película.', 'Veo película la.'], 'Veo la película.', 'Особая форма ver для yo — veo. Película пишется с артиклем la.'),
+  truth('Форма yo глагола dar — «do».', 'Неверно', 'Правильная форма: doy.'),
+  choice('Особая форма yo', 'Yo ___ un libro. (tener)', ['tengo', 'teno', 'tiene', 'tengo que'], 'tengo', 'У tener особая форма yo на -go.', 'tener → tengo.'),
+  typed('Особая форма yo', 'Напишите по-испански: «Я прихожу сегодня». Используйте venir; поставьте hoy после глагола.', 'Vengo hoy.', 'venir → vengo.', 'Правильно: Vengo hoy.', ['Yo vengo hoy.']),
+  order('Соберите предложение: я / вожу / машину.', ['Conduzco el coche.', 'Conduco el coche.', 'Conduzco coche el.'], 'Conduzco el coche.', 'conducir → conduzco; существительное пишите с артиклем.'),
+  typed('Особая форма yo', 'Впишите только форму oír для yo.', 'oigo', 'У oír форма yo оканчивается на -go.', 'oír → oigo.'),
+  choice('Особая форма yo', 'Yo ___ una película. (ver)', ['veo', 'vo', 'vee', 'ves'], 'veo', 'У ver особая форма yo.', 'ver → veo.'),
+  typed('Особая форма yo', 'Напишите по-испански: «Я даю еду коту». Используйте dar, la comida и al gato.', 'Doy la comida al gato.', 'dar → doy; comida пишется с артиклем la, a + el = al.', 'Правильно: Doy la comida al gato.', ['Yo doy la comida al gato.', 'Doy al gato la comida.', 'Yo doy al gato la comida.']),
+  typed('Особая форма yo', 'Впишите только форму conducir для yo.', 'conduzco', 'У -ucir в yo появляется -zco.', 'conducir → conduzco.'),
 ];
 
 const lesson4: LessonExercise[] = [
@@ -2239,178 +2024,61 @@ export const courseLessons = [
   {
     id: 'day',
     number: '03',
-    title: 'Мой день',
-    subtitle: 'Распорядок, действия и время',
+    title: 'Presente: глаголы в действии',
+    subtitle: 'Правильные глаголы, чередование гласных и особые формы yo',
     reward: 'Огоньки и два котика в готовом доме',
     icon: '⏰',
     theory: [
       {
-        title: 'Presente правильных глаголов',
+        title: 'Presente de Indicativo правильных глаголов',
         paragraphs: [
-          'Уберите -ar, -er или -ir и добавьте окончание. -AR: o, as, a, amos, áis, an. -ER: o, es, e, emos, éis, en. -IR: o, es, e, imos, ís, en.',
-          'Некоторые частые глаголы меняют основу: dormir → duermo, volver → vuelvo. Ir полностью особый: voy, vas, va, vamos, vais, van.',
+          'Presente de Indicativo описывает действие, которое происходит сейчас, повторяется регулярно или является общим фактом: Hablo español — я говорю по-испански; Trabajamos los lunes — мы работаем по понедельникам; Madrid está en España — Мадрид находится в Испании.',
+          'Чтобы образовать форму правильного глагола, уберите окончание инфинитива и добавьте личное окончание. Для -AR: yo -o, tú -as, él/ella/usted -a, nosotros -amos, vosotros -áis, ellos/ustedes -an.',
+          'Для -ER: yo -o, tú -es, él/ella/usted -e, nosotros -emos, vosotros -éis, ellos/ustedes -en. Для -IR: yo -o, tú -es, él/ella/usted -e, nosotros -imos, vosotros -ís, ellos/ustedes -en.',
+          'Подлежащее часто можно опустить: окончание уже показывает лицо. Hablo и Yo hablo одинаково означают «я говорю»; местоимение добавляют, когда нужно подчеркнуть или противопоставить человека.',
         ],
         examples: [
-          ['Trabajo de nueve a seis.', 'Я работаю с девяти до шести.'],
-          ['Comemos a las dos.', 'Мы едим в два.'],
-          ['Mi gato duerme mucho.', 'Мой кот много спит.'],
+          ['Hablo, hablas, habla, hablamos, habláis, hablan.', 'Формы hablar — говорить.'],
+          ['Como, comes, come, comemos, coméis, comen.', 'Формы comer — есть.'],
+          ['Vivo, vives, vive, vivimos, vivís, viven.', 'Формы vivir — жить.'],
+          ['Escribimos una carta.', 'Мы пишем письмо.'],
         ],
+        note: 'Сначала определите лицо и число подлежащего, затем выберите группу -ar, -er или -ir. Ударение в формах vosotros -áis и -éis обязательно.',
       },
       {
-        title: 'Возвратные действия и отрицание',
+        title: 'Чередование гласных в корне',
         paragraphs: [
-          'В распорядке часто нужны возвратные глаголы: levantarse, ducharse, acostarse. Местоимения me/te/se/nos/os/se ставятся перед личной формой: me levanto.',
-          'Для отрицания поставьте no прямо перед глаголом или возвратным местоимением: no trabajo, no me levanto. Двойное отрицание нормально: No veo nada.',
+          'У некоторых глаголов под ударением меняется гласная в корне. Окончания остаются обычными, но основа меняется во всех лицах, кроме nosotros и vosotros.',
+          'Основные модели: e → ie: pensar (думать) → pienso, querer (хотеть) → quiero, preferir (предпочитать) → prefiero, entender (понимать) → entiendo; o → ue: poder (мочь) → puedo, volver (возвращаться) → vuelvo, dormir (спать) → duermo; e → i: pedir (просить; заказывать) → pido, repetir (повторять) → repito; u → ue: jugar (играть) → juego.',
+          'В nosotros и vosotros ударение падает на окончание, поэтому корень сохраняется: pensamos/pensáis, podemos/podéis, dormimos/dormís, pedimos/pedís, jugamos/jugáis.',
+          'Тип окончания определяется инфинитивом и не меняется из-за чередования: dormir — «спать» — остаётся глаголом на -ir, поэтому получаем duermo, duermes, duerme, dormimos, dormís, duermen.',
         ],
         examples: [
-          ['Me levanto a las siete.', 'Я встаю в семь.'],
-          ['No desayunamos en casa.', 'Мы не завтракаем дома.'],
-          ['Luna no se despierta temprano.', 'Луна не просыпается рано.'],
+          ['Pienso, piensas, piensa, pensamos, pensáis, piensan.', 'Формы pensar — думать.'],
+          ['Duermo, duermes, duerme, dormimos, dormís, duermen.', 'Формы dormir — спать.'],
+          ['Pido, pides, pide, pedimos, pedís, piden.', 'Формы pedir — просить; заказывать.'],
+          ['El gato duerme en la casa.', 'Кот спит в доме.'],
         ],
-      },
-      {
-        title: 'Вопросительные слова',
-        paragraphs: [
-          'Qué — что/какой; quién — кто; dónde — где; cuándo — когда; cómo — как; cuánto — сколько; por qué — почему. В прямом вопросе они пишутся с ударением.',
-          'Вопросительные знаки ставятся с двух сторон: ¿…? После вопросительного слова идёт обычная личная форма глагола: ¿Dónde trabajas?',
-        ],
-        examples: [
-          ['¿Qué haces por la mañana?', 'Что ты делаешь утром?'],
-          ['¿Dónde comes?', 'Где ты ешь?'],
-          ['¿Por qué estudias español?', 'Почему ты учишь испанский?'],
-        ],
-      },
-      {
-        title: 'Время и a qué hora',
-        paragraphs: [
-          'Чтобы спросить время вообще: ¿Qué hora es? Чтобы узнать время действия: ¿A qué hora…? Ответ: a la una, a las dos.',
-          '1:00 — Es la una. Для остальных часов — Son las…. y cuarto — четверть после; y media — половина; menos cuarto — без четверти.',
-        ],
-        examples: [
-          ['¿A qué hora te levantas?', 'Во сколько ты встаёшь?'],
-          ['A las ocho y media.', 'В половине девятого.'],
-          ['La clase empieza a las nueve.', 'Урок начинается в девять.'],
-        ],
-      },
-      {
-        title: 'Чередование гласных в основе',
-        paragraphs: [
-          'У части глаголов под ударением меняется гласная основы: e→ie (pensar → pienso), o→ue (dormir → duermo), e→i (pedir → pido), u→ue (jugar → juego).',
-          'В nosotros и vosotros ударение падает на окончание, поэтому чередования обычно нет: pensamos, dormimos, pedimos, jugamos. Окончания при этом остаются обычными.',
-        ],
-        examples: [
-          ['Me despierto a las siete.', 'Я просыпаюсь в семь.'],
-          ['Volvemos a casa.', 'Мы возвращаемся домой.'],
-          ['Los gatos duermen de día.', 'Коты спят днём.'],
-        ],
-        note: 'Изменяется только последняя подходящая гласная основы: preferir → prefiero, но preferimos.',
+        note: 'Удобно запоминать «ботинок»: изменение есть в yo, tú, él/ella/usted и ellos/ustedes, но нет в nosotros и vosotros.',
       },
       {
         title: 'Особые формы yo',
         paragraphs: [
-          'Частые формы yo нужно учить отдельно: hacer → hago, poner → pongo, salir → salgo, traer → traigo, conocer → conozco, saber → sé, ver → veo, dar → doy.',
-          'Некоторые глаголы сочетают особую форму yo и чередование в других лицах: tener → tengo, tienes; venir → vengo, vienes; decir → digo, dices.',
+          'Некоторые глаголы имеют особую форму только в первом лице единственного числа. Остальные формы могут быть обычными или следовать своему чередованию. Такие формы yo лучше учить вместе с инфинитивом.',
+          'Частая группа на -go: hacer (делать) → hago, poner (класть; ставить) → pongo, salir (выходить) → salgo, traer (приносить) → traigo, decir (говорить; сказать) → digo, oír (слышать) → oigo. Глаголы tener (иметь) и venir (приходить) совмещают yo на -go с чередованием в других лицах: tengo, но tienes; vengo, но vienes.',
+          'У глаголов на -ocer и -ucir перед -o часто появляется -zc-: conocer (знать; быть знакомым) → conozco, conducir (водить) → conduzco. Другие важные особые формы: saber (знать) → sé, ver (видеть; смотреть) → veo, dar (давать) → doy.',
+          'Особенность относится именно к yo: digo, но dices; conozco, но conoces; conduzco, но conduces. Поэтому нельзя переносить -go или -zco на все лица.',
         ],
         examples: [
-          ['Hago ejercicio por la mañana.', 'Я занимаюсь утром.'],
-          ['Salgo de casa a las ocho.', 'Я выхожу из дома в восемь.'],
-          ['Pongo comida para el gato.', 'Я кладу еду коту.'],
+          ['Hago la comida.', 'Я готовлю еду.'],
+          ['Pongo el libro en la mesa.', 'Я кладу книгу на стол.'],
+          ['Conozco Madrid.', 'Я знаю Мадрид.'],
+          ['Traigo un libro y doy agua al gato.', 'Я приношу книгу и даю воду коту.'],
         ],
-      },
-      {
-        title: 'Возвратные глаголы подробно',
-        paragraphs: [
-          'Инфинитив на -se показывает, что действие направлено на самого человека: levantar → поднимать, levantarse → вставать. Формы местоимений: me, te, se, nos, os, se.',
-          'Перед личной формой местоимение пишется отдельно: me ducho. С инфинитивом его можно присоединить: Voy a ducharme, или поставить перед первым глаголом: Me voy a duchar. Оба варианта правильны.',
-        ],
-        examples: [
-          ['Nos acostamos tarde.', 'Мы ложимся поздно.'],
-          ['Voy a vestirme.', 'Я собираюсь одеться.'],
-          ['No me levanto temprano.', 'Я не встаю рано.'],
-        ],
-        note: 'У возвратного глагола всё равно нужно обычное личное окончание: te levantas, не te levantar.',
-      },
-      {
-        title: 'Наречия частоты и последовательность дня',
-        paragraphs: [
-          'Siempre — всегда; casi siempre — почти всегда; normalmente — обычно; a menudo — часто; a veces — иногда; casi nunca — почти никогда; nunca — никогда. Они могут стоять перед глаголом или после него в зависимости от акцента.',
-          'Для последовательности используйте primero, después/luego, entonces, al final. После antes de и después de перед глаголом идёт инфинитив: antes de trabajar, después de comer.',
-        ],
-        examples: [
-          ['Normalmente desayuno en casa.', 'Обычно я завтракаю дома.'],
-          ['Después de trabajar, descanso.', 'После работы я отдыхаю.'],
-          ['Mi gato nunca duerme aquí.', 'Мой кот здесь никогда не спит.'],
-        ],
-      },
-      {
-        title: 'Части дня и предлоги времени',
-        paragraphs: [
-          'por la mañana, por la tarde, por la noche описывают часть дня вообще. Для точного времени используйте a: a las ocho. Для дня недели регулярного действия — определённый артикль: los lunes; для конкретного дня — el lunes.',
-          'de… a… задаёт промежуток: Trabajo de nueve a cinco. desde… hasta… подчёркивает начальную и конечную точки. En используется с месяцами и годами: en mayo, en 2026.',
-        ],
-        examples: [
-          ['Estudio por la tarde.', 'Я учусь днём/вечером.'],
-          [
-            'Trabajo de lunes a viernes.',
-            'Я работаю с понедельника по пятницу.',
-          ],
-          ['El lunes ceno con Ana.', 'В этот понедельник ужинаю с Аной.'],
-        ],
-      },
-      {
-        title: 'Время: разговорные варианты',
-        paragraphs: [
-          'После половины часа в Испании часто считают до следующего часа: 8:45 — las nueve menos cuarto. В Латинской Америке также обычно услышать las ocho y cuarenta y cinco. Оба варианта понятны.',
-          'Для приблизительности: sobre las ocho — около восьми. en punto — ровно. del mediodía/de la tarde/de la noche уточняют часть суток, если это важно.',
-        ],
-        examples: [
-          ['Son las diez en punto.', 'Ровно десять.'],
-          ['Llego sobre las seis.', 'Я прихожу около шести.'],
-          ['La cita es a las ocho de la noche.', 'Встреча в восемь вечера.'],
-        ],
-      },
-      {
-        title: 'Построение вопросов без инверсии',
-        paragraphs: [
-          'В испанском не нужен вспомогательный глагол вроде английского do. Вопрос можно сделать интонацией: ¿Trabajas aquí? Если есть вопросительное слово, оно обычно стоит первым: ¿Dónde trabajas?',
-          'Подлежащее может идти после глагола, особенно если это новая информация: ¿Dónde trabaja Ana? Вопросительное слово сохраняет ударение даже в косвенном вопросе: No sé dónde trabaja.',
-        ],
-        examples: [
-          ['¿Comes en casa?', 'Ты ешь дома?'],
-          ['¿Cuándo llegan tus padres?', 'Когда приезжают твои родители?'],
-          ['Dime a qué hora sales.', 'Скажи, во сколько ты выходишь.'],
-        ],
-      },
-      {
-        title: 'Ir a + infinitivo и планы',
-        paragraphs: [
-          'Для ближайших планов используйте ir a + инфинитив: voy a trabajar, vamos a cenar. Спрягается только ir; второй глагол остаётся инфинитивом.',
-          'Отрицание ставится перед ir: No voy a salir. Вопросительное слово — перед всей конструкцией: ¿Qué vas a hacer? Если после a идёт el + существительное, получается al: voy al trabajo; перед инфинитивом слияния нет.',
-        ],
-        examples: [
-          ['Voy a estudiar esta noche.', 'Я буду заниматься сегодня вечером.'],
-          ['¿A qué hora vas a volver?', 'Во сколько ты вернёшься?'],
-          ['Los gatos van a dormir.', 'Коты собираются спать.'],
-        ],
-      },
-      {
-        title: 'Глаголы с личным a',
-        paragraphs: [
-          'Когда прямое дополнение — конкретный человек или домашнее животное, перед ним часто ставится a: Veo a mi madre; llamo al médico; busco a mi gato. Перед неодушевлённым предметом a не ставится: Busco las llaves.',
-          'С tener личное a обычно не употребляется: Tengo dos hermanos. После hay также нет личного a: Hay un médico aquí.',
-        ],
-        examples: [
-          [
-            'Visito a mis abuelos los domingos.',
-            'Я навещаю бабушку и дедушку по воскресеньям.',
-          ],
-          ['Busco a Luna.', 'Я ищу Луну (кошку).'],
-          ['Busco mi teléfono.', 'Я ищу телефон.'],
-        ],
-        note: 'Это a не переводится как «к»; оно лишь отмечает одушевлённое прямое дополнение.',
+        note: 'Проверяйте не только окончание, но и основу. Например: yo tengo, tú tienes, nosotros tenemos.',
       },
     ] as TheoryBlock[],
-    exercises: diversifyExercises(lesson3),
+    exercises: diversifyExercises(lesson3, false),
   },
   {
     id: 'home',

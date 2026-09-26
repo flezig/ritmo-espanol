@@ -1876,7 +1876,7 @@ familia=семья;padre=отец;madre=мать;padres=родители;hermano
 `;
 
 const routineWords = `
-día=день;mañana=утро / завтра;tarde=день / вечер / поздно;noche=ночь;hora=час;minuto=минута;hoy=сегодня;ayer=вчера;siempre=всегда;normalmente=обычно;generalmente=обычно;a veces=иногда;nunca=никогда;primero=сначала;después=потом;luego=затем;temprano=рано;levantarse=вставать;despertarse=просыпаться;ducharse=принимать душ;lavarse=умываться;vestirse=одеваться;desayunar=завтракать;comer=есть / обедать;cenar=ужинать;trabajar=работать;estudiar=учиться;empezar=начинать;terminar=заканчивать;salir=выходить;llegar=приходить;volver=возвращаться;descansar=отдыхать;dormir=спать;leer=читать;escribir=писать;ver=смотреть;escuchar=слушать;hablar=говорить;caminar=ходить;correr=бегать;cocinar=готовить;limpiar=убирать;comprar=покупать;hacer=делать;ir=идти;venir=приходить;casa=дом;trabajo=работа;escuela=школа;universidad=университет;oficina=офис;desayuno=завтрак;comida=обед / еда;cena=ужин;café=кофе;agua=вода;autobús=автобус;metro=метро;coche=машина;pie=пешком;lunes=понедельник;martes=вторник;miércoles=среда;jueves=четверг;viernes=пятница;sábado=суббота;domingo=воскресенье;semana=неделя;fin de semana=выходные;a las ocho=в восемь;a la una=в час;por la mañana=утром;por la tarde=днём;por la noche=вечером;antes=до / раньше;después de=после;durante=во время;desde=с;hasta=до;cada día=каждый день;todos los días=каждый день;mucho=много;poco=мало;rápido=быстро;despacio=медленно;ocupado=занятый;libre=свободный
+día=день;mañana=утро / завтра;tarde=день / вечер / поздно;noche=ночь;hora=час;minuto=минута;hoy=сегодня;ayer=вчера;siempre=всегда;normalmente=обычно;generalmente=обычно;a veces=иногда;nunca=никогда;primero=сначала;después=потом;luego=затем;temprano=рано;levantarse=вставать;despertarse=просыпаться;ducharse=принимать душ;lavarse=умываться;vestirse=одеваться;desayunar=завтракать;comer=есть / обедать;cenar=ужинать;trabajar=работать;estudiar=учиться;empezar=начинать;terminar=заканчивать;salir=выходить;llegar=приходить;volver=возвращаться;descansar=отдыхать;dormir=спать;leer=читать;escribir=писать;ver=смотреть;escuchar=слушать;hablar=говорить;caminar=ходить;correr=бегать;cocinar=готовить;limpiar=убирать;comprar=покупать;hacer=делать;ir=идти;venir=приходить;casa=дом;trabajo=работа;escuela=школа;universidad=университет;oficina=офис;desayuno=завтрак;comida=обед / еда;cena=ужин;café=кофе;agua=вода;autobús=автобус;metro=метро;coche=машина;pie=пешком;lunes=понедельник;martes=вторник;miércoles=среда;jueves=четверг;viernes=пятница;sábado=суббота;domingo=воскресенье;semana=неделя;fin de semana=выходные;a las ocho=в восемь;a la una=в час;por la mañana=утром;por la tarde=днём;por la noche=вечером;antes=до / раньше;después de=после;durante=во время;desde=с;hasta=до;cada día=каждый день;todos los días=каждый день;mucho=много;poco=мало;rápido=быстро;despacio=медленно;ocupado=занятый;libre=свободный;pensar=думать;repetir=повторять;poner=класть / ставить;traer=приносить;decir=говорить / сказать;oír=слышать;dar=давать
 `;
 
 const homeWords = `
@@ -3016,6 +3016,34 @@ const naturalExamplesFor = (
 // Редакторские замены имеют приоритет над корпусом. Здесь находятся пары,
 // которые были формально корректны, но неточны, неестественны или неуместны для A1.
 const editorialExamples: Record<string, NaturalExample> = {
+  pensar: {
+    example: 'Pienso en el trabajo.', exampleRu: 'Я думаю о работе.',
+    extraExample: 'Pensamos en la respuesta.', extraExampleRu: 'Мы думаем над ответом.',
+  },
+  repetir: {
+    example: 'Repito la frase.', exampleRu: 'Я повторяю фразу.',
+    extraExample: 'Repetimos el ejercicio.', extraExampleRu: 'Мы повторяем упражнение.',
+  },
+  poner: {
+    example: 'Pongo el libro en la mesa.', exampleRu: 'Я кладу книгу на стол.',
+    extraExample: 'Ponemos la comida aquí.', extraExampleRu: 'Мы ставим еду сюда.',
+  },
+  traer: {
+    example: 'Traigo un libro.', exampleRu: 'Я приношу книгу.',
+    extraExample: 'Traemos agua para todos.', extraExampleRu: 'Мы приносим воду для всех.',
+  },
+  decir: {
+    example: 'Digo la verdad.', exampleRu: 'Я говорю правду.',
+    extraExample: 'Decimos la respuesta.', extraExampleRu: 'Мы называем ответ.',
+  },
+  oír: {
+    example: 'Oigo la música.', exampleRu: 'Я слышу музыку.',
+    extraExample: 'Oímos al profesor.', extraExampleRu: 'Мы слышим преподавателя.',
+  },
+  dar: {
+    example: 'Doy agua al gato.', exampleRu: 'Я даю воду коту.',
+    extraExample: 'Damos el libro a Ana.', extraExampleRu: 'Мы даём книгу Ане.',
+  },
   calle: {
     example: 'Esta calle es muy ruidosa durante el día.',
     exampleRu: 'Эта улица очень шумная днём.',

@@ -83,6 +83,7 @@ import {
   derivedWordStatus,
   hasOnlySpanishMarkDifference,
   localDateKey,
+  matchesAnswerVariant,
   masteredRecord,
   nextStreak,
   normalizeText,
@@ -196,6 +197,7 @@ type StudyCard = {
   extraExample?: string;
   extraExampleRu?: string;
   units?: string[];
+  lessonIds?: string[];
   skill: SkillType;
   answer: string;
   prompt: string;
@@ -1534,54 +1536,36 @@ const lessonCoreVocabulary: Record<string, LessonWord[]> = {
     },
   ],
   day: [
-    {
-      es: 'levantarse',
-      ru: 'вставать',
-      example: 'Me levanto a las siete.',
-      exampleRu: 'Я встаю в семь часов.',
-    },
-    {
-      es: 'desayunar',
-      ru: 'завтракать',
-      example: 'Desayuno antes de trabajar.',
-      exampleRu: 'Я завтракаю перед работой.',
-    },
-    {
-      es: 'empezar',
-      ru: 'начинать',
-      example: 'La clase empieza a las nueve.',
-      exampleRu: 'Занятие начинается в девять.',
-    },
-    {
-      es: 'terminar',
-      ru: 'заканчивать',
-      example: 'Termino de trabajar a las seis.',
-      exampleRu: 'Я заканчиваю работать в шесть.',
-    },
-    {
-      es: 'volver',
-      ru: 'возвращаться',
-      example: 'Vuelvo a casa por la tarde.',
-      exampleRu: 'Я возвращаюсь домой вечером.',
-    },
-    {
-      es: 'dormir',
-      ru: 'спать',
-      example: 'Duermo ocho horas.',
-      exampleRu: 'Я сплю восемь часов.',
-    },
-    {
-      es: 'mañana',
-      ru: 'утро; завтра',
-      example: 'Trabajo por la mañana.',
-      exampleRu: 'Я работаю утром.',
-    },
-    {
-      es: 'noche',
-      ru: 'ночь; вечер',
-      example: 'Leo un libro por la noche.',
-      exampleRu: 'Вечером я читаю книгу.',
-    },
+    { es: 'hablar', ru: 'говорить', example: 'Hablo español.', exampleRu: 'Я говорю по-испански.' },
+    { es: 'trabajar', ru: 'работать', example: 'Trabajamos juntos.', exampleRu: 'Мы работаем вместе.' },
+    { es: 'estudiar', ru: 'изучать; учиться', example: 'Estudias español.', exampleRu: 'Ты изучаешь испанский.' },
+    { es: 'comer', ru: 'есть', example: 'Comen el pan.', exampleRu: 'Они едят хлеб.' },
+    { es: 'beber', ru: 'пить', example: 'Bebéis café.', exampleRu: 'Вы пьёте кофе.' },
+    { es: 'vivir', ru: 'жить', example: 'Vivimos en Madrid.', exampleRu: 'Мы живём в Мадриде.' },
+    { es: 'escribir', ru: 'писать', example: 'Escribo una carta.', exampleRu: 'Я пишу письмо.' },
+    { es: 'pensar', ru: 'думать', example: 'Pienso en el trabajo.', exampleRu: 'Я думаю о работе.' },
+    { es: 'querer', ru: 'хотеть', example: 'Quiero jugar.', exampleRu: 'Я хочу играть.' },
+    { es: 'preferir', ru: 'предпочитать', example: 'Prefiero el té.', exampleRu: 'Я предпочитаю чай.' },
+    { es: 'entender', ru: 'понимать', example: 'Entiendo la lección.', exampleRu: 'Я понимаю урок.' },
+    { es: 'poder', ru: 'мочь', example: 'Podemos volver.', exampleRu: 'Мы можем вернуться.' },
+    { es: 'volver', ru: 'возвращаться', example: 'Vuelven a casa.', exampleRu: 'Они возвращаются домой.' },
+    { es: 'dormir', ru: 'спать', example: 'El gato duerme.', exampleRu: 'Кот спит.' },
+    { es: 'jugar', ru: 'играть', example: 'Jugamos juntos.', exampleRu: 'Мы играем вместе.' },
+    { es: 'pedir', ru: 'просить; заказывать', example: 'Pides la comida.', exampleRu: 'Ты заказываешь еду.' },
+    { es: 'repetir', ru: 'повторять', example: 'Repetimos la frase.', exampleRu: 'Мы повторяем фразу.' },
+    { es: 'hacer', ru: 'делать', example: 'Hago la comida.', exampleRu: 'Я готовлю еду.' },
+    { es: 'poner', ru: 'класть; ставить', example: 'Pongo el libro en la mesa.', exampleRu: 'Я кладу книгу на стол.' },
+    { es: 'salir', ru: 'выходить', example: 'Salgo de la casa.', exampleRu: 'Я выхожу из дома.' },
+    { es: 'traer', ru: 'приносить', example: 'Traigo un libro.', exampleRu: 'Я приношу книгу.' },
+    { es: 'decir', ru: 'говорить; сказать', example: 'Digo la verdad.', exampleRu: 'Я говорю правду.' },
+    { es: 'oír', ru: 'слышать', example: 'Oigo la música.', exampleRu: 'Я слышу музыку.' },
+    { es: 'tener', ru: 'иметь', example: 'Tengo veinte años.', exampleRu: 'Мне двадцать лет.' },
+    { es: 'venir', ru: 'приходить', example: 'Vengo hoy.', exampleRu: 'Я прихожу сегодня.' },
+    { es: 'conocer', ru: 'знать; быть знакомым', example: 'Conozco Madrid.', exampleRu: 'Я знаю Мадрид.' },
+    { es: 'saber', ru: 'знать', example: 'Sé la respuesta.', exampleRu: 'Я знаю ответ.' },
+    { es: 'ver', ru: 'видеть; смотреть', example: 'Veo al gato.', exampleRu: 'Я вижу кота.' },
+    { es: 'dar', ru: 'давать', example: 'Doy agua al gato.', exampleRu: 'Я даю воду коту.' },
+    { es: 'conducir', ru: 'водить', example: 'Conduzco el coche.', exampleRu: 'Я вожу машину.' },
   ],
   home: [
     {
@@ -1684,6 +1668,14 @@ const lessonCoreVocabulary: Record<string, LessonWord[]> = {
     },
   ],
 };
+const lessonIdsForWord = (word: string) => {
+  const normalized = normalizeText(word.split(' / ')[0]);
+  return Object.entries(lessonCoreVocabulary)
+    .filter(([, words]) =>
+      words.some((item) => normalizeText(item.es.split(' / ')[0]) === normalized),
+    )
+    .map(([lessonId]) => lessonId);
+};
 const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
   ...vocabularyTopics.flatMap((topic) =>
     topic.entries.flatMap((entry) => {
@@ -1709,6 +1701,7 @@ const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
           extraExample: entry.extraExample,
           extraExampleRu: entry.extraExampleRu,
           units: entry.units,
+          lessonIds: lessonIdsForWord(entry.es),
         };
       const cards: StudyCard[] = [
         {
@@ -3438,6 +3431,7 @@ function useTaskMotion() {
 }
 
 function LessonsView() {
+  const { speakText } = useSpanishVoices();
   const [lessonIndex, setLessonIndex] = useState(0),
     [mode, setMode] = useState<'theory' | 'practice'>('theory'),
     [theoryBlockIndex, setTheoryBlockIndex] = useState(0),
@@ -3465,6 +3459,9 @@ function LessonsView() {
     },
     exerciseIndex = mistakeMode ? (mistakeQueue[question] ?? 0) : question,
     exercise = lesson.exercises[exerciseIndex],
+    lessonAnswerIsCorrect = (value: string) =>
+      matchesAnswerVariant(value, exercise.answer, exercise.acceptedAnswers),
+    submittedAnswerCorrect = !!answer && lessonAnswerIsCorrect(answer),
     exerciseId = `${normalizeText(exercise?.prompt || '')}::${normalizeText(exercise?.answer || '')}`,
     completedCount = courseLessons.filter(
       (item) => progress[item.id]?.completed,
@@ -3564,7 +3561,7 @@ function LessonsView() {
   const record = (value: string) => {
     if (answer || answerLock.current) return;
     answerLock.current = true;
-    const correct = normalizeText(value) === normalizeText(exercise.answer),
+    const correct = lessonAnswerIsCorrect(value),
       storedErrors = lessonState.errors || [],
       storedErrorIds = lessonState.errorIds || [],
       nextErrors = correct
@@ -3580,6 +3577,8 @@ function LessonsView() {
       score: correct ? 1 : 0,
     });
     playFeedbackSound(correct);
+    if (!/^(?:верно|неверно)$/iu.test(exercise.answer.trim()))
+      window.setTimeout(() => speakText(exercise.answer, 0.92), 180);
     setCatState(
       question === exerciseTotal - 1 ? 'love' : correct ? 'happy' : 'wrong',
     );
@@ -4076,19 +4075,18 @@ function LessonsView() {
                 {answer && (
                   <div
                     className={
-                      normalizeText(answer) === normalizeText(exercise.answer)
+                      submittedAnswerCorrect
                         ? 'lesson-result correct'
                         : 'lesson-result wrong'
                     }
                   >
                     <b>
-                      {normalizeText(answer) === normalizeText(exercise.answer)
+                      {submittedAnswerCorrect
                         ? 'Верно!'
                         : 'Нужно исправить'}
                     </b>
                     <p>{exercise.explanation}</p>
-                    {normalizeText(answer) ===
-                      normalizeText(exercise.answer) && (
+                    {submittedAnswerCorrect && (
                       <strong className="word-assembled">
                         {exercise.answer}
                       </strong>
@@ -4099,8 +4097,7 @@ function LessonsView() {
                         образце.
                       </small>
                     )}
-                    {normalizeText(answer) !==
-                      normalizeText(exercise.answer) && (
+                    {!submittedAnswerCorrect && (
                       <code>{exercise.answer}</code>
                     )}
                     <button onClick={next}>
@@ -6954,7 +6951,7 @@ function MusicView() {
 type SessionMode = 'five' | 'errors' | 'favorites';
 type SavedSessionMode = SessionMode | 'fifteen' | 'weak';
 type PracticeLevel = VocabularyLevel | 'Все уровни';
-type PracticeCollection = 'topics' | 'units';
+type PracticeCollection = 'topics' | 'units' | 'lessons';
 type PracticeProgressBaseline = {
   srs: Record<string, SRSRecord | null>;
   wordProgress: Record<string, WordStatus | null>;
@@ -7539,6 +7536,8 @@ const unitNames = [
 const practiceTopics = (level: PracticeLevel, collection: PracticeCollection) =>
   collection === 'units'
     ? ['Все unidades', ...unitNames]
+    : collection === 'lessons'
+      ? ['Все уроки', ...courseLessons.map((lesson) => lesson.title)]
     : [
         'Все темы',
         ...vocabularyBrowseTopics
@@ -7546,10 +7545,21 @@ const practiceTopics = (level: PracticeLevel, collection: PracticeCollection) =>
           .filter((topic) => level === 'Все уровни' || topic.level === level)
           .map((topic) => topic.name),
         'Мои слова',
-        ...(level === 'Все уровни' || level === 'A1–A2' ? ['Уроки A1'] : []),
       ];
-const topicDeck = (deck: StudyCard[], level: PracticeLevel, topic: string) =>
-  topic === 'Мои слова'
+const topicDeck = (
+  deck: StudyCard[],
+  level: PracticeLevel,
+  topic: string,
+  collection: PracticeCollection = 'topics',
+) =>
+  collection === 'lessons'
+    ? topic === 'Все уроки'
+      ? deck.filter((card) => card.lessonIds?.length)
+      : deck.filter((card) => {
+          const lessonId = courseLessons.find((lesson) => lesson.title === topic)?.id;
+          return !!lessonId && card.lessonIds?.includes(lessonId);
+        })
+    : topic === 'Мои слова'
     ? deck.filter((card) => card.topic === 'Мои слова')
     : topic === 'Все unidades'
       ? deck.filter(
@@ -7561,13 +7571,7 @@ const topicDeck = (deck: StudyCard[], level: PracticeLevel, topic: string) =>
         ? level === 'Все уровни'
           ? deck
           : deck.filter((card) => card.level === level)
-        : topic === 'Уроки A1'
-          ? deck.filter(
-              (card) =>
-                card.topic !== 'Мои слова' &&
-                !vocabularyTopics.some((item) => item.name === card.topic),
-            )
-          : deck.filter(
+        : deck.filter(
               (card) => card.topic === topic || card.units?.includes(topic),
             );
 const seededNumber = (seed: string) =>
@@ -8788,13 +8792,20 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
             : saved.mode;
         setMode(savedMode);
         setLevel(saved.level || (vocabularyBrowseTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'));
-        const savedCollection = saved.collection || (/^Unidad\s/iu.test(saved.topic) || saved.topic === 'Все unidades' ? 'units' : 'topics');
+        const legacyLessonCollection = saved.topic === 'Уроки A1';
+        const savedCollection = legacyLessonCollection
+          ? 'lessons'
+          : saved.collection ||
+            (/^Unidad\s/iu.test(saved.topic) || saved.topic === 'Все unidades'
+              ? 'units'
+              : 'topics');
+        const savedTopic = legacyLessonCollection ? 'Все уроки' : saved.topic;
         setCollection(savedCollection);
-        setTopic(saved.topic);
+        setTopic(savedTopic);
         setScopeSelection({
           level: saved.level || (vocabularyBrowseTopics.find((item) => item.name === saved.topic)?.level ?? 'A1–A2'),
           collection: savedCollection,
-          topic: saved.topic,
+          topic: savedTopic,
         });
         if (shouldAutoResumePractice(saved)) {
           const {
@@ -8895,7 +8906,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
   useEffect(() => {
     if (!sessionHydrated || !srsHydrated || session.length || finished || awaitingStart) return;
     const ready = buildSession(
-      topicDeck(makeStudyDeck(customWords), level, topic),
+      topicDeck(makeStudyDeck(customWords), level, topic, collection),
       records,
       mode,
     );
@@ -8907,6 +8918,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     now,
     mode,
     level,
+    collection,
     topic,
     records,
     session.length,
@@ -8916,10 +8928,13 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     srsHydrated,
     awaitingStart,
   ]);
-  const scopedDeck = useMemo(() => topicDeck(deck, level, topic), [deck, level, topic]),
+  const scopedDeck = useMemo(
+      () => topicDeck(deck, level, topic, collection),
+      [deck, level, topic, collection],
+    ),
     selectedScopedDeck = useMemo(
-      () => topicDeck(deck, scopeSelection.level, scopeSelection.topic),
-      [deck, scopeSelection.level, scopeSelection.topic],
+      () => topicDeck(deck, scopeSelection.level, scopeSelection.topic, scopeSelection.collection),
+      [deck, scopeSelection.level, scopeSelection.topic, scopeSelection.collection],
     ),
     card = session[index],
     cardBase = card ? baseCardKey(card.key) : '',
@@ -9018,19 +9033,17 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     nextMode: SessionMode,
     nextTopic = scopeSelection.topic,
     nextLevel = scopeSelection.level,
+    requestedCollection = scopeSelection.collection,
   ) => {
     beginAssignedSession('practice', `words:${nextMode}`, nextTopic);
     if (!deckReady) return;
     answerLock.current = false;
     gradeLock.current = false;
-    const nextDeck = topicDeck(deck, nextLevel, nextTopic),
+    const nextDeck = topicDeck(deck, nextLevel, nextTopic, requestedCollection),
       nextSession = buildSession(nextDeck, records, nextMode);
     setMode(nextMode);
     setLevel(nextLevel);
-    const nextCollection: PracticeCollection =
-      /^Unidad\s/iu.test(nextTopic) || nextTopic === 'Все unidades'
-        ? 'units'
-        : 'topics';
+    const nextCollection: PracticeCollection = requestedCollection;
     setCollection(nextCollection);
     setTopic(nextTopic);
     setScopeSelection({ level: nextLevel, collection: nextCollection, topic: nextTopic });
@@ -9057,7 +9070,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     topic: string;
   }) => {
     setScopeSelection(next);
-    if (!awaitingStart) start(mode, next.topic, next.level);
+    if (!awaitingStart) start(mode, next.topic, next.level, next.collection);
   };
   useEffect(() => {
     if (!assignedMode || !deckReady || !sessionHydrated || assignedStarted.current) return;
@@ -9347,7 +9360,11 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           aria-expanded={scopeOpen}
           onClick={() => setScopeOpen((value) => !value)}
         >
-          {scopeSelection.collection === 'units' ? 'Unidades' : scopeSelection.level} ·{' '}
+          {scopeSelection.collection === 'units'
+            ? 'Unidades'
+            : scopeSelection.collection === 'lessons'
+              ? 'Уроки'
+              : scopeSelection.level} ·{' '}
           {scopeSelection.topic}{' '}
           <span>{scopeOpen ? 'Закрыть' : 'Сменить'}</span>
         </button>
@@ -9380,6 +9397,19 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
             >
               Unidades
             </button>
+            <button
+              type="button"
+              className={scopeSelection.collection === 'lessons' ? 'active' : ''}
+              onClick={() => {
+                applyScopeSelection({
+                  collection: 'lessons',
+                  level: 'A1–A2',
+                  topic: 'Все уроки',
+                });
+              }}
+            >
+              Уроки
+            </button>
           </div>
         </div>
         {scopeSelection.collection === 'topics' && <div>
@@ -9401,7 +9431,13 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           </select>
         </div>}
         <div>
-          <span>{scopeSelection.collection === 'units' ? 'UNIDAD' : 'ТЕМА СЛОВ'}</span>
+          <span>
+            {scopeSelection.collection === 'units'
+              ? 'UNIDAD'
+              : scopeSelection.collection === 'lessons'
+                ? 'УРОК'
+                : 'ТЕМА СЛОВ'}
+          </span>
           <select
             value={scopeSelection.topic}
             disabled={!deckReady}

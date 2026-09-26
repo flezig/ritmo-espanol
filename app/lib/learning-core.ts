@@ -58,6 +58,15 @@ export const normalizeText = (value: string) =>
     .trim()
     .toLowerCase();
 
+export const matchesAnswerVariant = (
+  value: string,
+  answer: string,
+  acceptedAnswers: string[] = [],
+) =>
+  [answer, ...acceptedAnswers].some(
+    (variant) => normalizeText(value) === normalizeText(variant),
+  );
+
 export const hasOnlySpanishMarkDifference = (value: string, answer: string) =>
   normalizeText(value) === normalizeText(answer) && comparisonText(value) !== comparisonText(answer);
 
