@@ -176,7 +176,7 @@ test('translation choices are built as four-option questions', () => {
 test('lesson 1 keeps ambiguous agreement prompts as guided choices', () => {
   const lesson = courseLessons.find((item) => item.id === 'intro');
   assert.ok(lesson);
-  assert.equal(lesson.exercises.length, 50);
+  assert.ok(lesson.exercises.length <= 80);
   for (const prompt of [
     'La doctora es ___.',
     'Los amigos son ___.',
@@ -195,6 +195,37 @@ test('lesson 1 keeps ambiguous agreement prompts as guided choices', () => {
     ),
     false,
   );
+});
+
+test('lesson 1 replaces repeated drills with coverage of its essential theory', () => {
+  const lesson = courseLessons.find((item) => item.id === 'intro');
+  assert.ok(lesson);
+  assert.equal(lesson.exercises.length, 71);
+  assert.ok(lesson.exercises.filter((item) => item.kind === 'Ser').length < 10);
+  assert.ok(lesson.exercises.filter((item) => item.kind === 'Согласование').length < 10);
+  for (const [kind, minimum] of [
+    ['Ser, estar или hay', 8],
+    ['Нулевой артикль', 5],
+    ['Определённый и неопределённый артикль', 6],
+    ['Al и del', 4],
+    ['Вопросы и отрицание', 5],
+    ['Позиция прилагательного', 3],
+    ['Артикль и определители', 3],
+  ] as const) {
+    assert.ok(
+      lesson.exercises.filter((item) => item.kind === kind).length >= minimum,
+      `missing lesson 1 coverage: ${kind}`,
+    );
+  }
+  for (const exercise of lesson.exercises) {
+    assert.ok(exercise.prompt.trim(), 'lesson 1 exercise has an empty prompt');
+    assert.ok(exercise.answer.trim(), `lesson 1 exercise has no answer: ${exercise.prompt}`);
+    if (exercise.mode === 'choice') {
+      assert.ok((exercise.options?.length || 0) >= 3, `not enough choices: ${exercise.prompt}`);
+      assert.ok(exercise.options?.includes(exercise.answer), `answer is not displayed: ${exercise.prompt}`);
+      assert.equal(new Set(exercise.options).size, exercise.options.length, `duplicate choices: ${exercise.prompt}`);
+    }
+  }
 });
 
 test('lesson free input is used only when the prompt identifies the answer', () => {

@@ -110,7 +110,7 @@ const diversifyExercises = (
   return result;
 };
 
-const lesson1: LessonExercise[] = [
+const lesson1Original: LessonExercise[] = [
   ...[
     ['Yo ___ Ana.', ['soy', 'eres', 'es'], 'soy'],
     ['Tú ___ de Chile.', ['eres', 'soy', 'somos'], 'eres'],
@@ -319,6 +319,121 @@ const lesson1: LessonExercise[] = [
     'Soy una estudiante nueva.',
     'Если есть характеристика, с профессией или ролью возможен артикль una.',
   ),
+];
+
+const lesson1Keep = (prompt: string) => {
+  const exercise = lesson1Original.find((item) => item.prompt === prompt);
+  if (!exercise) throw new Error(`Missing lesson 1 exercise: ${prompt}`);
+  return exercise;
+};
+
+// Reuse useful original tasks so existing resume points and mistake IDs remain
+// valid, while replacing repeated drills with practice for the wider theory.
+const lesson1: LessonExercise[] = [
+  ...[
+    'Yo ___ Ana.',
+    'Tú ___ de Chile.',
+    'Él ___ médico.',
+    'Nosotros ___ estudiantes.',
+    'Usted ___ el señor Ruiz.',
+    'Luna y Sol ___ mis gatos.',
+    '___ gato duerme en la silla.',
+    '___ gata se llama Luna.',
+    '___ problema es pequeño.',
+    '___ mano está fría.',
+    'Busco ___ trabajo.',
+    'Tengo ___ amigo en Perú.',
+    'María es ___.',
+    'Carlos es ___.',
+    'La doctora es ___.',
+    'Los amigos son ___.',
+    'Pedro y Ana son ___.',
+  ].map(lesson1Keep),
+  ...lesson1Original.filter(
+    (item) => !['Ser', 'Артикли', 'Согласование'].includes(item.kind),
+  ),
+  ...[
+    ['Madrid ___ la capital de España.', ['es', 'está', 'hay'], 'es'],
+    ['Ana ___ cansada hoy.', ['está', 'es', 'hay'], 'está'],
+    ['Mis amigos ___ en casa.', ['están', 'son', 'hay'], 'están'],
+    ['En mi calle ___ una cafetería.', ['hay', 'está', 'es'], 'hay'],
+    ['En la mesa ___ dos libros.', ['hay', 'están', 'son'], 'hay'],
+    ['El libro ___ encima de la mesa.', ['está', 'es', 'hay'], 'está'],
+    ['Mi hermana ___ muy inteligente.', ['es', 'está', 'hay'], 'es'],
+    ['¿Dónde ___ el baño?', ['está', 'es', 'hay'], 'está'],
+  ].map(([prompt, options, answer]) =>
+    choice(
+      'Ser, estar или hay',
+      prompt as string,
+      options as string[],
+      answer as string,
+      'Ser — характеристика; estar — состояние или местонахождение; hay — наличие.',
+      'Выберите конструкцию по смыслу предложения.',
+    ),
+  ),
+  ...[
+    ['Soy ___ médico.', ['без артикля', 'un', 'el'], 'без артикля'],
+    ['Ana es ___ estudiante.', ['без артикля', 'una', 'la'], 'без артикля'],
+    ['Hablo ___ español.', ['без артикля', 'el', 'un'], 'без артикля'],
+    ['Vivo con ___ mi madre.', ['без артикля', 'la', 'una'], 'без артикля'],
+    ['Laura es ___ excelente médica.', ['una', 'без артикля', 'la'], 'una'],
+  ].map(([prompt, options, answer]) =>
+    choice(
+      'Нулевой артикль',
+      prompt as string,
+      options as string[],
+      answer as string,
+      'Перед профессией после ser обычно нет артикля; другой определитель также заменяет артикль.',
+      'Артикль зависит от конструкции и наличия другого определителя.',
+    ),
+  ),
+  ...[
+    ['Hay ___ gato en el jardín. ___ gato es negro.', ['un / El', 'el / Un', 'un / Un'], 'un / El'],
+    ['Busco ___ piso pequeño, no конкретную квартиру.', ['un', 'el', 'без артикля'], 'un'],
+    ['Cierra ___ puerta, por favor. Оба знают, о какой двери речь.', ['la', 'una', 'без артикля'], 'la'],
+    ['Necesito ___ bolígrafo cualquiera.', ['un', 'el', 'без артикля'], 'un'],
+    ['___ sol sale por el este.', ['El', 'Un', 'без артикля'], 'El'],
+    ['Esta es ___ casa de Ana.', ['la', 'una', 'без артикля'], 'la'],
+  ].map(([prompt, options, answer]) =>
+    choice(
+      'Определённый и неопределённый артикль',
+      prompt as string,
+      options as string[],
+      answer as string,
+      'Un/una вводит новый или неконкретный предмет; el/la указывает на известный или единственный.',
+      'Сначала определите, известен ли собеседникам предмет.',
+    ),
+  ),
+  ...[
+    ['Voy ___ supermercado.', ['al', 'a el', 'del'], 'al'],
+    ['Vengo ___ supermercado.', ['del', 'de el', 'al'], 'del'],
+    ['Escribo ___ profesor.', ['al', 'del', 'a la'], 'al'],
+    ['La puerta ___ hotel está abierta.', ['del', 'al', 'de el'], 'del'],
+  ].map(([prompt, options, answer]) =>
+    choice(
+      'Al и del',
+      prompt as string,
+      options as string[],
+      answer as string,
+      'a + el = al; de + el = del.',
+      'Перед мужским артиклем el предлоги a и de образуют слитные формы.',
+    ),
+  ),
+  choice('Вопросы и отрицание', 'Как спросить: «Ты студент?»', ['¿Eres estudiante?', '¿Estudiante eres qué?', '¿Tú ser estudiante?'], '¿Eres estudiante?', 'В испанском не нужен вспомогательный глагол.', 'Интонация и знаки ¿? превращают утверждение в общий вопрос.'),
+  choice('Вопросы и отрицание', 'Как сказать: «Я не врач»?', ['No soy médico.', 'Soy no médico.', 'No médico soy no.'], 'No soy médico.', 'No ставится перед спрягаемым глаголом.', 'Правильный порядок: no + soy.'),
+  choice('Вопросы и отрицание', 'Как вежливо спросить незнакомого взрослого о профессии?', ['¿A qué se dedica usted?', '¿Qué trabajas tú?', '¿Dónde profesión?'], '¿A qué se dedica usted?', 'Используйте usted и форму третьего лица.', '¿A qué se dedica usted? — нейтральный вежливый вопрос о профессии.'),
+  choice('Вопросы и отрицание', '___ eres? — Soy de México.', ['¿De dónde', '¿Cómo', '¿Qué'], '¿De dónde', 'Ответ сообщает происхождение.', 'Для происхождения спрашивают ¿De dónde eres?'),
+  choice('Вопросы и отрицание', '___ te llamas? — Me llamo Elena.', ['¿Cómo', '¿Dónde', '¿Quién'], '¿Cómo', 'Нужен вопрос о имени.', 'Стандартная модель: ¿Cómo te llamas?'),
+  ...[
+    ['Выберите обычный нейтральный порядок.', ['una casa grande', 'una grande casa', 'casa una grande'], 'una casa grande'],
+    ['Выберите обычный нейтральный порядок.', ['un gato blanco', 'un blanco gato', 'blanco un gato'], 'un gato blanco'],
+    ['В сочетании una gran ciudad слово gran означает:', ['великий / значительный город', 'город большого размера', 'старый город'], 'великий / значительный город'],
+  ].map(([prompt, options, answer]) => choice('Позиция прилагательного', prompt as string, options as string[], answer as string, 'Описательное прилагательное обычно стоит после существительного.', 'Позиция прилагательного может быть нейтральной или менять оттенок значения.')),
+  ...[
+    ['___ casa es grande. (моя)', ['Mi', 'La mi', 'Una mi'], 'Mi'],
+    ['___ libro es interesante. (этот)', ['Este', 'El este', 'Un este'], 'Este'],
+    ['___ amigos viven aquí. (некоторые)', ['Algunos', 'Los algunos', 'Unos los'], 'Algunos'],
+  ].map(([prompt, options, answer]) => choice('Артикль и определители', prompt as string, options as string[], answer as string, 'Притяжательное, указательное или неопределённое слово уже занимает место артикля.', 'Обычный артикль перед таким определителем не добавляется.')),
 ];
 
 const lesson2Original: LessonExercise[] = [
