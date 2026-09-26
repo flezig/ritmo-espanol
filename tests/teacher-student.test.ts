@@ -11,6 +11,7 @@ const attemptsSql = readFileSync(new URL('../supabase/migrations/0008_assignment
 const progressHotfixSql = readFileSync(new URL('../supabase/migrations/0009_fix_assignment_progress_ambiguity.sql', import.meta.url), 'utf8');
 const contextSql = readFileSync(new URL('../supabase/migrations/0010_assignment_context.sql', import.meta.url), 'utf8');
 const expandedLessonSql = readFileSync(new URL('../supabase/migrations/0013_track_expanded_lesson_answers.sql', import.meta.url), 'utf8');
+const insightSql = readFileSync(new URL('../supabase/migrations/0015_teacher_learning_insights.sql', import.meta.url), 'utf8');
 const assignmentTracking = readFileSync(new URL('../app/lib/assignment-tracking.ts', import.meta.url), 'utf8');
 
 test('teacher/student migration contains the complete durable model', () => {
@@ -171,6 +172,19 @@ test('unresolved errors missed by the old logger are recovered without changing 
 test('student workspace cannot expose assignments merely created by the same teacher account', () => {
   assert.match(contextSql, /function public\.get_my_student_assignments/i);
   assert.match(contextSql, /a\.student_id = auth\.uid\(\) and a\.status <> 'draft'/i);
+});
+
+test('teacher summary exposes learning insights without rewriting learner progress', () => {
+  assert.match(insightSql, /ritmo-learning-insights/i);
+  assert.match(insightSql, /ritmo-word-history/i);
+  assert.match(insightSql, /ritmo-srs/i);
+  assert.match(insightSql, /lessonRules/i);
+  assert.match(insightSql, /reviewQueue/i);
+  assert.match(insightSql, /averageResponseMs/i);
+  assert.doesNotMatch(insightSql, /update\s+public\.user_progress/i);
+  assert.doesNotMatch(insightSql, /delete\s+from\s+public\.user_progress/i);
+  assert.doesNotMatch(insightSql, /truncate\s+public\.user_progress/i);
+  assert.doesNotMatch(insightSql, /drop\s+table/i);
 });
 
 test('exercise questions stay scoped to assignment parties', () => {

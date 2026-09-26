@@ -3,6 +3,7 @@ export const BACKUP_VERSION = 3;
 export const BACKUP_KEYS = [
   'ritmo-device-profile', 'ritmo-srs', 'ritmo-word-progress', 'ritmo-word-history',
   'ritmo-word-sessions',
+  'ritmo-learning-insights',
   'ritmo-learn-progress', 'ritmo-lesson-progress', 'ritmo-error-profile',
   'ritmo-content-favorites', 'ritmo-custom-words', 'ritmo-example-reports',
   'ritmo-lesson-word-db', 'ritmo-home-favorites', 'ritmo-practice-session',

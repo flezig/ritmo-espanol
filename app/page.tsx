@@ -49,6 +49,7 @@ import {
   shouldAutoResumePractice,
 } from './lib/practice-session';
 import { BACKUP_KEYS, BACKUP_VERSION, isValidBackup, type RitmoBackup } from './lib/backup';
+import { recordLearningInsight, type LearningSkill } from './lib/learning-insights';
 import {
   applyAchievementEvent,
   defaultAchievementStats,
@@ -3441,10 +3442,13 @@ function LessonsView() {
     [typedAnswer, setTypedAnswer] = useState(''),
     [selectedWords, setSelectedWords] = useState<number[]>([]),
     [catState, setCatState] = useState<CatState>('neutral'),
+    [lessonHintVisible, setLessonHintVisible] = useState(false),
     [mistakeMode, setMistakeMode] = useState(false),
     [mistakeQueue, setMistakeQueue] = useState<number[]>([]);
   const { leaving, move } = useTaskMotion(),
     answerLock = useRef(false),
+    lessonShownAt = useRef(Date.now()),
+    lessonHintUsed = useRef(false),
     lessonWorkspaceRef = useRef<HTMLDivElement>(null);
   const { progress, save } = useLessonProgress(),
     { words: learnedWordDb, studyLesson, studyLessons } = useLearnedWordsDb(),
@@ -3558,6 +3562,11 @@ function LessonsView() {
     const timer = window.setTimeout(() => setCatState('sleeping'), 18000);
     return () => window.clearTimeout(timer);
   }, [mode, question, lessonIndex, answer]);
+  useEffect(() => {
+    lessonShownAt.current = Date.now();
+    lessonHintUsed.current = false;
+    setLessonHintVisible(false);
+  }, [exerciseId, mode]);
   const record = (value: string) => {
     if (answer || answerLock.current) return;
     answerLock.current = true;
@@ -3571,6 +3580,14 @@ function LessonsView() {
         ? storedErrorIds.filter((id) => id !== exerciseId)
         : [...new Set([...storedErrorIds, exerciseId])];
     setAnswer(value);
+    recordLearningInsight({
+      correct,
+      responseMs: Date.now() - lessonShownAt.current,
+      hints: lessonHintUsed.current ? 1 : 0,
+      topic: lesson.title,
+      lessonId: lesson.id,
+      rule: exercise.kind,
+    });
     recordAssignedActivity({
       type: 'lesson', contentId: lesson.id, itemKey: exerciseId, prompt: exercise.prompt,
       studentAnswer: value, correctAnswer: exercise.answer, correct,
@@ -4118,8 +4135,14 @@ function LessonsView() {
                 <span>КОТ-ПОМОЩНИК</span>
                 <p>{helperText}</p>
                 {!answer && (
-                  <small>
-                    <Lightbulb /> Подсказка: {exercise.hint}
+                  <small className="lesson-hint-control">
+                    <button type="button" onClick={() => {
+                      lessonHintUsed.current = true;
+                      setLessonHintVisible((value) => !value);
+                    }} aria-expanded={lessonHintVisible}>
+                      <Lightbulb /> {lessonHintVisible ? 'Скрыть подсказку' : 'Показать подсказку'}
+                    </button>
+                    {lessonHintVisible && <span>{exercise.hint}</span>}
                   </small>
                 )}
               </div>
@@ -9220,6 +9243,20 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       const answerWasCorrect = responseKind === 'self'
         ? value === 'good' || value === 'easy'
         : correct;
+      const insightSkill: LearningSkill =
+        responseKind === 'audioSentence' || card.skill === 'dictation'
+          ? 'dictation'
+          : responseKind === 'audioWord' || card.skill === 'listening'
+            ? 'listening'
+            : card.skill === 'recognition'
+              ? 'translation'
+              : 'production';
+      recordLearningInsight({
+        correct: answerWasCorrect,
+        responseMs: answerDuration.current || Date.now() - cardShownAt.current,
+        skill: insightSkill,
+        topic: card.topic,
+      });
       const applied = adjustedGradeForEvidence(
         responseKind !== 'self' && !correct ? 'again' : value,
         responseKind,
@@ -11683,7 +11720,6 @@ function AccountPanel({
 
 function AccessibilitySettings() {
   const { preferences, updatePreferences } = useSitePreferences(),
-    account = useAccount(),
     [notice, setNotice] = useState('');
   const toggleReviewNotifications = async () => {
     if (preferences.reviewNotifications) {
@@ -11780,15 +11816,6 @@ function AccessibilitySettings() {
           </button>
         </article>
       </div>
-      <aside className="email-reminder-note">
-        <b>Напоминания по почте</b>
-        <p>
-          {account.user
-            ? `Адрес ${account.user.email} подтверждён, но для реальной рассылки ещё нужен отдельный почтовый сервис и серверное расписание.`
-            : 'Сначала потребуется войти в аккаунт, а затем подключить отдельный почтовый сервис и серверное расписание.'}
-          {' '}Сайт не показывает фиктивный переключатель, пока отправка писем не подключена.
-        </p>
-      </aside>
       {notice && <p className="preference-notice" role="status">{notice}</p>}
     </section>
   );

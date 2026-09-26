@@ -295,6 +295,32 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase, syncUser, showReady]);
 
+  useEffect(() => {
+    if (!supabase || !user) return;
+    let lastTouch = 0;
+    const touch = () => {
+      if (document.visibilityState === 'hidden' || Date.now() - lastTouch < 60_000) return;
+      lastTouch = Date.now();
+      void supabase.rpc('touch_my_last_seen').then(({ error }) => {
+        // A missing migration must not interfere with login or progress sync.
+        if (error && !/function.*does not exist/iu.test(error.message))
+          console.error('Could not update account activity', error);
+      });
+    };
+    touch();
+    const timer = window.setInterval(touch, 10 * 60 * 1000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') touch();
+    };
+    window.addEventListener('focus', touch);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', touch);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [supabase, user]);
+
   const register = useCallback(async (name: string, email: string, password: string): Promise<AuthResult> => {
     if (!supabase) return { ok: false, message: 'Вход ещё не настроен.' };
     const normalizedEmail = email.trim().toLowerCase();

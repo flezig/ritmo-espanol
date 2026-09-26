@@ -10,6 +10,7 @@ const requiredProgressKeys = [
   'ritmo-srs',
   'ritmo-word-progress',
   'ritmo-word-history',
+  'ritmo-learning-insights',
   'ritmo-learn-progress',
   'ritmo-lesson-progress',
   'ritmo-error-profile',

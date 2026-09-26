@@ -222,9 +222,10 @@ test('lesson 1 replaces repeated drills with coverage of its essential theory', 
     assert.ok(exercise.prompt.trim(), 'lesson 1 exercise has an empty prompt');
     assert.ok(exercise.answer.trim(), `lesson 1 exercise has no answer: ${exercise.prompt}`);
     if (exercise.mode === 'choice') {
-      assert.ok((exercise.options?.length || 0) >= 3, `not enough choices: ${exercise.prompt}`);
-      assert.ok(exercise.options?.includes(exercise.answer), `answer is not displayed: ${exercise.prompt}`);
-      assert.equal(new Set(exercise.options).size, exercise.options.length, `duplicate choices: ${exercise.prompt}`);
+      const options = exercise.options || [];
+      assert.ok(options.length >= 3, `not enough choices: ${exercise.prompt}`);
+      assert.ok(options.includes(exercise.answer), `answer is not displayed: ${exercise.prompt}`);
+      assert.equal(new Set(options).size, options.length, `duplicate choices: ${exercise.prompt}`);
     }
   }
 });
@@ -282,8 +283,9 @@ test('lesson 3 covers only its three presente rules with varied stable practice'
     assert.ok(exercise.prompt.trim(), 'lesson 3 exercise has an empty prompt');
     assert.ok(exercise.answer.trim(), `lesson 3 exercise has no answer: ${exercise.prompt}`);
     if (exercise.mode === 'choice') {
-      assert.ok(exercise.options?.includes(exercise.answer), `answer is not displayed: ${exercise.prompt}`);
-      assert.equal(new Set(exercise.options).size, exercise.options.length, `duplicate choices: ${exercise.prompt}`);
+      const options = exercise.options || [];
+      assert.ok(options.includes(exercise.answer), `answer is not displayed: ${exercise.prompt}`);
+      assert.equal(new Set(options).size, options.length, `duplicate choices: ${exercise.prompt}`);
     }
     if (exercise.mode === 'order')
       assert.equal(exercise.options?.join(' '), exercise.answer, `broken word bank: ${exercise.prompt}`);
@@ -362,7 +364,7 @@ test('lesson 2 covers every expanded rule in exactly 60 clear tasks', () => {
     ['la hija pequeña', 'las hijas pequeñas'],
     ['su hermana', 'sus hermanas'],
   ]) {
-    const exercise = lesson.exercises.find((item) => item.prompt.includes(source));
+    const exercise: LessonExercise | undefined = lesson.exercises.find((item) => item.prompt.includes(source));
     assert.ok(exercise, `missing clarified plural task: ${source}`);
     assert.equal(exercise.mode, 'type');
     assert.match(exercise.prompt, /Преобразуйте всё словосочетание/);

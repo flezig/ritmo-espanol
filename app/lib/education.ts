@@ -33,7 +33,15 @@ export type StudentLearningSummary = {
   level: string; xp: number; streak: number; activeDays: number; totalReviews: number;
   totalCorrect: number; completedLessons: number; activeToday: boolean;
   lastSeenAt: string | null; learningWords: string[];
+  lessonProgress: Record<string, { done?: number; completed?: boolean; correct?: number; errors?: number[]; errorIds?: string[] }>;
+  lessonRules: Record<string, Record<string, LearningMetric>>;
+  reviewQueue: { dueNow: number; next24h: number; next7d: number; later: number };
+  averageResponseMs: number; measuredAnswers: number; hintUses: number;
+  skills: Partial<Record<'translation' | 'production' | 'listening' | 'dictation', LearningMetric>>;
+  weakTopics: Record<string, LearningMetric>; legacyErrors: Record<string, number>;
+  recentWords: Array<{ key: string; status: 'learning' | 'difficult' | 'learned'; firstStudiedAt: string | null; learnedAt: string | null; lastChangedAt: string | null }>;
 };
+export type LearningMetric = { answers: number; correct: number; errors: number; totalResponseMs: number; hints: number; lastAnsweredAt: string };
 
 const unwrap = <T>(data: T | null, error: { message: string } | null): T => {
   if (error) throw new Error(error.message);
@@ -179,5 +187,15 @@ export async function markNotificationRead(client: SupabaseClient, id: string) {
 }
 export async function loadStudentLearningSummary(client: SupabaseClient, studentId: string) {
   const { data, error } = await client.rpc('get_student_learning_summary', { p_student: studentId });
-  return unwrap<StudentLearningSummary>(data, error);
+  const value = unwrap<Partial<StudentLearningSummary>>(data, error);
+  return {
+    ...value,
+    level: value.level || 'A1', xp: value.xp || 0, streak: value.streak || 0, activeDays: value.activeDays || 0,
+    totalReviews: value.totalReviews || 0, totalCorrect: value.totalCorrect || 0, completedLessons: value.completedLessons || 0,
+    activeToday: !!value.activeToday, lastSeenAt: value.lastSeenAt || null, learningWords: value.learningWords || [],
+    lessonProgress: value.lessonProgress || {}, lessonRules: value.lessonRules || {},
+    reviewQueue: value.reviewQueue || { dueNow: 0, next24h: 0, next7d: 0, later: 0 },
+    averageResponseMs: value.averageResponseMs || 0, measuredAnswers: value.measuredAnswers || 0, hintUses: value.hintUses || 0,
+    skills: value.skills || {}, weakTopics: value.weakTopics || {}, legacyErrors: value.legacyErrors || {}, recentWords: value.recentWords || [],
+  } satisfies StudentLearningSummary;
 }
