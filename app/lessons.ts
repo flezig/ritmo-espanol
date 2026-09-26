@@ -12,6 +12,7 @@ export type TheoryBlock = {
   title: string;
   paragraphs: string[];
   examples: [string, string][];
+  highlight?: string;
   note?: string;
 };
 
@@ -2006,6 +2007,7 @@ export const courseLessons = [
           ['Mi abuelo tiene setenta años.', 'Моему дедушке семьдесят лет.'],
           ['Los gatos tienen hambre.', 'Коты голодны.'],
         ],
+        highlight: 'tengo · tienes · tiene · tenemos · tenéis · tienen',
         note: 'Возраст по-испански «имеют»: Tengo veinte años, не Soy veinte años.',
       },
       {
@@ -2022,6 +2024,7 @@ export const courseLessons = [
           ['comprar / necesitar', 'покупать / нуждаться, быть необходимым'],
           ['cocinar / bailar', 'готовить / танцевать'],
         ],
+        highlight: 'yo -o · tú -as · él/ella -a · nosotros -amos · vosotros -áis · ellos -an',
         note: 'Правильное написание — bailar, не baliar. Ударение в форме vosotros сохраняется на окончании: habláis, trabajáis, estudiáis.',
       },
       {

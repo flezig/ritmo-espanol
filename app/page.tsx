@@ -3303,6 +3303,7 @@ function LessonsView() {
   const [lessonIndex, setLessonIndex] = useState(0),
     [mode, setMode] = useState<'theory' | 'practice'>('theory'),
     [theoryBlockIndex, setTheoryBlockIndex] = useState(0),
+    [theoryTocOpen, setTheoryTocOpen] = useState(false),
     [question, setQuestion] = useState(0),
     [answer, setAnswer] = useState(''),
     [typedAnswer, setTypedAnswer] = useState(''),
@@ -3645,21 +3646,25 @@ function LessonsView() {
         {mode === 'theory' ? (
           <div className="theory-study">
             <nav className="theory-toc" aria-label="Содержание урока">
-              <header>
+              <header className="theory-current-rule">
                 <div>
-                  <span>СОДЕРЖАНИЕ</span>
-                  <b>{lesson.theory.length} правил</b>
+                  <span>УРОК {lesson.number} · ПРАВИЛО {theoryBlockIndex + 1} ИЗ {lesson.theory.length}</span>
+                  <b>{String(theoryBlockIndex + 1).padStart(2, '0')} / {lesson.theory.length} · {lesson.theory[theoryBlockIndex]?.title}</b>
+                  <i aria-hidden="true"><span style={{ width: `${((theoryBlockIndex + 1) / lesson.theory.length) * 100}%` }} /></i>
                 </div>
-                <small>
-                  {theoryBlockIndex + 1} / {lesson.theory.length}
-                </small>
+                <button type="button" className="theory-toc-toggle" aria-expanded={theoryTocOpen} onClick={() => setTheoryTocOpen((open) => !open)}>
+                  {theoryTocOpen ? 'Скрыть содержание' : `Все ${lesson.theory.length} правил`}
+                </button>
               </header>
-              <div>
+              {theoryTocOpen && <div className="theory-toc-list">
                 {lesson.theory.map((block, index) => (
                   <button
                     type="button"
                     className={theoryBlockIndex === index ? 'active' : ''}
-                    onClick={() => setTheoryBlockIndex(index)}
+                    onClick={() => {
+                      setTheoryBlockIndex(index);
+                      setTheoryTocOpen(false);
+                    }}
                     aria-current={theoryBlockIndex === index ? 'step' : undefined}
                     key={block.title}
                   >
@@ -3667,7 +3672,7 @@ function LessonsView() {
                     <b>{block.title}</b>
                   </button>
                 ))}
-              </div>
+              </div>}
             </nav>
             <div className="theory-layout">
               <main>
@@ -3676,7 +3681,6 @@ function LessonsView() {
                     favoriteId = `${lesson.id}-rule-${theoryBlockIndex}`;
                   return (
                     <article className="theory-block focused-theory-block" key={`${lesson.id}-${theoryBlockIndex}`}>
-                      <span>{String(theoryBlockIndex + 1).padStart(2, '0')}</span>
                       <button
                         className={
                           contentFavorites.some((item) => item.id === favoriteId)
@@ -3695,10 +3699,12 @@ function LessonsView() {
                       >
                         <Heart fill="currentColor" />
                       </button>
+                      <span className="theory-rule-label">ПРАВИЛО {String(theoryBlockIndex + 1).padStart(2, '0')} / {lesson.theory.length}</span>
                       <h3>{block.title}</h3>
                       {block.paragraphs.map((text) => (
                         <p key={text}>{text}</p>
                       ))}
+                      {block.highlight && <div className="theory-grammar-highlight">{block.highlight}</div>}
                       <div className="theory-examples">
                         {block.examples.map((example) => (
                           <div key={example[0]}>
@@ -3722,7 +3728,7 @@ function LessonsView() {
                     onClick={() => setTheoryBlockIndex((value) => Math.max(0, value - 1))}
                     disabled={theoryBlockIndex === 0}
                   >
-                    <ArrowLeft /> Предыдущее правило
+                    <ArrowLeft /> Предыдущее
                   </button>
                   {theoryBlockIndex < lesson.theory.length - 1 ? (
                     <button
@@ -3734,7 +3740,7 @@ function LessonsView() {
                         )
                       }
                     >
-                      Следующее правило <ArrowRight />
+                      <span>Следующее: {lesson.theory[theoryBlockIndex + 1]?.title}</span> <ArrowRight />
                     </button>
                   ) : (
                     <button type="button" className="primary-btn" onClick={startPractice}>
