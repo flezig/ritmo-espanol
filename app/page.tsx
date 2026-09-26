@@ -3570,7 +3570,7 @@ function LessonsView() {
         <ViewHead
           over={`КУРС С НУЛЯ · ${courseLessons.length} УРОКОВ · ${courseLessons.reduce((sum, item) => sum + item.exercises.length, 0)} ЗАДАНИЙ`}
           title="Испанский вместе с котиками"
-          copy="После теории — 50 смешанных заданий: свободный ввод, сборка фраз, верно/неверно и варианты в случайном порядке."
+          copy="После теории — смешанные задания: свободный ввод, сборка фраз, верно/неверно и варианты в случайном порядке."
         />
         <CatHouse level={completedCount} />
       </div>
@@ -3592,11 +3592,20 @@ function LessonsView() {
                   state.completed ? 'love' : state.done ? 'happy' : 'neutral'
                 }
               />
-              <span className="course-number">{item.number}</span>
-              <em>{item.icon}</em>
               <h3>{item.title}</h3>
               <p>{item.subtitle}</p>
-              <PawProgress done={state.done} total={item.exercises.length} />
+              <div
+                className="course-card-progress"
+                role="progressbar"
+                aria-label={`Выполнено ${state.done} из ${item.exercises.length}`}
+                aria-valuemin={0}
+                aria-valuemax={item.exercises.length}
+                aria-valuenow={Math.min(state.done, item.exercises.length)}
+              >
+                <i>
+                  <span style={{ width: `${Math.min(100, (state.done / item.exercises.length) * 100)}%` }} />
+                </i>
+              </div>
               <footer>
                 <span>
                   {state.completed

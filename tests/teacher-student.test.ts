@@ -53,6 +53,15 @@ test('all four requested application routes exist', () => {
   ]) assert.ok(existsSync(new URL(route, import.meta.url)), route);
 });
 
+test('existing lesson assignments display the current exercise count', () => {
+  const workspace = readFileSync(new URL('../app/components/education-workspace.tsx', import.meta.url), 'utf8');
+  assert.match(workspace, /function currentLessonExerciseCount/);
+  assert.match(workspace, /courseLessons\.find\(\(lesson\) => lesson\.id === assignment\.content_id\)/);
+  assert.match(workspace, /Актуальная версия урока:/);
+  assert.match(workspace, /Актуальная версия:/);
+  assert.match(workspace, /lesson\.exercises\.length.*упражнений/);
+});
+
 test('assignment lifecycle is enforced in the database', () => {
   assert.match(sql, /status not in \('assigned', 'revision_requested', 'overdue'\)/);
   assert.match(sql, /row_data\.status <> 'submitted'/);

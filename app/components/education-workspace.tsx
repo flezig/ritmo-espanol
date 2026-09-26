@@ -65,6 +65,11 @@ function NotificationFeed({ items, role, refresh }: { items: AppNotification[]; 
   return <details className="notification-feed"><summary><Bell /><b>Уведомления</b><span>{items.filter((item) => !item.read_at).length} новых</span></summary><div>{items.slice(0, 10).map((item) => <article className={item.read_at ? '' : 'unread'} key={item.id}><div><b>{item.title}</b><p>{item.body}</p><small>{dateText(item.created_at)}</small></div>{item.entity_type === 'assignment' && item.entity_id && <a href={`/${role}/assignments/${item.entity_id}`}>Открыть</a>}{!item.read_at && <button aria-label="Отметить прочитанным" onClick={() => void markNotificationRead(client, item.id).then(refresh)}><Check /></button>}</article>)}</div></details>;
 }
 
+function currentLessonExerciseCount(assignment: Assignment) {
+  if (assignment.content_type !== 'lesson' || !assignment.content_id) return null;
+  return courseLessons.find((lesson) => lesson.id === assignment.content_id)?.exercises.length ?? null;
+}
+
 function AssignmentRows({ assignments, profiles, progress, perspective }: { assignments: Assignment[]; profiles?: Map<string, Profile>; progress?: Map<string, AssignmentProgress>; perspective: 'teacher' | 'student' }) {
   const [studentFilter, setStudentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<Assignment['status'] | 'all'>('all');
@@ -83,9 +88,11 @@ function AssignmentRows({ assignments, profiles, progress, perspective }: { assi
     const overdue = item.due_at && new Date(item.due_at) < new Date() && !['completed', 'submitted'].includes(item.status);
     const measured = progress?.get(item.id);
     const started = !!measured?.completed_count || !!measured?.answer_count;
+    const lessonExerciseCount = currentLessonExerciseCount(item);
     return <a key={item.id} className="assignment-row" href={`/${perspective}/assignments/${item.id}`}>
       <div className="assignment-main"><span className={`assignment-status ${overdue ? 'overdue' : item.status}`}>{overdue ? 'Просрочено' : statusLabel[item.status]}</span><h3>{item.title}</h3>
         {perspective === 'teacher' ? <p>{personName(profiles?.get(item.student_id))}</p> : <p>{item.content_title_snapshot || item.description || 'Выполните задание преподавателя'}</p>}
+        {lessonExerciseCount !== null && <small className="assignment-topic">Актуальная версия урока: {lessonExerciseCount} упражнений</small>}
         {item.topic_title_snapshot && <small className="assignment-topic">Тема: {item.topic_title_snapshot}</small>}
         {measured && <div className="assignment-mini-progress"><i><span style={{ width: `${measured.progress_percent}%` }} /></i><b>{measured.completed_count} / {measured.target_count}</b></div>}</div>
       <div className="assignment-meta"><span><Clock3 />{dateText(item.due_at)}</span><strong>{perspective === 'teacher' ? 'Открыть результат' : started ? 'Продолжить' : 'Начать'}</strong></div>
@@ -128,7 +135,7 @@ function TeacherStudent({ studentId }: { studentId: string }) {
   useAutoRefresh(refresh);
   const linked = data?.relationships.some((r) => r.student_id === studentId);
   const contentOptions = useMemo(() => [
-    ...courseLessons.map((lesson) => ({ id: lesson.id, type: 'lesson' as const, title: `Урок: ${lesson.title}` })),
+    ...courseLessons.map((lesson) => ({ id: lesson.id, type: 'lesson' as const, title: `Урок: ${lesson.title} · ${lesson.exercises.length} упражнений` })),
     { id: 'all', type: 'practice' as const, title: 'Practice: любой режим' },
     { id: 'words:five', type: 'practice' as const, title: 'Practice: учить слова · 5 минут' },
     { id: 'words:errors', type: 'practice' as const, title: 'Practice: работа над ошибками' },
@@ -191,7 +198,7 @@ function AssignmentDetail({ id, role }: { id: string; role: 'teacher' | 'student
   if (!data && !error) return <Busy role={role} />;
   const assignment = data?.assignment;
   if (!assignment) return <WorkspaceFrame role={role}><ErrorBox message={error || 'Задание не найдено или недоступно.'} /></WorkspaceFrame>;
-  const latest = data.submissions[0], latestReview = data.reviews[0];
+  const latest = data.submissions[0], latestReview = data.reviews[0], lessonExerciseCount = currentLessonExerciseCount(assignment);
   const focusContent = () => {
     if (role === 'student' && ['lesson', 'practice', 'dictation', 'music'].includes(assignment.content_type || ''))
       activateAssignmentTracking({ id: assignment.id, userId: assignment.student_id, type: assignment.content_type as 'lesson' | 'practice' | 'dictation' | 'music', contentId: assignment.content_id || 'all' });
@@ -208,7 +215,7 @@ function AssignmentDetail({ id, role }: { id: string; role: 'teacher' | 'student
     <div className="education-heading assignment-heading"><div><span className={`assignment-status ${assignment.status}`}>{statusLabel[assignment.status]}</span><h1>{assignment.title}</h1><p>{assignment.description || 'Без дополнительного описания.'}</p></div><div className="education-notice"><Clock3 /><b>{dateText(assignment.due_at)}</b><span>срок выполнения</span></div></div>
     {error && <ErrorBox message={error} />}{data.progress && <section className="assignment-live-progress"><div><span>Выполнение</span><b>{data.progress.completed_count} из {data.progress.target_count}</b></div><i><span style={{ width: `${data.progress.progress_percent}%` }} /></i><div className="progress-facts"><span>{data.progress.progress_percent}% цели</span>{data.progress.answer_count > 0 && <span>{data.progress.correct_count} из {data.progress.answer_count} ответов верно</span>}{data.progress.earned_score > 0 && <span>{data.progress.earned_score} очков</span>}</div></section>}
     {role === 'student' && assignment.status === 'revision_requested' && latestReview && <aside className="revision-callout"><MessageCircle /><div><b>Преподаватель:</b><p>{latestReview.comment || 'Откройте работу и исправьте отмеченные ошибки.'}</p></div></aside>}
-    {assignment.content_title_snapshot && <a className="content-reference" onClick={focusContent} href={`/#${assignment.content_type === 'lesson' ? 'lessons' : assignment.content_type}`}><BookOpen /><div><b>{assignment.content_title_snapshot}</b>{assignment.topic_title_snapshot && <small>Тема: {assignment.topic_title_snapshot}</small>}<span>{data.progress?.completed_count ? 'Продолжить с места остановки' : 'Начать выполнение'}</span></div></a>}{assignment.material_url && <a className="external-material" href={assignment.material_url} target="_blank" rel="noreferrer">Открыть дополнительный материал</a>}
+    {assignment.content_title_snapshot && <a className="content-reference" onClick={focusContent} href={`/#${assignment.content_type === 'lesson' ? 'lessons' : assignment.content_type}`}><BookOpen /><div><b>{assignment.content_title_snapshot}</b>{lessonExerciseCount !== null && <small>Актуальная версия: {lessonExerciseCount} упражнений</small>}{assignment.topic_title_snapshot && <small>Тема: {assignment.topic_title_snapshot}</small>}<span>{data.progress?.completed_count ? 'Продолжить с места остановки' : 'Начать выполнение'}</span></div></a>}{assignment.material_url && <a className="external-material" href={assignment.material_url} target="_blank" rel="noreferrer">Открыть дополнительный материал</a>}
     {!!data.questions.length && <QuestionThreads questions={data.questions} messages={data.questionMessages} userId={user?.id || ''} refresh={refresh} />}
     {role === 'teacher' && <AssignmentActivityPanel items={data.activity} />}
     <div className="education-columns"><section className="education-card"><h2>{role === 'student' ? 'Ваш ответ' : 'Последняя работа'}</h2>
