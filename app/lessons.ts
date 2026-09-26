@@ -805,6 +805,24 @@ const lesson2: LessonExercise[] = [
   ),
 ];
 
+const lesson2TheoryOrder = [
+  'Tener: иметь и описывать',
+  'Tener: все частые выражения',
+  'Tener que + инфинитив',
+  'Presente: первое спряжение на -ar',
+  'Семья: ключевая лексика',
+  'Mi, tu, su',
+  'Чьи вещи: su и уточнение владельца',
+  'Множественное число',
+  'Множественное число: особые случаи',
+  'Прилагательные',
+  'Muy, mucho, poco и bastante',
+  'Внешность: ser, tener и llevar',
+  'Характер и состояние',
+  'Указательные: este, ese, aquel',
+  'Самые нужные предлоги',
+] as const;
+
 const lesson3: LessonExercise[] = [
   ...[
     [
@@ -1976,7 +1994,7 @@ export const courseLessons = [
     subtitle: 'Семья, внешность и характер',
     reward: 'Когтеточка, полка и игрушки',
     icon: '👨‍👩‍👧',
-    theory: [
+    theory: ([
       {
         title: 'Tener: иметь и описывать',
         paragraphs: [
@@ -2010,7 +2028,7 @@ export const courseLessons = [
         title: 'Mi, tu, su',
         paragraphs: [
           'Краткие притяжательные ставятся перед существительным: mi/mis, tu/tus, su/sus, nuestro/a/os/as, vuestro/a/os/as.',
-          'Они согласуются не с владельцем, а с тем, чем владеют: su hermano, sus hermanas. Su может означать «его», «её», «Ваш» или «их» — значение даёт контекст.',
+          'Su и sus выбираются по числу предметов, а не по числу владельцев. Su ставится перед одним предметом: su hermano — «его / её / Ваш / их брат». Sus ставится перед несколькими предметами: sus hermanas — «его / её / Ваши / их сёстры». Значение владельца показывает только контекст.',
         ],
         examples: [
           ['Mi madre y mis hermanos', 'моя мама и мои братья'],
@@ -2094,9 +2112,13 @@ export const courseLessons = [
       {
         title: 'Указательные: este, ese, aquel',
         paragraphs: [
-          'Este указывает на предмет рядом с говорящим; ese — рядом с собеседником или немного дальше; aquel — далеко от обоих. Формы согласуются с существительным: este/esta/estos/estas, ese/esa/esos/esas, aquel/aquella/aquellos/aquellas.',
-          'Эти слова могут стоять перед существительным или самостоятельно: esta revista; ¿Cuál quieres, esta o aquella? Нейтральные esto, eso, aquello называют неизвестное или не названное: ¿Qué es esto? У них нет форм рода и числа.',
-          'Во времени este обозначает настоящее или ближайшее будущее, ese — упомянутое прошлое, aquel — далёкое прошлое: este mes, ese año, en aquella época.',
+          'Este, ese, aquel — указательные слова, которые используются, чтобы указать на предмет или человека. Их форма зависит от рода и числа существительного, к которому они относятся.',
+          'Este / esta / estos / estas указывают на то, что находится рядом с говорящим.',
+          'Ese / esa / esos / esas указывают на то, что находится рядом с собеседником. При этом ese иногда употребляется и для чего-то, находящегося далеко и от говорящего, и от собеседника.',
+          'Aquel / aquella / aquellos / aquellas указывают на то, что находится далеко и от говорящего, и от собеседника.',
+          'Эти слова могут употребляться с существительным: esta revista, esos zapatos, aquella casa — или самостоятельно: ¿Cuál es tu maleta, esta, esa o aquella?',
+          'Нейтральные формы esto, eso, aquello используются, когда существительное не называется — например, потому что неизвестно, что это, или потому что называть его не требуется: ¿Qué es esto? У этих форм нет рода и числа.',
+          'Указательные слова также могут обозначать время: este — настоящее или ближайшее будущее (este año), ese — прошлое (ese año), aquel — далёкое прошлое (en aquella época).',
         ],
         examples: [
           ['¿Cuánto cuesta esta revista?', 'Сколько стоит этот журнал рядом со мной?'],
@@ -2108,29 +2130,37 @@ export const courseLessons = [
       {
         title: 'Самые нужные предлоги',
         paragraphs: [
-          'A показывает направление или адресата: voy a Madrid, escribo a Ana. De — происхождение, принадлежность или материал: soy de Perú, la casa de Ana. En — место: vivo en Moscú. Con — «с», sin — «без».',
-          'Para чаще обозначает цель, назначение или получателя: un regalo para mi hermana. Por — причину, путь или обмен: gracias por la ayuda, paseo por el parque. Перед el формы a и de сливаются: a + el = al, de + el = del.',
+          'A обычно показывает направление, движение к месту или адресата: voy a Madrid, escribo a Ana.',
+          'De обозначает происхождение, принадлежность, материал или связь: soy de Perú, la casa de Ana, una mesa de madera.',
+          'En чаще всего обозначает место или нахождение где-либо: vivo en Moscú, estoy en casa.',
+          'Con значит «с»: café con leche. Sin значит «без»: café sin azúcar.',
+          'Para обычно обозначает цель, назначение или получателя: estudio para aprender, un regalo para mi hermana.',
+          'Por может обозначать причину, движение через или по какому-либо месту, а также обмен: gracias por la ayuda, paseo por el parque, cambio un libro por otro.',
+          'Перед артиклем el предлоги a и de сливаются с ним: a + el = al → voy al parque; de + el = del → vengo del trabajo.',
+          'Перед la, los и las слияния нет: a la escuela, de los amigos.',
         ],
         examples: [
-          ['Voy al trabajo.', 'Я иду на работу.'],
+          ['Voy al parque.', 'Я иду в парк.'],
+          ['Vengo del trabajo.', 'Я иду / возвращаюсь с работы.'],
           ['Café con leche y sin azúcar.', 'Кофе с молоком и без сахара.'],
           ['Este libro es para ti.', 'Эта книга для тебя.'],
           ['Gracias por todo.', 'Спасибо за всё.'],
         ],
-        note: 'Базовая подсказка: куда — a, где — en, откуда/чей — de, с кем/чем — con, цель — para, причина — por.',
+        note: 'Базовая подсказка: куда — a, где — en, откуда/чей/из чего — de, с кем/чем — con, без чего — sin, цель — para, причина или путь — por.',
       },
       {
         title: 'Чьи вещи: su и уточнение владельца',
         paragraphs: [
-          'Su/sus может означать «его», «её», «Ваш/Ваша», «их». Если контекст неясен, используйте конструкцию de + человек: el hermano de Ana, la casa de ellos.',
+          'И su, и sus могут означать «его», «её», «Ваш/Ваша/Ваши» или «их». Su используется с одним предметом: su gato — один его/её/Ваш/их кот. Sus используется с несколькими предметами: sus gatos — несколько его/её/Ваших/их котов.',
+          'По форме su/sus нельзя определить владельца. Если контекст неясен, уточните его конструкцией de + человек: el gato de él, la casa de ella, los amigos de ellos.',
           'После существительного возможны полные формы mío, tuyo, suyo: un amigo mío. Они согласуются с предметом: una amiga mía, unos amigos míos.',
         ],
         examples: [
-          ['Su gato es blanco.', 'Его/её/Ваш/их кот белый.'],
-          ['El gato de ella es blanco.', 'Её кот белый.'],
+          ['Su gato / sus gatos', 'его, её, Ваш или их кот / коты'],
+          ['La casa de ella', 'её дом — владелец указан точно'],
           ['Es una amiga mía.', 'Она одна из моих подруг.'],
         ],
-        note: 'Не говорите un mi amigo. Правильно mi amigo или un amigo mío.',
+        note: 'Запомните: su = один предмет, sus = несколько предметов. Не говорите un mi amigo: правильно mi amigo или un amigo mío.',
       },
       {
         title: 'Внешность: ser, tener и llevar',
@@ -2145,15 +2175,19 @@ export const courseLessons = [
         ],
       },
       {
-        title: 'Характер и временное поведение',
+        title: 'Характер и состояние',
         paragraphs: [
-          'Ser + прилагательное описывает устойчивую черту: Es tranquilo. Estar + прилагательное — состояние сейчас: Está nervioso. Иногда выбор меняет смысл: es aburrido — скучный человек; está aburrido — ему скучно.',
-          'Другие важные пары: ser listo — быть умным; estar listo — быть готовым. ser malo — быть плохим; estar malo — болеть или быть испорченным.',
+          'Ser + прилагательное обычно описывает качество или характеристику человека или предмета: Es tranquilo. Es simpática.',
+          'Estar + прилагательное обычно обозначает состояние в определённый момент: Está nervioso. Estoy cansada.',
+          'Иногда выбор ser / estar полностью меняет смысл: es aburrido — он скучный; está aburrido — ему скучно.',
+          'Другие частые пары: ser listo — быть умным, estar listo — быть готовым; ser malo — быть плохим, estar malo — болеть или быть испорченным; ser rico — быть богатым, estar rico — быть вкусным; ser seguro — быть безопасным, estar seguro — быть уверенным.',
         ],
         examples: [
           ['Mi hermana es alegre.', 'Моя сестра жизнерадостная.'],
           ['Hoy está triste.', 'Сегодня ей грустно.'],
           ['El gato está listo para jugar.', 'Кот готов играть.'],
+          ['Esta sopa está muy rica.', 'Этот суп очень вкусный.'],
+          ['Estoy seguro de la respuesta.', 'Я уверен в ответе.'],
         ],
       },
       {
@@ -2174,16 +2208,29 @@ export const courseLessons = [
       {
         title: 'Muy, mucho, poco и bastante',
         paragraphs: [
-          'Muy ставится перед прилагательным или наречием и не меняется: muy amable, muy bien. Mucho может быть наречием после глагола и не меняться: trabaja mucho; либо определителем и согласовываться: muchos amigos, mucha paciencia.',
-          'Poco и bastante работают сходно: poco tiempo, pocas personas; bastante tiempo, bastantes personas. Для усиления существительного нельзя использовать muy: не muy amigos, а muchos amigos.',
+          'Muy ставится перед прилагательным или наречием и не изменяется: muy amable, muy interesante, muy bien, muy rápido. Перед существительным muy не употребляется.',
+          'Mucho после глагола обычно является наречием и не изменяется: trabaja mucho, estudia mucho. Перед существительным оно согласуется с ним в роде и числе: mucho tiempo, mucha paciencia, muchos amigos, muchas cosas.',
+          'Poco работает похожим образом. После глагола оно может не изменяться: duerme poco, habla poco. Перед существительным согласуется: poco tiempo, poca agua, pocos libros, pocas personas.',
+          'Bastante может означать «довольно» или «достаточно». Перед прилагательным и наречием оно не изменяется: bastante fácil, bastante bien. Перед существительным форма обычно зависит от числа: bastante tiempo, bastante paciencia, bastantes personas, bastantes problemas.',
+          'Важно различать: muy interesante — очень интересный; mucho interés — большой интерес; trabaja mucho — много работает; poco interesante — малоинтересный или не очень интересный; bastante interesante — довольно интересный.',
+          'Для усиления существительного нельзя использовать muy: не muy amigos, а muchos amigos; не muy paciencia, а mucha paciencia.',
+          'Muy может усиливать poco: muy poco tiempo — очень мало времени; muy pocas personas — очень мало людей. В такой конструкции poco по-прежнему согласуется с существительным.',
         ],
         examples: [
-          ['Mi abuela es muy paciente.', 'Моя бабушка очень терпеливая.'],
+          ['Es muy interesante.', 'Это очень интересно.'],
           ['Tenemos muchos amigos.', 'У нас много друзей.'],
           ['Los gatos duermen mucho.', 'Коты много спят.'],
+          ['Hay pocas personas.', 'Людей мало.'],
+          ['Es bastante fácil.', 'Это довольно легко.'],
+          ['Tenemos muy poco tiempo.', 'У нас очень мало времени.'],
         ],
+        note: 'Смотрите, что стоит после слова: прилагательное или наречие требуют неизменяемых muy/bastante, а mucho и poco перед существительным согласуются с ним.',
       },
-    ] as TheoryBlock[],
+    ] as TheoryBlock[]).sort(
+      (first, second) =>
+        lesson2TheoryOrder.indexOf(first.title as (typeof lesson2TheoryOrder)[number]) -
+        lesson2TheoryOrder.indexOf(second.title as (typeof lesson2TheoryOrder)[number]),
+    ),
     exercises: diversifyExercises(lesson2),
   },
   {

@@ -291,6 +291,22 @@ test('lesson 2 covers every expanded rule in exactly 60 clear tasks', () => {
   }
 });
 
+test('lesson 2 theory keeps related rules together and explains su/sus by possessed number', () => {
+  const lesson = courseLessons.find((item) => item.id === 'family');
+  assert.ok(lesson);
+  const titles = lesson.theory.map((block) => block.title);
+  assert.equal(titles.indexOf('Tener: все частые выражения'), titles.indexOf('Tener: иметь и описывать') + 1);
+  assert.equal(titles.indexOf('Tener que + инфинитив'), titles.indexOf('Tener: все частые выражения') + 1);
+  assert.equal(titles.indexOf('Чьи вещи: su и уточнение владельца'), titles.indexOf('Mi, tu, su') + 1);
+  assert.equal(titles.indexOf('Множественное число: особые случаи'), titles.indexOf('Множественное число') + 1);
+  const possessives = lesson.theory.find((block) => block.title === 'Чьи вещи: su и уточнение владельца');
+  assert.ok(possessives);
+  const text = JSON.stringify(possessives);
+  assert.match(text, /Su используется с одним предметом/);
+  assert.match(text, /Sus используется с несколькими предметами/);
+  assert.match(text, /их кот \/ коты/);
+});
+
 test('lesson and grammar choices use displayed shuffled options', () => {
   const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
   assert.match(source, /displayedOptions = shuffledOptions/);

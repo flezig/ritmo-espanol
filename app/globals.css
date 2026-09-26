@@ -4172,6 +4172,50 @@ input {
   justify-content: center;
   margin-top: 10px;
 }
+@media (min-width: 1051px) {
+  .theory-layout {
+    grid-template-columns: minmax(0, 1fr) clamp(200px, 17vw, 230px);
+    gap: 16px;
+  }
+  .theory-layout > aside {
+    padding: 14px;
+    border-radius: 18px;
+  }
+  .theory-layout > aside .cat-mascot {
+    width: 124px;
+    height: 124px;
+    margin: 0 auto 4px;
+    aspect-ratio: 1;
+  }
+  .theory-layout > aside h3 {
+    margin: 8px 0 4px;
+    font-size: 16px;
+  }
+  .theory-layout > aside > p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.42;
+  }
+  .theory-layout > aside .lesson-core-words {
+    gap: 7px;
+    margin: 10px 0 4px;
+    padding: 10px;
+  }
+  .theory-layout > aside .lesson-core-words > span,
+  .theory-layout > aside .lesson-core-words small,
+  .theory-layout > aside .lesson-core-words b {
+    font-size: 10px;
+  }
+  .theory-layout > aside .lesson-core-words b {
+    padding: 4px 6px;
+  }
+  .theory-layout > aside .lesson-practice-cta {
+    min-height: 42px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
 .exercise-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;

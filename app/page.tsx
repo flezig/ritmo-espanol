@@ -3768,7 +3768,7 @@ function LessonsView() {
                 </small>
               </div>
               <button className="primary-btn lesson-practice-cta" onClick={startPractice}>
-                Перейти к 50 заданиям <ArrowRight />
+                Перейти к {lesson.exercises.length} заданиям <ArrowRight />
               </button>
             </aside>
             </div>
