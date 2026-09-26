@@ -321,7 +321,7 @@ const lesson1: LessonExercise[] = [
   ),
 ];
 
-const lesson2: LessonExercise[] = [
+const lesson2Original: LessonExercise[] = [
   ...[
     ['Yo ___ una hermana.', ['tengo', 'tienes', 'tiene'], 'tengo'],
     ['Tú ___ dos gatos.', ['tienes', 'tengo', 'tienen'], 'tienes'],
@@ -529,6 +529,144 @@ const lesson2: LessonExercise[] = [
     'Nuestros gatos son curiosos.',
     'Nuestros и curiosos согласуются с gatos.',
   ),
+];
+
+const lesson2Keep = (prompt: string) => {
+  const exercise = lesson2Original.find((item) => item.prompt === prompt);
+  if (!exercise) throw new Error(`Missing lesson 2 exercise: ${prompt}`);
+  return exercise;
+};
+
+// Keep the lesson at 50 focused tasks. Existing prompts are reused where they
+// still fit so saved mistake IDs and resume points continue to resolve.
+const lesson2: LessonExercise[] = [
+  ...[
+    'Yo ___ una hermana.',
+    'Tú ___ dos gatos.',
+    'Mi madre ___ ojos verdes.',
+    'Nosotros ___ una familia grande.',
+    '___ madre se llama Elena.',
+    '¿Cómo se llama ___ hermano?',
+    'Ana vive con ___ familia.',
+    'Tenemos dos gatos. ___ gatos son naranjas.',
+    'Mi hermana es ___.',
+    'Pedro tiene los ojos ___.',
+    'la mujer → …',
+    'la luz → …',
+    'Напишите: «Моей кошке три года».',
+  ].map(lesson2Keep),
+  typed(
+    'Множественное число',
+    'Преобразуйте всё словосочетание во множественное число: la hija pequeña.',
+    'las hijas pequeñas',
+    'Измените артикль, существительное и прилагательное.',
+    'la → las, hija → hijas, pequeña → pequeñas.',
+  ),
+  typed(
+    'Множественное число',
+    'Преобразуйте всё словосочетание во множественное число: su hermana.',
+    'sus hermanas',
+    'Измените притяжательное и существительное.',
+    'su → sus, hermana → hermanas.',
+  ),
+  choice(
+    'Семья',
+    'Mi tío es el ___ de mi madre.',
+    ['hermano', 'hijo', 'abuelo'],
+    'hermano',
+    'Определите родственную связь.',
+    'Дядя — брат отца или матери.',
+  ),
+  ...[
+    ['Después de caminar, tengo ___. Quiero comer.', ['hambre', 'sed', 'sueño'], 'hambre', 'быть голодным'],
+    ['Después de correr, tenemos ___. Queremos agua.', ['sed', 'frío', 'suerte'], 'sed', 'хотеть пить'],
+    ['Es medianoche y Ana tiene ___.', ['sueño', 'calor', 'prisa'], 'sueño', 'хотеть спать'],
+    ['Cierra la ventana: tengo ___.', ['frío', 'hambre', 'razón'], 'frío', 'мёрзнуть'],
+    ['Abre la ventana: tenemos ___.', ['calor', 'miedo', 'sed'], 'calor', 'испытывать жару'],
+    ['El niño tiene ___ de la oscuridad.', ['miedo', 'prisa', 'suerte'], 'miedo', 'бояться'],
+    ['Salimos en dos minutos: tengo ___.', ['prisa', 'razón', 'sueño'], 'prisa', 'спешить'],
+    ['Sí, tú tienes ___. Esta respuesta es correcta.', ['razón', 'hambre', 'frío'], 'razón', 'быть правым'],
+    ['Encontré el último billete: tengo ___.', ['suerte', 'sed', 'calor'], 'suerte', 'мне повезло'],
+  ].map(([prompt, options, answer, meaning]) =>
+    choice(
+      'Выражения с tener',
+      prompt as string,
+      options as string[],
+      answer as string,
+      `tener ${answer as string} — ${meaning as string}`,
+      'В устойчивом выражении изменяется только форма tener.',
+    ),
+  ),
+  ...[
+    ['Yo ___ llamar a mi madre.', ['tengo que', 'tienes que', 'tiene'], 'tengo que'],
+    ['Nosotros ___ ayudar a la abuela.', ['tenemos que', 'tienen que', 'tenemos'], 'tenemos que'],
+    ['После tengo que нужна форма ___.', ['инфинитива', 'yo', 'прошедшего времени'], 'инфинитива'],
+    ['No tienes que venir hoy означает:', ['Тебе не обязательно приходить сегодня.', 'Тебе запрещено приходить сегодня.', 'Ты не пришёл сегодня.'], 'Тебе не обязательно приходить сегодня.'],
+  ].map(([prompt, options, answer]) =>
+    choice(
+      'Tener que',
+      prompt as string,
+      options as string[],
+      answer as string,
+      'Спрягайте tener; после que оставляйте инфинитив.',
+      'Tener que + infinitivo выражает необходимость конкретного человека.',
+    ),
+  ),
+  ...[
+    ['___ libro que tengo en la mano es interesante.', ['Este', 'Ese', 'Aquel'], 'Este'],
+    ['¿Cuánto cuesta ___ revista que está junto a usted?', ['esa', 'esta', 'aquella'], 'esa'],
+    ['Mira las montañas lejanas. ___ montañas son altas.', ['Aquellas', 'Estas', 'Esos'], 'Aquellas'],
+    ['No sé qué es ___ que está aquí.', ['esto', 'este', 'esta'], 'esto'],
+    ['Nací en 1983. ___ mismo año nació mi prima.', ['Ese', 'Este', 'Aquel'], 'Ese'],
+    ['2001 fue un año extraordinario. ___ verano conocí a Maite.', ['Ese', 'Este', 'Aquel'], 'Ese'],
+    ['Luis se casó en 1970. En ___ época yo vivía en México.', ['aquella', 'esta', 'esas'], 'aquella'],
+    ['___ mes ha sido fabuloso: he encontrado piso y trabajo.', ['Este', 'Ese', 'Aquel'], 'Este'],
+    ['¿Qué haces ___ noche?', ['esta', 'esa', 'aquella'], 'esta'],
+  ].map(([prompt, options, answer]) =>
+    choice(
+      'Указательные',
+      prompt as string,
+      options as string[],
+      answer as string,
+      'este — близко; ese — у собеседника или прошлое; aquel — далеко.',
+      'Форма согласуется с существительным; esto/eso/aquello употребляются самостоятельно.',
+    ),
+  ),
+  ...[
+    ['Voy ___ Madrid mañana.', ['a', 'en', 'de'], 'a'],
+    ['Soy ___ Perú.', ['de', 'a', 'con'], 'de'],
+    ['Vivo ___ Moscú.', ['en', 'a', 'por'], 'en'],
+    ['Café ___ leche, por favor.', ['con', 'sin', 'de'], 'con'],
+    ['Este regalo es ___ mi hermana.', ['para', 'por', 'a'], 'para'],
+    ['Gracias ___ tu ayuda.', ['por', 'para', 'en'], 'por'],
+  ].map(([prompt, options, answer]) =>
+    choice(
+      'Базовые предлоги',
+      prompt as string,
+      options as string[],
+      answer as string,
+      'a — направление; de — откуда/чей; en — где; con — с; para — цель; por — причина.',
+      'Выбор предлога зависит от отношения между словами.',
+    ),
+  ),
+  order(
+    'Соберите описание внешности',
+    ['Mi padre tiene el pelo corto.'],
+    'Mi padre tiene el pelo corto.',
+    'Части тела и внешность часто описывают через tener.',
+  ),
+  choice(
+    'Ser или estar',
+    'Mi hermana обычно спокойная, но сегодня нервничает: Es tranquila, pero hoy ___.',
+    ['está nerviosa', 'es nerviosa', 'tiene nerviosa'],
+    'está nerviosa',
+    'Постоянная черта — ser; состояние сейчас — estar.',
+    'Временное состояние выражается estar + прилагательное.',
+  ),
+  choice('Особое множественное число', 'un joven feliz → …', ['unos jóvenes felices', 'unos jovenes feliz', 'unas jóvenes felices'], 'unos jóvenes felices', 'joven получает ударение, z меняется на c.', 'Правильно: jóvenes и felices.'),
+  choice('Muy и mucho', 'Mi abuela es ___ paciente.', ['muy', 'mucho', 'mucha'], 'muy', 'Перед прилагательным используется muy.', 'Muy не меняется и усиливает прилагательное.'),
+  choice('Muy и mucho', 'Tenemos ___ amigos.', ['muchos', 'muy', 'mucho'], 'muchos', 'Перед существительным mucho согласуется в роде и числе.', 'С amigos нужна форма muchos.'),
+  truth('«Su madre» может означать «его мама», «её мама», «Ваша мама» или «их мама».', 'Верно', 'Если владелец неясен, уточните: la madre de él/de ella/de usted/de ellos.'),
 ];
 
 const lesson3: LessonExercise[] = [
@@ -1777,29 +1915,57 @@ export const courseLessons = [
       {
         title: 'Tener: все частые выражения',
         paragraphs: [
-          'Кроме обладания и возраста tener используется в устойчивых сочетаниях: tener hambre, sed, sueño, frío, calor, miedo, prisa, razón, suerte. На русский они часто переводятся прилагательным или безличной конструкцией.',
+          'Кроме обладания и возраста tener используется в устойчивых сочетаниях. Их важно учить целиком: по-русски они часто переводятся прилагательным, глаголом или безличной конструкцией.',
           'Согласуется только tener, существительное остаётся неизменным: Tengo hambre; Ellos tienen hambre. Для состояния «мне жарко» не используйте estar caliente: это может иметь другое значение.',
         ],
         examples: [
-          ['Tenemos sueño.', 'Мы хотим спать.'],
-          ['¿Tienes frío?', 'Тебе холодно?'],
-          ['Mi gata tiene miedo.', 'Моя кошка боится.'],
+          ['tener hambre / tener sed', 'быть голодным / хотеть пить'],
+          ['tener sueño / tener frío / tener calor', 'хотеть спать / мёрзнуть / испытывать жару'],
+          ['tener miedo / tener prisa', 'бояться / спешить'],
+          ['tener razón / tener suerte', 'быть правым / быть удачливым, «повезти»'],
+        ],
+        note: 'На каждое из девяти выражений есть отдельное упражнение в практической части урока.',
+      },
+      {
+        title: 'Tener que + инфинитив',
+        paragraphs: [
+          'Tener que + инфинитив выражает необходимость конкретного человека: «нужно», «надо», «должен». Спрягается только tener: tengo que, tienes que, tiene que, tenemos que, tenéis que, tienen que.',
+          'После que всегда идёт инфинитив, а не личная форма: Tengo que trabajar. В вопросе меняется интонация: ¿Tienes que salir? Отрицание ставится перед tener: No tengo que trabajar — «мне не нужно / не обязательно работать», а не «мне запрещено».',
+        ],
+        examples: [
+          ['Tengo que llamar a mi madre.', 'Мне нужно позвонить маме.'],
+          ['Tenemos que ayudar a la abuela.', 'Нам нужно помочь бабушке.'],
+          ['¿Tienes que salir ahora?', 'Тебе нужно сейчас уходить?'],
+          ['No tienes que venir hoy.', 'Тебе не обязательно приходить сегодня.'],
         ],
       },
       {
-        title: 'Tener que и hay que',
+        title: 'Указательные: este, ese, aquel',
         paragraphs: [
-          'Tener que + инфинитив выражает личную необходимость: Tengo que llamar a mi madre. Hay que + инфинитив — общее правило или безличную необходимость: Hay que descansar.',
-          'После que всегда идёт инфинитив, а не личная форма. Отрицание ставится перед tener или hay: No tengo que trabajar; No hay que correr.',
+          'Este указывает на предмет рядом с говорящим; ese — рядом с собеседником или немного дальше; aquel — далеко от обоих. Формы согласуются с существительным: este/esta/estos/estas, ese/esa/esos/esas, aquel/aquella/aquellos/aquellas.',
+          'Эти слова могут стоять перед существительным или самостоятельно: esta revista; ¿Cuál quieres, esta o aquella? Нейтральные esto, eso, aquello называют неизвестное или не названное: ¿Qué es esto? У них нет форм рода и числа.',
+          'Во времени este обозначает настоящее или ближайшее будущее, ese — упомянутое прошлое, aquel — далёкое прошлое: este mes, ese año, en aquella época.',
         ],
         examples: [
-          ['Tenemos que ayudar a la abuela.', 'Нам нужно помочь бабушке.'],
-          ['Hay que cuidar a los gatos.', 'Нужно заботиться о котах.'],
-          [
-            'No tienes que venir hoy.',
-            'Тебе не обязательно приходить сегодня.',
-          ],
+          ['¿Cuánto cuesta esta revista?', 'Сколько стоит этот журнал рядом со мной?'],
+          ['Me gusta esa casa.', 'Мне нравится тот дом у вас / чуть дальше.'],
+          ['¿Quiénes son aquellas chicas?', 'Кто те девушки вдали?'],
+          ['No sé qué es esto.', 'Я не знаю, что это.'],
         ],
+      },
+      {
+        title: 'Самые нужные предлоги',
+        paragraphs: [
+          'A показывает направление или адресата: voy a Madrid, escribo a Ana. De — происхождение, принадлежность или материал: soy de Perú, la casa de Ana. En — место: vivo en Moscú. Con — «с», sin — «без».',
+          'Para чаще обозначает цель, назначение или получателя: un regalo para mi hermana. Por — причину, путь или обмен: gracias por la ayuda, paseo por el parque. Перед el формы a и de сливаются: a + el = al, de + el = del.',
+        ],
+        examples: [
+          ['Voy al trabajo.', 'Я иду на работу.'],
+          ['Café con leche y sin azúcar.', 'Кофе с молоком и без сахара.'],
+          ['Este libro es para ti.', 'Эта книга для тебя.'],
+          ['Gracias por todo.', 'Спасибо за всё.'],
+        ],
+        note: 'Базовая подсказка: куда — a, где — en, откуда/чей — de, с кем/чем — con, цель — para, причина — por.',
       },
       {
         title: 'Чьи вещи: su и уточнение владельца',

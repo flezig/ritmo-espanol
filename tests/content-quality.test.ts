@@ -214,6 +214,46 @@ test('lesson free input is used only when the prompt identifies the answer', () 
   }
 });
 
+test('lesson 2 covers every expanded rule in no more than 50 clear tasks', () => {
+  const lesson = courseLessons.find((item) => item.id === 'family');
+  assert.ok(lesson);
+  assert.equal(lesson.exercises.length, 50);
+
+  const theory = JSON.stringify(lesson.theory);
+  const exercises = JSON.stringify(lesson.exercises);
+  for (const expression of [
+    'hambre', 'sed', 'sueño', 'frío', 'calor', 'miedo', 'prisa', 'razón', 'suerte',
+  ]) {
+    assert.match(theory, new RegExp(expression), `missing tener ${expression} in theory`);
+    assert.match(exercises, new RegExp(expression), `missing tener ${expression} exercise`);
+  }
+  for (const kind of [
+    'Tener', 'Притяжательные', 'Согласование', 'Множественное число', 'Семья',
+    'Выражения с tener', 'Tener que', 'Указательные', 'Базовые предлоги',
+    'Ser или estar', 'Особое множественное число', 'Muy и mucho',
+  ]) {
+    assert.ok(
+      lesson.exercises.some((exercise) => exercise.kind.startsWith(kind)),
+      `missing lesson 2 exercise group: ${kind}`,
+    );
+  }
+  assert.equal(theory.toLowerCase().includes('hay que'), false);
+  assert.ok(lesson.exercises.filter((exercise) => exercise.kind === 'Tener que').length >= 4);
+  assert.ok(lesson.exercises.filter((exercise) => exercise.kind === 'Указательные').length >= 8);
+  assert.ok(lesson.exercises.filter((exercise) => exercise.kind === 'Базовые предлоги').length >= 6);
+
+  for (const [source, answer] of [
+    ['la hija pequeña', 'las hijas pequeñas'],
+    ['su hermana', 'sus hermanas'],
+  ]) {
+    const exercise = lesson.exercises.find((item) => item.prompt.includes(source));
+    assert.ok(exercise, `missing clarified plural task: ${source}`);
+    assert.equal(exercise.mode, 'type');
+    assert.match(exercise.prompt, /Преобразуйте всё словосочетание/);
+    assert.equal(exercise.answer, answer);
+  }
+});
+
 test('lesson and grammar choices use displayed shuffled options', () => {
   const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
   assert.match(source, /displayedOptions = shuffledOptions/);
