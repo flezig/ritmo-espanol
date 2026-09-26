@@ -1,3 +1,5 @@
+import { createEmptyCard, fsrs, Rating, State, type CardInput } from 'ts-fsrs';
+
 export type WordStatus = 'new' | 'learning' | 'learned' | 'difficult';
 export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy';
 
@@ -12,6 +14,11 @@ export type SRSRecord = {
   successes: number;
   favorite: boolean;
   lastGrade: ReviewGrade;
+  /** Present only after this card has naturally moved to FSRS. */
+  scheduler?: 'fsrs-6';
+  fsrsState?: number;
+  scheduledDays?: number;
+  learningSteps?: number;
 };
 
 export type AnswerAnalysis = {
@@ -80,6 +87,17 @@ const editDistance = (a: string, b: string) => {
 };
 
 export const analyzeAnswer = (value: string, answer: string): AnswerAnalysis => {
+  const variants = answer
+    .split(/\s*(?:;|\|)\s*|\s+\/\s+/u)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (variants.length > 1) {
+    const results = variants.map((variant) => analyzeAnswer(value, variant));
+    const accepted = results.find((result) => result.correct);
+    if (accepted) return accepted;
+    const mostHelpful = results.find((result) => result.kind !== 'wrong');
+    if (mostHelpful) return mostHelpful;
+  }
   const raw = comparisonText(value);
   const target = comparisonText(answer);
   const plain = normalizeText(value);
@@ -147,49 +165,72 @@ export const blankSRS = (): SRSRecord => ({
   lastGrade: 'again',
 });
 
+const fsrsScheduler = fsrs({
+  request_retention: 0.9,
+  maximum_interval: 36_500,
+  enable_fuzz: false,
+  enable_short_term: true,
+  learning_steps: ['10m'],
+  relearning_steps: ['10m'],
+});
+const fsrsRating = (grade: ReviewGrade) =>
+  grade === 'again'
+    ? Rating.Again
+    : grade === 'hard'
+      ? Rating.Hard
+      : grade === 'easy'
+        ? Rating.Easy
+        : Rating.Good;
+
+const fsrsCardFromRecord = (record: SRSRecord | undefined, now: number): CardInput => {
+  if (!record) return createEmptyCard(new Date(now));
+  const legacyScheduledDays = Math.max(
+    0.1,
+    (record.nextReview - record.lastReview) / DAY_MS,
+  );
+  return {
+    due: new Date(record.nextReview || now),
+    stability: Math.max(0.1, record.stability || legacyScheduledDays),
+    difficulty: Math.max(1, record.difficulty || 5),
+    elapsed_days: record.lastReview
+      ? Math.max(0, Math.round((now - record.lastReview) / DAY_MS))
+      : 0,
+    scheduled_days: record.scheduledDays || Math.max(0, Math.round(legacyScheduledDays)),
+    learning_steps: record.learningSteps || 0,
+    reps: record.reviews,
+    lapses: record.lapses,
+    state: record.fsrsState ?? (record.reviews ? State.Review : State.New),
+    last_review: record.lastReview ? new Date(record.lastReview) : undefined,
+  };
+};
+
 export const scheduleReview = (
   current: SRSRecord | undefined,
   grade: ReviewGrade,
   now = Date.now(),
 ): SRSRecord => {
   const old = current || blankSRS();
-  const elapsed = old.lastReview ? Math.max(0.01, (now - old.lastReview) / DAY_MS) : 0;
-  const retrievability = old.stability ? Math.exp(-elapsed / old.stability) : 0;
   const success = grade !== 'again';
-  const difficulty = Math.max(
-    1,
-    Math.min(
-      10,
-      old.difficulty +
-        (grade === 'again' ? 1.1 : grade === 'hard' ? 0.35 : grade === 'easy' ? -0.55 : -0.18),
-    ),
-  );
-  let stability = old.stability;
-  if (grade === 'again') stability = Math.max(0.08, stability * 0.42);
-  else if (!stability) stability = grade === 'easy' ? 3 : grade === 'hard' ? 0.5 : 1;
-  else
-    stability = Math.max(
-      0.5,
-      stability *
-        (grade === 'hard'
-          ? 1.25
-          : grade === 'good'
-            ? 1.75 + 0.35 * (1 - retrievability)
-            : 2.65 + 0.5 * (1 - retrievability)) *
-        (1 + (6 - difficulty) * 0.035),
-    );
-  const interval = grade === 'again' ? 10 / 1440 : grade === 'hard' ? Math.max(0.5, stability * 0.7) : stability;
+  const result = fsrsScheduler.next(
+    fsrsCardFromRecord(current, now),
+    new Date(now),
+    fsrsRating(grade),
+  ).card;
   return {
     ...old,
-    difficulty,
-    stability,
+    difficulty: result.difficulty,
+    stability: result.stability,
     lastReview: now,
-    nextReview: now + interval * DAY_MS,
+    nextReview: result.due.getTime(),
     lapses: old.lapses + (success ? 0 : 1),
     correctStreak: success ? old.correctStreak + 1 : 0,
     reviews: old.reviews + 1,
     successes: old.successes + (success ? 1 : 0),
     lastGrade: grade,
+    scheduler: 'fsrs-6',
+    fsrsState: result.state,
+    scheduledDays: result.scheduled_days,
+    learningSteps: result.learning_steps,
   };
 };
 

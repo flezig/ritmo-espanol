@@ -8802,6 +8802,31 @@ input {
   color: var(--purple);
   margin: 0 0 25px;
 }
+.intro-article-note {
+  color: var(--muted);
+  margin: -17px 0 14px;
+}
+.practice-article-reminder {
+  color: var(--purple);
+  font-weight: 850;
+  letter-spacing: 0.06em;
+}
+.adaptive-grade-note {
+  display: block;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.intro-knowledge-choice {
+  width: min(620px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.intro-knowledge-choice > button {
+  min-height: 48px;
+  justify-content: center;
+}
+.intro-knowledge-choice svg { width: 18px; }
 .intro-listen {
   display: flex;
   align-items: center;
@@ -8846,6 +8871,9 @@ input {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
+}
+@media (max-width: 620px) {
+  .intro-knowledge-choice { grid-template-columns: 1fr; }
 }
 .mark-new {
   height: 36px;
@@ -8964,6 +8992,7 @@ input {
 /* Diverse practice controls */
 .practice-topic-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
@@ -8979,8 +9008,16 @@ input {
 }
 .practice-topic-bar > div {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 12px;
+}
+.practice-collection-tabs {
+  flex: 0 1 auto;
+}
+.practice-topic-bar > div:not(.practice-collection-tabs) {
+  flex: 1 1 250px;
+  justify-content: flex-end;
 }
 .practice-topic-bar > div > span {
   font-size: 12px;
@@ -9081,6 +9118,7 @@ input {
   font-weight: 900;
 }
 .practice-topic-bar select {
+  max-width: 100%;
   min-width: 210px;
   height: 44px;
   border: 1px solid var(--line);
@@ -9406,6 +9444,11 @@ input {
   .practice-topic-bar > div {
     align-items: stretch;
     flex-direction: column;
+  }
+  .practice-topic-bar > div:not(.practice-collection-tabs),
+  .practice-topic-bar > .practice-collection-tabs {
+    flex: none;
+    justify-content: flex-start;
   }
   .practice-topic-bar select {
     width: 100%;

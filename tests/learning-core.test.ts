@@ -20,6 +20,11 @@ test('accent and ñ differences are accepted with a specific warning', () => {
   assert.equal(analyzeAnswer('el arbol', 'el árbol').kind, 'accent');
 });
 
+test('listed equivalent answers are all accepted', () => {
+  assert.equal(analyzeAnswer('la vivienda', 'la casa / la vivienda').correct, true);
+  assert.equal(analyzeAnswer('обед', 'еда; обед').correct, true);
+});
+
 test('article errors are identified separately', () => {
   const result = analyzeAnswer('la problema', 'el problema');
   assert.equal(result.correct, false);
@@ -35,7 +40,17 @@ test('a very short unrelated answer gets a concrete explanation', () => {
 
 test('again really schedules a card ten minutes later', () => {
   const now = Date.UTC(2026, 8, 6, 10);
-  assert.equal(scheduleReview(undefined, 'again', now).nextReview, now + 10 * 60_000);
+  const scheduled = scheduleReview(undefined, 'again', now);
+  assert.equal(scheduled.nextReview, now + 10 * 60_000);
+  assert.equal(scheduled.scheduler, 'fsrs-6');
+});
+
+test('legacy due dates stay untouched until that card receives a new answer', () => {
+  const oldDue = Date.UTC(2026, 8, 20, 10);
+  const legacy = { ...blankSRS(), reviews: 3, successes: 3, lastReview: Date.UTC(2026, 8, 10, 10), nextReview: oldDue };
+  assert.equal(legacy.nextReview, oldDue);
+  assert.equal(legacy.scheduler, undefined);
+  assert.equal(scheduleReview(legacy, 'good', Date.UTC(2026, 8, 21, 10)).scheduler, 'fsrs-6');
 });
 
 test('successful intervals grow and hard remains shorter than good', () => {

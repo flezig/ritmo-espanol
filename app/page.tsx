@@ -58,6 +58,11 @@ import {
 import { STANDARD_RECOGNITION_DISTRIBUTION } from './lib/practice-distribution';
 import { inferWordPartOfSpeech } from './lib/word-part-of-speech';
 import {
+  recordWordSession,
+  type WordSessionRecord,
+  type WordSessionProgress,
+} from './lib/word-sessions';
+import {
   profileRankForXp,
   type ProfileGender,
 } from './lib/profile-ranks';
@@ -194,6 +199,33 @@ type StudyCard = {
   skill: SkillType;
   answer: string;
   prompt: string;
+};
+
+const definiteArticleFor = (es: string, example: string, extraExample = '') => {
+  const headword = es.split(' / ')[0].trim();
+  if (/^(?:el|la|los|las)\s+/iu.test(headword)) return '';
+  const singular = inferGenderArticle(headword, example, extraExample);
+  if (singular) return singular;
+  const escaped = headword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = `${example} ${extraExample}`.match(
+    new RegExp(`\\b(el|la|los|las|un|una|unos|unas)\\s+${escaped}(?=\\b|[.,;:!?])`, 'iu'),
+  );
+  const found = match?.[1]?.toLocaleLowerCase('es') || '';
+  return ({ un: 'el', una: 'la', unos: 'los', unas: 'las' } as Record<string, string>)[found] || found;
+};
+
+const spanishStudyAnswer = (es: string, ru: string, example: string, extraExample = '') => {
+  const article = definiteArticleFor(es, example, extraExample);
+  const noun = inferWordPartOfSpeech(es, ru, example) === 'noun';
+  return es
+    .split(' / ')
+    .map((variant) => {
+      const word = variant.trim();
+      return noun && article && !/^(?:el|la|los|las)\s+/iu.test(word)
+        ? `${article} ${word}`
+        : word;
+    })
+    .join(' / ');
 };
 type CustomWord = {
   id: string;
@@ -1662,6 +1694,12 @@ const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
           entry.extraExample || '',
         ),
         contextWord = entry.es.split(' / ')[0],
+        spanishAnswer = spanishStudyAnswer(
+          entry.es,
+          entry.ru,
+          entry.example,
+          entry.extraExample || '',
+        ),
         contextPrompt = maskExactTerm(entry.example, contextWord),
         hasClearBlank = contextPrompt !== entry.example,
         examples = {
@@ -1692,8 +1730,8 @@ const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
           example: entry.example,
           ...examples,
           skill: 'production',
-          answer: entry.es.split(' / ')[0],
-          prompt: `Напишите изучаемое слово по-испански: «${entry.ru}». Контекст: ${entry.exampleRu}`,
+          answer: spanishAnswer,
+          prompt: `Напишите изучаемое слово по-испански: «${entry.ru}». Существительное пишите с артиклем. Контекст: ${entry.exampleRu}`,
         },
         {
           key: `${base}-listening`,
@@ -1714,8 +1752,8 @@ const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
           example: entry.example,
           ...examples,
           skill: 'dictation',
-          answer: entry.es.split(' / ')[0],
-          prompt: 'Прослушайте слово и напишите услышанное по-испански',
+          answer: spanishAnswer,
+          prompt: 'Прослушайте слово и напишите услышанное по-испански. Существительное пишите с артиклем',
         },
       ];
       if (hasClearBlank)
@@ -1747,6 +1785,7 @@ const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
   ),
   ...customWords.flatMap((entry) => {
     const base = `Мои слова-${entry.id}`,
+      spanishAnswer = spanishStudyAnswer(entry.es, entry.ru, entry.example, entry.extraExample),
       common = {
         topic: 'Мои слова',
         level: 'Личное' as const,
@@ -1770,8 +1809,8 @@ const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
         ...common,
         key: `${base}-production`,
         skill: 'production' as const,
-        answer: entry.es,
-        prompt: `Напишите изучаемое слово по-испански: «${entry.ru}». Контекст: ${entry.exampleRu}`,
+        answer: spanishAnswer,
+        prompt: `Напишите изучаемое слово по-испански: «${entry.ru}». Существительное пишите с артиклем. Контекст: ${entry.exampleRu}`,
       },
       {
         ...common,
@@ -1784,8 +1823,8 @@ const buildStudyDeck = (customWords: CustomWord[] = []): StudyCard[] => [
         ...common,
         key: `${base}-dictation`,
         skill: 'dictation' as const,
-        answer: entry.es,
-        prompt: 'Прослушайте слово и напишите услышанное по-испански',
+        answer: spanishAnswer,
+        prompt: 'Прослушайте слово и напишите услышанное по-испански. Существительное пишите с артиклем',
       },
     ];
   }),
@@ -1819,9 +1858,9 @@ const auditVocabularyPracticeSync = () => {
       const base = `${topic.name}-${entry.id}`,
         expected = [
           ['recognition', entry.ru],
-          ['production', entry.es],
+          ['production', spanishStudyAnswer(entry.es, entry.ru, entry.example, entry.extraExample || '')],
           ['listening', entry.ru],
-          ['dictation', entry.es],
+          ['dictation', spanishStudyAnswer(entry.es, entry.ru, entry.example, entry.extraExample || '')],
         ] as const;
       expected.forEach(([skill, answer]) => {
         const card = byKey.get(`${base}-${skill}`);
@@ -1929,9 +1968,38 @@ function useSRS() {
     setRecords(next);
     window.dispatchEvent(new Event('ritmo-srs'));
   };
-  const rate = (card: StudyCard, grade: ReviewGrade) => {
+  const rate = (
+    card: StudyCard,
+    grade: ReviewGrade,
+    evidence?: { format: string; correct: boolean },
+  ) => {
     const updated = scheduleReview(records[card.key], grade);
     const nextRecords = { ...records, [card.key]: updated };
+    if (
+      evidence?.correct &&
+      grade !== 'again' &&
+      !['choice', 'self'].includes(evidence.format)
+    ) {
+      const base = baseCardKey(card.key),
+        siblingSkills: SkillType[] =
+          card.skill === 'dictation' || evidence.format === 'audioSentence'
+            ? ['production', 'listening']
+            : card.skill === 'production'
+              ? ['recognition']
+              : [];
+      siblingSkills.forEach((skill) => {
+        const key = `${base}-${skill}`,
+          sibling = nextRecords[key];
+        if (!sibling?.reviews || key === card.key) return;
+        const remaining = Math.max(0, sibling.nextReview - Date.now());
+        nextRecords[key] = {
+          ...sibling,
+          stability: sibling.stability * 1.08,
+          difficulty: Math.max(1, sibling.difficulty - 0.1),
+          nextReview: sibling.nextReview + remaining * 0.05,
+        };
+      });
+    }
     commit(nextRecords);
     syncWordStatusFromSrs(card, nextRecords);
     window.setTimeout(() => evaluateAchievements(true), 0);
@@ -1955,7 +2023,32 @@ function useSRS() {
       window.dispatchEvent(new Event('ritmo-word-progress'));
     } catch {}
   };
-  return { records, rate, toggleFavorite, markNew, hydrated };
+  const markLearned = (card: StudyCard) => {
+    const base = baseCardKey(card.key),
+      now = Date.now(),
+      nextReview = now + 365 * 86_400_000,
+      skills: SkillType[] = ['recognition', 'production', 'context', 'listening', 'dictation', 'article'],
+      next = { ...records };
+    skills.forEach((skill) => {
+      const key = `${base}-${skill}`,
+        old = records[key] || blankSRS();
+      next[key] = {
+        ...old,
+        difficulty: Math.min(old.difficulty, 2),
+        stability: Math.max(old.stability, 365),
+        lastReview: now,
+        nextReview,
+        correctStreak: Math.max(old.correctStreak, 3),
+        reviews: Math.max(old.reviews, 4),
+        successes: Math.max(old.successes, 4),
+        lastGrade: 'easy',
+      };
+    });
+    commit(next);
+    syncWordStatusFromSrs(card, next);
+    window.setTimeout(() => evaluateAchievements(true), 0);
+  };
+  return { records, rate, toggleFavorite, markNew, markLearned, hydrated };
 }
 function useWordProgress() {
   const [progress, setProgress] = useState<Record<string, WordStatus>>({});
@@ -2010,6 +2103,39 @@ function useWordHistory() {
     return () => window.removeEventListener('ritmo-word-progress', read);
   }, []);
   return history;
+}
+function useWordSessions() {
+  const [sessions, setSessions] = useState<WordSessionProgress>({});
+  useEffect(() => {
+    const read = () => {
+      try {
+        setSessions(JSON.parse(localStorage.getItem('ritmo-word-sessions') || '{}'));
+      } catch {}
+    };
+    read();
+    window.addEventListener('ritmo-word-sessions', read);
+    return () => window.removeEventListener('ritmo-word-sessions', read);
+  }, []);
+  const record = (
+    base: string,
+    sessionId: string,
+    successful: boolean,
+    sentenceDictation: boolean,
+  ) =>
+    setSessions((current) => {
+      const next = recordWordSession(
+        current,
+        base,
+        sessionId,
+        successful,
+        sentenceDictation,
+      );
+      localStorage.setItem('ritmo-word-sessions', JSON.stringify(next));
+      window.dispatchEvent(new Event('ritmo-word-sessions'));
+      window.dispatchEvent(new Event('ritmo-cloud-progress-changed'));
+      return next;
+    });
+  return { sessions, record };
 }
 type ContentFavorite = {
   id: string;
@@ -6833,6 +6959,7 @@ type PracticeProgressBaseline = {
   srs: Record<string, SRSRecord | null>;
   wordProgress: Record<string, WordStatus | null>;
   wordHistory: Record<string, WordHistoryRecord | null>;
+  wordSessions: Record<string, WordSessionRecord | null>;
   deviceProfile: string | null;
   achievementStats: string | null;
   achievementUnlocks: string | null;
@@ -6858,7 +6985,10 @@ type SavedPracticeSession = {
   sessionErrors?: number;
   awaitingStart?: boolean;
   baseline?: PracticeProgressBaseline | null;
+  sessionId?: string;
 };
+const newPracticeSessionId = () =>
+  `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 const capturePracticeBaseline = (cards: StudyCard[]): PracticeProgressBaseline => {
   const read = <T,>(key: string): Record<string, T> => {
       try {
@@ -6870,12 +7000,14 @@ const capturePracticeBaseline = (cards: StudyCard[]): PracticeProgressBaseline =
     records = read<SRSRecord>('ritmo-srs'),
     statuses = read<WordStatus>('ritmo-word-progress'),
     history = read<WordHistoryRecord>('ritmo-word-history'),
+    sessions = read<WordSessionRecord>('ritmo-word-sessions'),
     cardKeys = [...new Set(cards.map((card) => card.key))],
     wordKeys = [...new Set(cards.map((card) => baseCardKey(card.key)))];
   return {
     srs: Object.fromEntries(cardKeys.map((key) => [key, records[key] || null])),
     wordProgress: Object.fromEntries(wordKeys.map((key) => [key, statuses[key] || null])),
     wordHistory: Object.fromEntries(wordKeys.map((key) => [key, history[key] || null])),
+    wordSessions: Object.fromEntries(wordKeys.map((key) => [key, sessions[key] || null])),
     deviceProfile: localStorage.getItem('ritmo-device-profile'),
     achievementStats: localStorage.getItem('ritmo-achievement-stats'),
     achievementUnlocks: localStorage.getItem('ritmo-achievements'),
@@ -6902,6 +7034,7 @@ const restorePracticeBaseline = (baseline: PracticeProgressBaseline) => {
   restoreEntries('ritmo-srs', baseline.srs);
   restoreEntries('ritmo-word-progress', baseline.wordProgress);
   restoreEntries('ritmo-word-history', baseline.wordHistory);
+  restoreEntries('ritmo-word-sessions', baseline.wordSessions || {});
   restore('ritmo-device-profile', baseline.deviceProfile);
   restore('ritmo-achievement-stats', baseline.achievementStats);
   restore('ritmo-achievements', baseline.achievementUnlocks);
@@ -6909,6 +7042,7 @@ const restorePracticeBaseline = (baseline: PracticeProgressBaseline) => {
   restore('ritmo-latest-achievement', baseline.latestAchievement);
   window.dispatchEvent(new Event('ritmo-srs'));
   window.dispatchEvent(new Event('ritmo-word-progress'));
+  window.dispatchEvent(new Event('ritmo-word-sessions'));
   window.dispatchEvent(new Event('ritmo-profile'));
   window.dispatchEvent(new Event('ritmo-achievement-stats'));
   window.dispatchEvent(new Event('ritmo-achievements'));
@@ -7378,6 +7512,23 @@ type ResponseKind =
   | 'correction'
   | 'audioWord'
   | 'audioSentence';
+const adjustedGradeForEvidence = (
+  grade: ReviewGrade,
+  kind: ResponseKind,
+  correct: boolean,
+  answerMs: number,
+  edits: number,
+): ReviewGrade => {
+  if (!correct || grade === 'again') return 'again';
+  const grades: ReviewGrade[] = ['hard', 'good', 'easy'];
+  let index = grades.indexOf(grade);
+  if (index < 0) index = 0;
+  if (kind === 'choice' || kind === 'self') index -= 1;
+  if (answerMs > 45_000 || edits > 4) index -= 1;
+  if (kind === 'audioSentence' && answerMs <= 30_000 && edits <= 2)
+    index += 1;
+  return grades[Math.max(0, Math.min(grades.length - 1, index))];
+};
 const unitNames = [
   ...new Set(
     vocabularyTopics.flatMap((topic) =>
@@ -7424,10 +7575,64 @@ const seededNumber = (seed: string) =>
     (sum, character) => (sum * 33 + character.charCodeAt(0)) >>> 0,
     5381,
   );
+const wordReviewRounds = (card: StudyCard, records: Record<string, SRSRecord>) => {
+  const base = baseCardKey(card.key);
+  return Math.max(
+    0,
+    ...Object.entries(records)
+      .filter(([key]) => baseCardKey(key) === base)
+      .map(([, record]) => record.reviews),
+  );
+};
+const sentenceFunctionWords = new Set(
+  'a al de del el la los las un una unos unas y e o u pero que en con sin por para desde hasta sobre entre mi mis tu tus su sus nuestro nuestra nuestros nuestras este esta estos estas ese esa esos esas yo tú él ella usted nosotros nosotras vosotros vosotras ustedes ellos ellas me te se nos os lo le les no sí muy más menos ya hoy ayer mañana aquí allí hay es está son están soy eres somos sois ser estar tiene tienen tengo tienes tenemos quiero quiere queremos puedo puede podemos va voy vamos van como cómo cuando cuándo donde dónde porque qué quien quién cual cuál'.split(' '),
+);
+const controlledDictationSentence = (
+  card: StudyCard,
+  deck: StudyCard[],
+  records: Record<string, SRSRecord>,
+  wordSessions: WordSessionProgress,
+) => {
+  const successfulSessionCount = (item: StudyCard) =>
+    wordSessions[baseCardKey(item.key)]?.successfulSessions ??
+    (wordReviewRounds(item, records) > 0 ? 1 : 0);
+  if (successfulSessionCount(card) < 2) return '';
+  const familiar = new Set<string>(),
+    familiarStems = new Set<string>();
+  deck.forEach((item) => {
+    if (successfulSessionCount(item) < 2 && !wordIsLearned(item, records)) return;
+    item.es
+      .split(' / ')
+      .flatMap((variant) => normalizeText(variant).split(' '))
+      .forEach((token) => {
+        familiar.add(token);
+        if (/\p{L}{3,}(?:ar|er|ir)$/u.test(token)) familiarStems.add(token.slice(0, -2));
+        else if (/\p{L}{4,}s$/u.test(token)) familiarStems.add(token.slice(0, -1));
+      });
+  });
+  const isFamiliar = (token: string) =>
+    familiar.has(token) ||
+    [...familiarStems].some((stem) => stem.length >= 3 && token.startsWith(stem));
+  const candidates = [card.example, card.extraExample || ''].filter(Boolean);
+  return (
+    candidates
+      .map((sentence) => {
+        const content = normalizeText(sentence)
+          .split(' ')
+          .filter((token) => token.length > 1 && !sentenceFunctionWords.has(token));
+        const unknown = [...new Set(content.filter((token) => !isFamiliar(token)))];
+        const known = [...new Set(content.filter(isFamiliar))];
+        return { sentence, unknown: unknown.length, known: known.length };
+      })
+      .filter((item) => item.unknown >= 1 && item.unknown <= 2 && item.known >= 2)
+      .sort((a, b) => b.known - a.known || a.unknown - b.unknown)[0]?.sentence || ''
+  );
+};
 const responseKindFor = (
   card: StudyCard,
   index: number,
   record?: SRSRecord,
+  sentenceReady = false,
 ): ResponseKind => {
   const reviews = record?.reviews || 0,
     headword = card.es.split(' / ')[0].trim(),
@@ -7500,18 +7705,18 @@ const responseKindFor = (
   if (card.skill === 'listening')
     return pick(
       strong
-        ? ['audioSentence', 'type', 'audioSentence']
+        ? sentenceReady ? ['audioSentence', 'type', 'audioSentence'] : ['audioWord', 'type']
         : weak
-          ? ['type', 'audioSentence', 'type', 'choice', 'audioSentence']
-          : ['type', 'type', 'audioSentence', 'choice', 'audioSentence'],
+          ? sentenceReady ? ['type', 'audioSentence', 'type', 'choice'] : ['type', 'audioWord', 'choice']
+          : sentenceReady ? ['type', 'type', 'audioSentence', 'choice'] : ['type', 'audioWord', 'choice'],
     );
   if (card.skill === 'dictation')
     return pick(
       canRestoreLetters && weak
-        ? ['letters', 'type', 'audioSentence', 'type']
+        ? sentenceReady ? ['letters', 'type', 'audioSentence', 'type'] : ['letters', 'type']
         : strong
-          ? ['audioSentence', 'type', 'audioSentence', 'type']
-          : ['type', 'audioSentence', 'type', 'audioSentence'],
+          ? sentenceReady ? ['audioSentence', 'type', 'audioSentence', 'type'] : ['type', 'audioWord']
+          : sentenceReady ? ['type', 'audioSentence', 'type', 'audioSentence'] : ['type', 'audioWord'],
     );
   if (card.skill === 'context')
     return pick(
@@ -8521,8 +8726,9 @@ function PracticeHub() {
 
 function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { showModes: () => void; assignedMode: SessionMode | null; assignedTopic: string | null }) {
   const { words: customWords, hydrated: customHydrated } = useCustomWords(),
-    { records, rate, toggleFavorite, markNew, hydrated: srsHydrated } = useSRS();
+    { records, rate, toggleFavorite, markNew, markLearned, hydrated: srsHydrated } = useSRS();
   const { voices, voiceIndex, setVoiceIndex, speakText, voiceError } = useSpanishVoices();
+  const { sessions: wordSessions, record: recordWordSessionProgress } = useWordSessions();
   const { leaving, move } = useTaskMotion(),
     { preferences } = useSitePreferences();
   const [deck, setDeck] = useState<StudyCard[]>([]),
@@ -8551,9 +8757,13 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     [scopeOpen, setScopeOpen] = useState(false),
     [awaitingStart, setAwaitingStart] = useState(true),
     [sessionBaseline, setSessionBaseline] = useState<PracticeProgressBaseline | null>(null);
+  const [sessionId, setSessionId] = useState(newPracticeSessionId);
   const assignedStarted = useRef(false);
   const answerLock = useRef(false),
     gradeLock = useRef(false),
+    cardShownAt = useRef(Date.now()),
+    answerDuration = useRef(0),
+    inputEdits = useRef(0),
     reasonHelpRef = useRef<HTMLDetailsElement>(null),
     moreActionsRef = useRef<HTMLDetailsElement>(null);
   const deckReady = customHydrated && deck.length > 0;
@@ -8607,6 +8817,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           setSessionErrors(Number(saved.sessionErrors) || 0);
           setAwaitingStart(false);
           setSessionBaseline(saved.baseline || null);
+          setSessionId(saved.sessionId || newPracticeSessionId());
         } else {
           setSession([]);
           setIndex(0);
@@ -8646,6 +8857,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       sessionErrors,
       awaitingStart,
       baseline: sessionBaseline,
+      sessionId,
     };
     const saveTimer = window.setTimeout(
       () => {
@@ -8674,6 +8886,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     sessionErrors,
     awaitingStart,
     sessionBaseline,
+    sessionId,
   ]);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30000);
@@ -8712,8 +8925,15 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     cardBase = card ? baseCardKey(card.key) : '',
     isIntroduction =
       !!card && !wordWasStudied(card, records) && !introduced[cardBase],
+    dictationSentence = card
+      ? controlledDictationSentence(card, scopedDeck, records, wordSessions)
+      : '',
+    displayedHeadword = card
+      ? spanishStudyAnswer(card.es, card.ru, card.example, card.extraExample || '')
+      : '',
+    requiresArticle = !!card && displayedHeadword !== card.es,
     responseKind = card
-      ? responseKindFor(card, index, records[card.key])
+      ? responseKindFor(card, index, records[card.key], !!dictationSentence)
       : 'type',
     correctionTask =
       card && responseKind === 'correction'
@@ -8723,7 +8943,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       !card
         ? ''
         : responseKind === 'letters'
-          ? card.es.split(' / ')[0]
+          ? displayedHeadword.split(' / ')[0]
           : responseKind === 'phrase'
             ? card.answer
             : responseKind === 'correction'
@@ -8731,13 +8951,13 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
               : responseKind === 'audioWord'
                 ? card.answer
               : responseKind === 'audioSentence'
-                ? card.example
+                ? dictationSentence
               : card.answer,
     taskPrompt =
       !card
         ? ''
         : responseKind === 'letters'
-          ? `Восстановите слово целиком: ${maskedSpanishWord(card.es, `${card.key}-${index}`)}`
+          ? `Восстановите слово целиком вместе с артиклем: ${maskedSpanishWord(displayedHeadword, `${card.key}-${index}`)}`
           : responseKind === 'phrase'
             ? card.skill === 'recognition'
               ? `Как переводится «${card.es}» в этом предложении: ${card.example}`
@@ -8749,7 +8969,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
               : responseKind === 'audioWord'
                 ? 'Прослушайте слово и напишите его перевод'
               : responseKind === 'audioSentence'
-                ? 'Прослушайте предложение и напишите его полностью'
+                ? 'Прослушайте предложение и напишите его полностью. Все существительные пишите с артиклем'
                 : card.prompt,
     orderTokens =
       card && responseKind === 'order'
@@ -8768,6 +8988,11 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
           : [],
       [card, scopedDeck, index],
     );
+  useEffect(() => {
+    cardShownAt.current = Date.now();
+    answerDuration.current = 0;
+    inputEdits.current = 0;
+  }, [card?.key, isIntroduction]);
   const { due, errorCount, waitingErrors, favorites } = useMemo(() => {
     const allErrors = selectedScopedDeck.filter(
       (item) =>
@@ -8823,7 +9048,16 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     setScopeOpen(false);
     setAwaitingStart(false);
     setSessionBaseline(capturePracticeBaseline(nextSession));
+    setSessionId(newPracticeSessionId());
     trackLocalEvent('practice_started', nextTopic);
+  };
+  const applyScopeSelection = (next: {
+    level: PracticeLevel;
+    collection: PracticeCollection;
+    topic: string;
+  }) => {
+    setScopeSelection(next);
+    if (!awaitingStart) start(mode, next.topic, next.level);
   };
   useEffect(() => {
     if (!assignedMode || !deckReady || !sessionHydrated || assignedStarted.current) return;
@@ -8856,6 +9090,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       sessionErrors: 0,
       awaitingStart: true,
       baseline: null,
+      sessionId: newPracticeSessionId(),
     };
     localStorage.setItem(
       'ritmo-practice-session',
@@ -8875,6 +9110,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     setIntroduced({});
     setSessionErrors(0);
     setSessionBaseline(null);
+    setSessionId(newPracticeSessionId());
     setAwaitingStart(true);
     setScopeOpen(false);
   };
@@ -8886,7 +9122,11 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
   ) => {
     if (card)
       speakText(
-        target === 'word' ? card.es.split(' / ')[0] : card.example,
+        target === 'word'
+          ? card.skill === 'dictation'
+            ? card.answer.split(' / ')[0]
+            : displayedHeadword.split(' / ')[0]
+          : dictationSentence,
         speed,
       );
   };
@@ -8897,6 +9137,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
   const check = (value: string) => {
     if (!value.trim() || !card || revealed || answerLock.current) return;
     answerLock.current = true;
+    answerDuration.current = Date.now() - cardShownAt.current;
     const result = analyzeAnswer(value, expectedAnswer),
       isCorrect = result.correct;
     recordAssignedActivity({
@@ -8926,12 +9167,14 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
   const revealSelf = () => {
     if (revealed || answerLock.current) return;
     answerLock.current = true;
+    answerDuration.current = Date.now() - cardShownAt.current;
     setCorrect(true);
     setRevealed(true);
   };
   const dontKnow = () => {
     if (!card || revealed || answerLock.current) return;
     answerLock.current = true;
+    answerDuration.current = Date.now() - cardShownAt.current;
     recordAssignedActivity({
       type: 'practice', contentId: `words:${mode}`, topicId: topic, itemKey: cardBase, prompt: taskPrompt,
       studentAnswer: 'Не знаю', correctAnswer: expectedAnswer, correct: false,
@@ -8961,8 +9204,23 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       });
     }
     move(() => {
-      const applied = responseKind !== 'self' && !correct ? 'again' : value;
-      rate(card, applied);
+      const answerWasCorrect = responseKind === 'self'
+        ? value === 'good' || value === 'easy'
+        : correct;
+      const applied = adjustedGradeForEvidence(
+        responseKind !== 'self' && !correct ? 'again' : value,
+        responseKind,
+        answerWasCorrect,
+        answerDuration.current || Date.now() - cardShownAt.current,
+        inputEdits.current,
+      );
+      rate(card, applied, { format: responseKind, correct: answerWasCorrect });
+      recordWordSessionProgress(
+        cardBase,
+        sessionId,
+        answerWasCorrect,
+        answerWasCorrect && responseKind === 'audioSentence',
+      );
       if (
         responseKind === 'self' &&
         (value === 'good' || value === 'easy')
@@ -9012,6 +9270,55 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
     setAnalysis(null);
     setOrderedWords([]);
   };
+  const markCurrentLearned = () => {
+    if (!card) return;
+    markLearned(card);
+    setSessionBaseline((baseline) => {
+      if (!baseline) return baseline;
+      try {
+        const currentRecords = JSON.parse(localStorage.getItem('ritmo-srs') || '{}'),
+          currentProgress = JSON.parse(localStorage.getItem('ritmo-word-progress') || '{}'),
+          currentHistory = JSON.parse(localStorage.getItem('ritmo-word-history') || '{}'),
+          learnedKeys = Object.keys(currentRecords).filter(
+            (key) => baseCardKey(key) === cardBase,
+          );
+        return {
+          ...baseline,
+          srs: {
+            ...baseline.srs,
+            ...Object.fromEntries(learnedKeys.map((key) => [key, currentRecords[key]])),
+          },
+          wordProgress: { ...baseline.wordProgress, [cardBase]: currentProgress[cardBase] },
+          wordHistory: { ...baseline.wordHistory, [cardBase]: currentHistory[cardBase] },
+          achievementStats: localStorage.getItem('ritmo-achievement-stats'),
+          achievementUnlocks: localStorage.getItem('ritmo-achievements'),
+          latestAchievement: localStorage.getItem('ritmo-latest-achievement'),
+        };
+      } catch {
+        return baseline;
+      }
+    });
+    const nextIndex = session
+      .slice(0, index)
+      .filter((item) => baseCardKey(item.key) !== cardBase).length;
+    const remaining = session.filter(
+      (item) => baseCardKey(item.key) !== cardBase,
+    );
+    answerLock.current = false;
+    gradeLock.current = false;
+    setSession(remaining);
+    setTyped('');
+    setRevealed(false);
+    setCorrect(false);
+    setAnalysis(null);
+    setOrderedWords([]);
+    setIndex(nextIndex);
+    if (!remaining.length || nextIndex >= remaining.length) {
+      setIndex(Math.max(0, remaining.length - 1));
+      setFinished(true);
+      setSessionBaseline(null);
+    }
+  };
   const audio =
       card &&
       (card.skill === 'listening' ||
@@ -9051,11 +9358,11 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
               type="button"
               className={scopeSelection.collection === 'topics' ? 'active' : ''}
               onClick={() => {
-                setScopeSelection((current) => ({
-                  ...current,
+                applyScopeSelection({
+                  level: scopeSelection.level,
                   collection: 'topics',
                   topic: 'Все темы',
-                }));
+                });
               }}
             >
               Темы
@@ -9064,7 +9371,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
               type="button"
               className={scopeSelection.collection === 'units' ? 'active' : ''}
               onClick={() => {
-                setScopeSelection({
+                applyScopeSelection({
                   collection: 'units',
                   level: 'A1–A2',
                   topic: 'Все unidades',
@@ -9081,7 +9388,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
             value={scopeSelection.level}
             disabled={!deckReady}
             onChange={(event) =>
-              setScopeSelection({
+              applyScopeSelection({
                 collection: 'topics',
                 level: event.target.value as PracticeLevel,
                 topic: 'Все темы',
@@ -9099,10 +9406,10 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
             value={scopeSelection.topic}
             disabled={!deckReady}
             onChange={(event) =>
-              setScopeSelection((current) => ({
-                ...current,
+              applyScopeSelection({
+                ...scopeSelection,
                 topic: event.target.value,
-              }))
+              })
             }
           >
             {practiceTopics(scopeSelection.level, scopeSelection.collection).map((item) => (
@@ -9275,8 +9582,13 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
                 <Volume2 /> Медленно · 0.5×
               </button>
             </div>
-            <h2>{card.es}</h2>
+            <h2>{displayedHeadword}</h2>
             <h3>{card.ru}</h3>
+            {definiteArticleFor(card.es, card.example, card.extraExample || '') && (
+              <small className="intro-article-note">
+                Существительные учим и пишем вместе с артиклем.
+              </small>
+            )}
             <div className="intro-examples">
               {examples.map((example, exampleIndex) => (
                 <article key={exampleIndex}>
@@ -9300,14 +9612,19 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
                 </article>
               ))}
             </div>
-            <button
-              className="primary-btn intro-continue"
-              onClick={() =>
-                setIntroduced((current) => ({ ...current, [cardBase]: true }))
-              }
-            >
-              Запомнил — перейти к заданию <ArrowRight />
-            </button>
+            <div className="intro-knowledge-choice">
+              <button
+                className="secondary-btn"
+                onClick={() =>
+                  setIntroduced((current) => ({ ...current, [cardBase]: true }))
+                }
+              >
+                Не знаю — учить
+              </button>
+              <button className="primary-btn" onClick={markCurrentLearned}>
+                Знаю — отметить выученным <Check />
+              </button>
+            </div>
           </section>
         </article>
       ) : (
@@ -9399,6 +9716,10 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
                     <span>↺</span>
                     <b>Отметить новым</b>
                   </button>
+                  <button type="button" onClick={markCurrentLearned}>
+                    <Check />
+                    <b>Отметить слово выученным</b>
+                  </button>
                   <button
                     type="button"
                     className={records[card.key]?.favorite ? 'active' : ''}
@@ -9448,6 +9769,11 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
                           : 'НАПИШИТЕ ОТВЕТ БЕЗ ВАРИАНТОВ'}
             </small>
             <h2>{taskPrompt}</h2>
+            {requiresArticle && !audio && (
+              <small className="practice-article-reminder">
+                СУЩЕСТВИТЕЛЬНОЕ ПИШИТЕ С АРТИКЛЕМ
+              </small>
+            )}
             {audio && (
               <div className="practice-audio-block">
                 <details className="practice-voice-setting">
@@ -9580,6 +9906,7 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
                     onFocus={closePracticePopovers}
                     onChange={(event) => {
                       closePracticePopovers();
+                      inputEdits.current += 1;
                       setTyped(event.target.value);
                     }}
                     onKeyDown={(event) => {
@@ -9682,6 +10009,9 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
                 {!correct && typed && (
                   <SpellingDiff value={typed} answer={expectedAnswer} />
                 )}
+                <small className="adaptive-grade-note">
+                  Интервал автоматически учитывает формат задания, время ответа и количество исправлений.
+                </small>
                 <div className="grade-grid">
                   <button onClick={() => grade('again')}>
                     <b>Не помню</b>
