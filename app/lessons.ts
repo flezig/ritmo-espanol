@@ -667,6 +667,27 @@ const lesson2: LessonExercise[] = [
   choice('Muy и mucho', 'Mi abuela es ___ paciente.', ['muy', 'mucho', 'mucha'], 'muy', 'Перед прилагательным используется muy.', 'Muy не меняется и усиливает прилагательное.'),
   choice('Muy и mucho', 'Tenemos ___ amigos.', ['muchos', 'muy', 'mucho'], 'muchos', 'Перед существительным mucho согласуется в роде и числе.', 'С amigos нужна форма muchos.'),
   truth('«Su madre» может означать «его мама», «её мама», «Ваша мама» или «их мама».', 'Верно', 'Если владелец неясен, уточните: la madre de él/de ella/de usted/de ellos.'),
+  ...[
+    ['Yo ___ español con mi amiga. (hablar)', ['hablo', 'hablas', 'habla'], 'hablo'],
+    ['Tú ___ desde casa. (trabajar)', ['trabajas', 'trabajo', 'trabaja'], 'trabajas'],
+    ['Ella ___ español cada día. (estudiar)', ['estudia', 'estudias', 'estudio'], 'estudia'],
+    ['Nosotros ___ música por la tarde. (escuchar)', ['escuchamos', 'escuchan', 'escucháis'], 'escuchamos'],
+    ['Vosotros ___ mucho en verano. (viajar)', ['viajáis', 'viajamos', 'viajan'], 'viajáis'],
+    ['Ellos ___ fruta en el mercado. (comprar)', ['compran', 'compra', 'compramos'], 'compran'],
+    ['Usted ___ descansar. (necesitar)', ['necesita', 'necesitas', 'necesito'], 'necesita'],
+    ['Mi padre ___ muy bien. (cocinar)', ['cocina', 'cocino', 'cocinan'], 'cocina'],
+    ['Ana y Luis ___ salsa. (bailar)', ['bailan', 'baila', 'bailamos'], 'bailan'],
+    ['Для nosotros у правильного глагола на -ar окончание:', ['-amos', '-áis', '-an'], '-amos'],
+  ].map(([prompt, options, answer]) =>
+    choice(
+      'Presente · глаголы на -ar',
+      prompt as string,
+      options as string[],
+      answer as string,
+      'Уберите -ar и добавьте окончание: -o, -as, -a, -amos, -áis, -an.',
+      'Правильный глагол на -ar получает окончание, соответствующее подлежащему.',
+    ),
+  ),
 ];
 
 const lesson3: LessonExercise[] = [
@@ -1853,6 +1874,22 @@ export const courseLessons = [
           ['Los gatos tienen hambre.', 'Коты голодны.'],
         ],
         note: 'Возраст по-испански «имеют»: Tengo veinte años, не Soy veinte años.',
+      },
+      {
+        title: 'Presente: первое спряжение на -ar',
+        paragraphs: [
+          'Чтобы проспрягать правильный глагол на -ar в настоящем времени, уберите -ar и добавьте окончание: yo -o, tú -as, él/ella/usted -a, nosotros/nosotras -amos, vosotros/vosotras -áis, ellos/ellas/ustedes -an.',
+          'Например, hablar: yo hablo, tú hablas, él/ella/usted habla, nosotros hablamos, vosotros habláis, ellos/ustedes hablan. Местоимение часто опускают, потому что лицо уже видно по окончанию: Trabajo en casa — «Я работаю дома».',
+          'Отрицание no ставится перед личной формой: No viajamos. В вопросе окончания не меняются: ¿Estudias español?',
+        ],
+        examples: [
+          ['hablar', 'говорить'],
+          ['trabajar / estudiar', 'работать / учиться, изучать'],
+          ['escuchar / viajar', 'слушать / путешествовать'],
+          ['comprar / necesitar', 'покупать / нуждаться, быть необходимым'],
+          ['cocinar / bailar', 'готовить / танцевать'],
+        ],
+        note: 'Правильное написание — bailar, не baliar. Ударение в форме vosotros сохраняется на окончании: habláis, trabajáis, estudiáis.',
       },
       {
         title: 'Mi, tu, su',

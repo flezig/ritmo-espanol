@@ -214,10 +214,10 @@ test('lesson free input is used only when the prompt identifies the answer', () 
   }
 });
 
-test('lesson 2 covers every expanded rule in no more than 50 clear tasks', () => {
+test('lesson 2 covers every expanded rule in exactly 60 clear tasks', () => {
   const lesson = courseLessons.find((item) => item.id === 'family');
   assert.ok(lesson);
-  assert.equal(lesson.exercises.length, 50);
+  assert.equal(lesson.exercises.length, 60);
 
   const theory = JSON.stringify(lesson.theory);
   const exercises = JSON.stringify(lesson.exercises);
@@ -231,6 +231,7 @@ test('lesson 2 covers every expanded rule in no more than 50 clear tasks', () =>
     'Tener', 'Притяжательные', 'Согласование', 'Множественное число', 'Семья',
     'Выражения с tener', 'Tener que', 'Указательные', 'Базовые предлоги',
     'Ser или estar', 'Особое множественное число', 'Muy и mucho',
+    'Presente · глаголы на -ar',
   ]) {
     assert.ok(
       lesson.exercises.some((exercise) => exercise.kind.startsWith(kind)),
@@ -241,6 +242,11 @@ test('lesson 2 covers every expanded rule in no more than 50 clear tasks', () =>
   assert.ok(lesson.exercises.filter((exercise) => exercise.kind === 'Tener que').length >= 4);
   assert.ok(lesson.exercises.filter((exercise) => exercise.kind === 'Указательные').length >= 8);
   assert.ok(lesson.exercises.filter((exercise) => exercise.kind === 'Базовые предлоги').length >= 6);
+  assert.equal(lesson.exercises.filter((exercise) => exercise.kind.startsWith('Presente · глаголы на -ar')).length, 10);
+  for (const verb of ['hablar', 'trabajar', 'estudiar', 'escuchar', 'viajar', 'comprar', 'necesitar', 'cocinar', 'bailar']) {
+    assert.match(theory, new RegExp(verb), `missing -ar verb in theory: ${verb}`);
+    assert.match(exercises, new RegExp(verb), `missing -ar verb exercise: ${verb}`);
+  }
 
   for (const [source, answer] of [
     ['la hija pequeña', 'las hijas pequeñas'],
