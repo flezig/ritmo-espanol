@@ -5,6 +5,7 @@ import { ArrowLeft, Bell, BookOpen, Check, Clock3, GraduationCap, LoaderCircle, 
 import { useAccount } from './account-provider';
 import { getCloudClient } from '../lib/cloud-progress';
 import { activateAssignmentTracking } from '../lib/assignment-tracking';
+import { normalizeText } from '../lib/learning-core';
 import { courseLessons } from '../lessons';
 import { vocabularyTopics } from '../vocabulary';
 import {
@@ -217,7 +218,7 @@ function AssignmentDetail({ id, role }: { id: string; role: 'teacher' | 'student
     {role === 'student' && assignment.status === 'revision_requested' && latestReview && <aside className="revision-callout"><MessageCircle /><div><b>Преподаватель:</b><p>{latestReview.comment || 'Откройте работу и исправьте отмеченные ошибки.'}</p></div></aside>}
     {assignment.content_title_snapshot && <a className="content-reference" onClick={focusContent} href={`/#${assignment.content_type === 'lesson' ? 'lessons' : assignment.content_type}`}><BookOpen /><div><b>{assignment.content_title_snapshot}</b>{lessonExerciseCount !== null && <small>Актуальная версия: {lessonExerciseCount} упражнений</small>}{assignment.topic_title_snapshot && <small>Тема: {assignment.topic_title_snapshot}</small>}<span>{data.progress?.completed_count ? 'Продолжить с места остановки' : 'Начать выполнение'}</span></div></a>}{assignment.material_url && <a className="external-material" href={assignment.material_url} target="_blank" rel="noreferrer">Открыть дополнительный материал</a>}
     {!!data.questions.length && <QuestionThreads questions={data.questions} messages={data.questionMessages} userId={user?.id || ''} refresh={refresh} />}
-    {role === 'teacher' && <AssignmentActivityPanel items={data.activity} />}
+    {role === 'teacher' && <AssignmentActivityPanel items={data.activity} assignment={assignment} recoveredErrorIds={data.recoveredErrorIds} />}
     <div className="education-columns"><section className="education-card"><h2>{role === 'student' ? 'Ваш ответ' : 'Последняя работа'}</h2>
       {latest && <article className="submission-box"><span>Попытка {latest.attempt} · {dateText(latest.submitted_at)}</span><p>{latest.text_answer || 'Текстовый ответ не добавлен.'}</p>{latest.link_url && <a href={latest.link_url} target="_blank" rel="noreferrer">Ссылка ученика</a>}</article>}
       {role === 'student' && assignment.metric_key !== 'manual' && ['assigned', 'revision_requested', 'overdue'].includes(assignment.status) && <p className="measured-assignment-note">Выполните назначенное количество сессий в учебном разделе. После этого работа отправится учителю автоматически.</p>}
@@ -234,9 +235,14 @@ function QuestionThreads({ questions, messages, userId, refresh }: { questions: 
   return <section className="education-card question-threads"><div className="card-title"><div><h2>Вопросы по упражнениям</h2><p>Короткое обсуждение остаётся привязано к конкретному заданию.</p></div><MessageCircle /></div>{questions.map((question) => <details key={question.id} open={question.status === 'open'}><summary><span className={`question-state ${question.status}`}>{question.status === 'answered' ? 'Отвечено' : 'Ждёт ответа'}</span><b>{question.prompt}</b></summary><div className="question-messages">{messages.filter((item) => item.question_id === question.id).map((item) => <p className={item.author_id === userId ? 'mine' : ''} key={item.id}><span>{item.body}</span><small>{dateText(item.created_at)}</small></p>)}</div><div className="question-reply"><input value={drafts[question.id] || ''} onChange={(event) => setDrafts((value) => ({...value,[question.id]:event.target.value}))} placeholder="Ответить по этому упражнению" /><button disabled={busy === question.id || !drafts[question.id]?.trim()} onClick={() => void send(question.id)}>Отправить</button></div></details>)}</section>;
 }
 
-function AssignmentActivityPanel({ items }: { items: AssignmentActivity[] }) {
+function AssignmentActivityPanel({ items, assignment, recoveredErrorIds }: { items: AssignmentActivity[]; assignment: Assignment; recoveredErrorIds: string[] }) {
   const answers = items.filter((item) => item.event_kind === 'answer'), sessions = items.filter((item) => item.event_kind === 'session_complete'),
     errors = answers.filter((item) => !item.is_correct), correct = answers.length - errors.length;
+  const lesson = assignment.assignment_type === 'lesson' ? courseLessons.find((item) => item.id === assignment.content_id) : undefined;
+  const recoveredErrors = recoveredErrorIds
+    .filter((key) => !answers.some((item) => item.item_key === key))
+    .map((key) => ({ key, exercise: lesson?.exercises.find((item) => `${normalizeText(item.prompt)}::${normalizeText(item.answer)}` === key) }))
+    .filter((item) => item.exercise);
   const sessionNumbers = new Map<string, number>(), attemptCounts = new Map<number, number>();
   [...answers].reverse().forEach((item) => {
     if (!item.session_id || sessionNumbers.has(item.session_id)) return;
@@ -244,7 +250,7 @@ function AssignmentActivityPanel({ items }: { items: AssignmentActivity[] }) {
     attemptCounts.set(item.attempt_no, next); sessionNumbers.set(item.session_id, next);
   });
   const resolved = (error: AssignmentActivity) => answers.some((item) => item.is_correct && (error.item_key ? item.item_key === error.item_key : item.prompt === error.prompt) && item.occurred_at > error.occurred_at);
-  const unresolvedCount = errors.filter((item) => !resolved(item)).length;
+  const unresolvedCount = errors.filter((item) => !resolved(item)).length + recoveredErrors.length;
   return <section className="education-card assignment-activity-card">
     <div className="card-title"><div><h2>Конкретные ошибки ученика</h2><p>Здесь видны формулировка, введённый ответ и правильный вариант.</p></div><span className="activity-error-count">{unresolvedCount} требуют повторения</span></div>
     <div className="assignment-activity-summary"><span><b>{answers.length}</b> ответов</span><span><b>{sessions.length}</b> сессий</span><span><b>{correct}</b> верных</span><span><b>{answers.length ? Math.round(correct / answers.length * 100) : 0}%</b> точность</span></div>
@@ -255,6 +261,12 @@ function AssignmentActivityPanel({ items }: { items: AssignmentActivity[] }) {
       <h3>{item.prompt}</h3>
       <div><p><small>Ответ ученика</small><strong>{item.student_answer || 'Не знаю / пустой ответ'}</strong></p><p><small>Правильный ответ</small><strong>{item.correct_answer || 'Не указан'}</strong></p></div>
       <footer className={resolved(item) ? 'resolved' : 'pending'}>{resolved(item) ? '✓ Исправлено позже' : 'Нужно повторить'}</footer>
+    </article>)}</div>}
+    {!!recoveredErrors.length && <div className="assignment-error-list">{recoveredErrors.map(({ key, exercise }) => <article key={`recovered:${key}`}>
+      <header><span>Урок · восстановлено из прогресса</span></header>
+      <h3>{exercise!.prompt}</h3>
+      <div><p><small>Ответ ученика</small><strong>Ответ не сохранился</strong></p><p><small>Правильный ответ</small><strong>{exercise!.answer}</strong></p></div>
+      <footer className="pending">Нужно повторить</footer>
     </article>)}</div>}
   </section>;
 }

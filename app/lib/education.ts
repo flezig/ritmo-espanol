@@ -97,13 +97,14 @@ export async function loadStudentWorkspace(client: SupabaseClient) {
 
 export async function loadAssignmentDetail(client: SupabaseClient, id: string) {
   await client.rpc('refresh_my_assignment_progress');
-  const [assignment, submissions, reviews, comments, progress, activity] = await Promise.all([
+  const [assignment, submissions, reviews, comments, progress, activity, recoveredErrors] = await Promise.all([
     client.from('assignments').select('*').eq('id', id).single(),
     client.from('assignment_submissions').select('*').eq('assignment_id', id).order('attempt', { ascending: false }),
     client.from('assignment_reviews').select('*').eq('assignment_id', id).order('created_at', { ascending: false }),
     client.from('assignment_comments').select('*').eq('assignment_id', id).order('created_at'),
     client.rpc('get_visible_assignment_progress'),
     loadAllAssignmentActivity(client, id),
+    client.rpc('get_assignment_unresolved_lesson_errors', { p_assignment: id }),
   ]);
   const questionResult = await client.from('exercise_questions').select('*').eq('assignment_id', id).order('created_at', { ascending: false });
   const questions = unwrap<ExerciseQuestion[]>(questionResult.data, questionResult.error);
@@ -115,6 +116,7 @@ export async function loadAssignmentDetail(client: SupabaseClient, id: string) {
     comments: unwrap<AssignmentComment[]>(comments.data, comments.error),
     progress: unwrap<AssignmentProgress[]>(progress.data, progress.error).find((item) => item.assignment_id === id) || null,
     activity,
+    recoveredErrorIds: unwrap<Array<{ item_key: string }>>(recoveredErrors.data, recoveredErrors.error).map((item) => item.item_key),
     questions,
     questionMessages: unwrap<ExerciseQuestionMessage[]>(messageResult.data as ExerciseQuestionMessage[], messageResult.error),
   };

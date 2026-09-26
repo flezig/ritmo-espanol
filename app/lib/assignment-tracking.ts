@@ -2,7 +2,7 @@ import { getCloudClient } from './cloud-progress';
 
 type ActivityType = 'lesson' | 'practice' | 'dictation' | 'music';
 type ActiveAssignment = { id: string; userId: string; type: ActivityType; contentId: string; topicId?: string; sessionId: string };
-type QueuedActivity = { eventId: string; userId: string; sessionId: string; eventKind: 'answer' | 'session_complete'; activityType: ActivityType; contentId: string; topicId: string; itemKey: string; prompt: string; studentAnswer: string; correctAnswer: string; correct: boolean; score: number; metadata: Record<string, number> };
+type QueuedActivity = { eventId: string; userId: string; assignmentId?: string; sessionId: string; eventKind: 'answer' | 'session_complete'; activityType: ActivityType; contentId: string; topicId: string; itemKey: string; prompt: string; studentAnswer: string; correctAnswer: string; correct: boolean; score: number; metadata: Record<string, number> };
 const ACTIVE_KEY = 'ritmo-active-assignment';
 const outboxKey = (userId: string) => `ritmo-assignment-activity-outbox:${userId}`;
 const uuid = () => crypto.randomUUID();
@@ -37,15 +37,24 @@ async function runFlush() {
   const client = getCloudClient(); if (!client) return;
   const { data: { user } } = await client.auth.getUser(); if (!user) return;
   for (const item of readOutbox(user.id)) {
-    const { error } = await client.rpc('record_learning_activity', {
+    const params = {
       p_event_id: item.eventId, p_activity_type: item.activityType,
       p_content_id: item.contentId, p_topic_id: item.topicId || null, p_prompt: item.prompt, p_student_answer: item.studentAnswer,
       p_correct_answer: item.correctAnswer, p_is_correct: item.correct, p_score_delta: item.score, p_metadata: item.metadata,
       p_session_id: item.sessionId, p_event_kind: item.eventKind,
       p_item_key: item.itemKey,
+    };
+    let { error } = await client.rpc('record_learning_activity', {
+      ...params,
+      p_assignment_id: item.assignmentId || null,
     });
+    // An answer tied to an exact assignment must wait for the new database
+    // function instead of falling back and being silently lost. Legacy queued
+    // events without an assignment id can still use the old signature.
+    if (error && !item.assignmentId && /function|schema cache|p_assignment_id/i.test(error.message || ''))
+      ({ error } = await client.rpc('record_learning_activity', params));
     if (!error) saveOutbox(user.id, readOutbox(user.id).filter((queued) => queued.eventId !== item.eventId));
-    else if (/fetch|network|timeout/i.test(error.message || '')) break;
+    else if (/fetch|network|timeout|function|schema cache|p_assignment_id/i.test(error.message || '')) break;
     else {
       saveOutbox(user.id, readOutbox(user.id).filter((queued) => queued.eventId !== item.eventId));
     }
@@ -63,7 +72,9 @@ export function flushAssignmentActivity() {
 
 function queueActivity(input: { type: ActivityType; contentId: string; topicId?: string; itemKey?: string; prompt: string; studentAnswer: string; correctAnswer: string; correct: boolean; score?: number; eventKind: 'answer' | 'session_complete'; metadata?: Record<string, number> }) {
   if (!signedInUserId) return;
-  const item: QueuedActivity = { eventId: uuid(), userId: signedInUserId, sessionId: getSession(input.type, input.contentId, input.topicId), eventKind: input.eventKind, activityType: input.type,
+  const active = activeAssignment();
+  const assignmentId = active?.userId === signedInUserId && active.type === input.type && (active.contentId === 'all' || active.contentId === input.contentId) ? active.id : undefined;
+  const item: QueuedActivity = { eventId: uuid(), userId: signedInUserId, assignmentId, sessionId: getSession(input.type, input.contentId, input.topicId), eventKind: input.eventKind, activityType: input.type,
     topicId: input.topicId || '',
     contentId: input.contentId, itemKey: input.itemKey || '', prompt: input.prompt, studentAnswer: input.studentAnswer,
     correctAnswer: input.correctAnswer, correct: input.correct, score: input.score || 0, metadata: input.metadata || {} };

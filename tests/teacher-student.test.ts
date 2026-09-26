@@ -10,6 +10,7 @@ const activitySql = readFileSync(new URL('../supabase/migrations/0007_assignment
 const attemptsSql = readFileSync(new URL('../supabase/migrations/0008_assignment_attempts.sql', import.meta.url), 'utf8');
 const progressHotfixSql = readFileSync(new URL('../supabase/migrations/0009_fix_assignment_progress_ambiguity.sql', import.meta.url), 'utf8');
 const contextSql = readFileSync(new URL('../supabase/migrations/0010_assignment_context.sql', import.meta.url), 'utf8');
+const expandedLessonSql = readFileSync(new URL('../supabase/migrations/0013_track_expanded_lesson_answers.sql', import.meta.url), 'utf8');
 const assignmentTracking = readFileSync(new URL('../app/lib/assignment-tracking.ts', import.meta.url), 'utf8');
 
 test('teacher/student migration contains the complete durable model', () => {
@@ -137,6 +138,34 @@ test('normal learning activity is matched server-side to every relevant assignme
   assert.match(contextSql, /a\.topic_id='all'/i);
   assert.match(contextSql, /on conflict\(assignment_id,source_event_id\) do nothing/i);
   assert.match(assignmentTracking, /record_learning_activity/);
+});
+
+test('new answers in an expanded submitted lesson keep their exact error details', () => {
+  assert.match(assignmentTracking, /assignmentId\?: string/);
+  assert.match(assignmentTracking, /p_assignment_id: item\.assignmentId \|\| null/);
+  assert.match(assignmentTracking, /active\?\.userId === signedInUserId/);
+  assert.match(assignmentTracking, /active\.contentId === 'all' \|\| active\.contentId === input\.contentId/);
+  assert.match(assignmentTracking, /!item\.assignmentId && \/function\|schema cache\|p_assignment_id/i);
+  assert.match(expandedLessonSql, /p_assignment_id uuid default null/i);
+  assert.match(expandedLessonSql, /a\.id=p_assignment_id and a\.status='submitted' and a\.assignment_type='lesson'/i);
+  assert.match(expandedLessonSql, /and \(p_assignment_id is null or a\.id=p_assignment_id\)/i);
+  assert.match(expandedLessonSql, /item\.status in \('assigned','revision_requested','overdue'\)/i);
+  assert.doesNotMatch(expandedLessonSql, /a\.status='completed'/i);
+});
+
+test('unresolved errors missed by the old logger are recovered without changing progress', () => {
+  const education = readFileSync(new URL('../app/lib/education.ts', import.meta.url), 'utf8');
+  const workspace = readFileSync(new URL('../app/components/education-workspace.tsx', import.meta.url), 'utf8');
+  assert.match(expandedLessonSql, /function public\.get_assignment_unresolved_lesson_errors\(p_assignment uuid\)/i);
+  assert.match(expandedLessonSql, /auth\.uid\(\) not in \(item\.teacher_id,item\.student_id\)/i);
+  assert.match(expandedLessonSql, /public\.progress_fragment\(item\.student_id,'ritmo-lesson-progress'\)/i);
+  assert.match(expandedLessonSql, /lesson_state->'errorIds'/i);
+  assert.match(expandedLessonSql, /revoke all on function public\.get_assignment_unresolved_lesson_errors\(uuid\) from public,anon/i);
+  assert.doesNotMatch(expandedLessonSql.slice(expandedLessonSql.indexOf('get_assignment_unresolved_lesson_errors')), /insert into public\.assignment_activity_events/i);
+  assert.match(education, /get_assignment_unresolved_lesson_errors/);
+  assert.match(workspace, /восстановлено из прогресса/);
+  assert.match(workspace, /Ответ не сохранился/);
+  assert.match(workspace, /!answers\.some\(\(item\) => item\.item_key === key\)/);
 });
 
 test('student workspace cannot expose assignments merely created by the same teacher account', () => {
