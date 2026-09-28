@@ -209,7 +209,9 @@ const additionalKespaLessons: KespaLesson[] = [
   },
 ];
 
-const kespaLessons: KespaLesson[] = [...baseKespaLessons, ...additionalKespaLessons];
+const kespaLessons: KespaLesson[] = [...baseKespaLessons, ...additionalKespaLessons]
+  .sort((first, second) => first.source.localeCompare(second.source, 'ru'))
+  .map((lesson, index) => ({ ...lesson, number: String(index + 1).padStart(2, '0') }));
 
 const theoryExpansions: Record<string, TheoryPanel[]> = {
   'kespa-pronouns': [
@@ -281,7 +283,7 @@ const highlightedTerms = new Set([
   'ustedes', 'vosotros', 'yo', 'nosotros', 'un', 'una', 'el', 'la', 'su', 'sus',
   'nuestro', 'muy', 'bastante', 'presente', 'quiero', 'puedo', 'hago', 'tengo',
 ]);
-const highlightPattern = new RegExp(`(${[...highlightedTerms].sort((a, b) => b.length - a.length).map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'giu');
+const highlightPattern = new RegExp(`(?<![\\p{L}\\p{M}\\p{N}])(${[...highlightedTerms].sort((a, b) => b.length - a.length).map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![\\p{L}\\p{M}\\p{N}])`, 'giu');
 function HighlightedText({ text }: { text: string }) {
   return <>{text.split(highlightPattern).map((part, index) => highlightedTerms.has(part.toLowerCase()) ? /[а-яё]/iu.test(part) ? <mark key={`${part}-${index}`}>{part}</mark> : <em key={`${part}-${index}`}>{part}</em> : part)}</>;
 }
