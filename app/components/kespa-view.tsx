@@ -15,6 +15,7 @@ import {
 
 type Pair = { ru: string; es: string };
 type DialogueLine = Pair & { speaker: string; side: 'left' | 'right' };
+type SpeechDrill = { title: string; subtitle: string; items: Pair[] };
 type TheoryPanel = {
   title: string;
   text: string;
@@ -276,6 +277,150 @@ const narrativeExpansions: Record<string, { miniText: Pair & { title: string }; 
   'kespa-irregular': { miniText: { title: 'Почему я учусь', ru: 'Я хочу жить в Испании и свободно говорить с людьми. Поэтому сейчас занимаюсь каждый день. Утром читаю новости и делаю короткое задание. Днём могу слушать испанское радио во время работы. Вечером пишу несколько фраз и разговариваю с сестрой. Она хорошо знает язык и всегда может мне помочь.', es: 'Quiero vivir en España y hablar con la gente con soltura. Por eso ahora estudio todos los días. Por la mañana leo las noticias y hago un ejercicio corto. Durante el día puedo escuchar la radio española mientras trabajo. Por la noche escribo varias frases y hablo con mi hermana. Ella conoce bien el idioma y siempre puede ayudarme.' }, dialogue: { title: 'План на вечер', lines: [{ speaker: 'Инес', side: 'left', ru: 'Ты можешь заниматься сегодня вечером?', es: '¿Puedes estudiar esta noche?' }, { speaker: 'Рауль', side: 'right', ru: 'Да. Я хочу повторить неправильные глаголы.', es: 'Sí. Quiero repasar los verbos irregulares.' }, { speaker: 'Инес', side: 'left', ru: 'Отлично. Сначала сделаем упражнения?', es: 'Genial. ¿Hacemos primero los ejercicios?' }, { speaker: 'Рауль', side: 'right', ru: 'Да, а потом я могу прочитать текст вслух.', es: 'Sí, y después puedo leer el texto en voz alta.' }, { speaker: 'Инес', side: 'left', ru: 'У тебя есть вопросы по querer и poder?', es: '¿Tienes preguntas sobre querer y poder?' }, { speaker: 'Рауль', side: 'right', ru: 'Один вопрос. Потом можем поговорить без учебника.', es: 'Tengo una pregunta. Después podemos hablar sin el libro.' }] } },
 };
 
+const speechDrills: Record<string, SpeechDrill> = {
+  'kespa-ser': {
+    title: 'Техника речи 1',
+    subtitle: 'Утверждения с ser во всех лицах и числах',
+    items: [
+      { ru: 'Я дизайнер. Я из России.', es: 'Soy diseñador. Soy de Rusia.' },
+      { ru: 'Ты преподаватель. Ты из Перу.', es: 'Eres profesor. Eres de Perú.' },
+      { ru: 'Он врач. Он из Чили.', es: 'Es médico. Es de Chile.' },
+      { ru: 'Она студентка. Она из Испании.', es: 'Es estudiante. Es de España.' },
+      { ru: 'Мы коллеги. Мы из разных стран.', es: 'Somos colegas. Somos de países diferentes.' },
+      { ru: 'Вы друзья. Вы из Мадрида.', es: 'Sois amigos. Sois de Madrid.' },
+      { ru: 'Они музыканты. Они из Колумбии.', es: 'Son músicos. Son de Colombia.' },
+    ],
+  },
+  'kespa-family': {
+    title: 'Техника речи 1',
+    subtitle: 'Tener во всех лицах и числах',
+    items: [
+      { ru: 'У меня есть брат. Мне тридцать лет.', es: 'Tengo un hermano. Tengo treinta años.' },
+      { ru: 'У тебя есть сестра. Тебе двадцать лет.', es: 'Tienes una hermana. Tienes veinte años.' },
+      { ru: 'У него есть сын. Ему сорок лет.', es: 'Tiene un hijo. Tiene cuarenta años.' },
+      { ru: 'У неё есть дочь. Ей тридцать пять лет.', es: 'Tiene una hija. Tiene treinta y cinco años.' },
+      { ru: 'У нас есть двое детей. У нас большая семья.', es: 'Tenemos dos hijos. Tenemos una familia grande.' },
+      { ru: 'У вас есть бабушка. У вас добрые родители.', es: 'Tenéis una abuela. Tenéis unos padres amables.' },
+      { ru: 'У них есть внук. У них маленький дом.', es: 'Tienen un nieto. Tienen una casa pequeña.' },
+    ],
+  },
+  'kespa-ar': {
+    title: 'Техника речи 1',
+    subtitle: 'Глаголы на -ar во всех лицах и числах',
+    items: [
+      { ru: 'Я говорю по-испански. Я работаю дома.', es: 'Hablo español. Trabajo en casa.' },
+      { ru: 'Ты говоришь по-испански. Ты работаешь дома.', es: 'Hablas español. Trabajas en casa.' },
+      { ru: 'Он говорит по-испански. Он работает дома.', es: 'Habla español. Trabaja en casa.' },
+      { ru: 'Она говорит по-испански. Она работает дома.', es: 'Habla español. Trabaja en casa.' },
+      { ru: 'Мы говорим по-испански. Мы работаем дома.', es: 'Hablamos español. Trabajamos en casa.' },
+      { ru: 'Вы говорите по-испански. Вы работаете дома.', es: 'Habláis español. Trabajáis en casa.' },
+      { ru: 'Они говорят по-испански. Они работают дома.', es: 'Hablan español. Trabajan en casa.' },
+    ],
+  },
+  'kespa-er-ir': {
+    title: 'Техника речи 1',
+    subtitle: 'Глаголы на -er и -ir во всех лицах и числах',
+    items: [
+      { ru: 'Я живу в Мадриде. Я ем дома.', es: 'Vivo en Madrid. Como en casa.' },
+      { ru: 'Ты живёшь в Мадриде. Ты ешь дома.', es: 'Vives en Madrid. Comes en casa.' },
+      { ru: 'Он живёт в Мадриде. Он ест дома.', es: 'Vive en Madrid. Come en casa.' },
+      { ru: 'Она живёт в Мадриде. Она ест дома.', es: 'Vive en Madrid. Come en casa.' },
+      { ru: 'Мы живём в Мадриде. Мы едим дома.', es: 'Vivimos en Madrid. Comemos en casa.' },
+      { ru: 'Вы живёте в Мадриде. Вы едите дома.', es: 'Vivís en Madrid. Coméis en casa.' },
+      { ru: 'Они живут в Мадриде. Они едят дома.', es: 'Viven en Madrid. Comen en casa.' },
+    ],
+  },
+  'kespa-irregular': {
+    title: 'Техника речи 1',
+    subtitle: 'Poder и querer во всех лицах и числах',
+    items: [
+      { ru: 'Я могу помочь. Я хочу говорить по-испански.', es: 'Puedo ayudar. Quiero hablar español.' },
+      { ru: 'Ты можешь помочь. Ты хочешь говорить по-испански.', es: 'Puedes ayudar. Quieres hablar español.' },
+      { ru: 'Он может помочь. Он хочет говорить по-испански.', es: 'Puede ayudar. Quiere hablar español.' },
+      { ru: 'Она может помочь. Она хочет говорить по-испански.', es: 'Puede ayudar. Quiere hablar español.' },
+      { ru: 'Мы можем помочь. Мы хотим говорить по-испански.', es: 'Podemos ayudar. Queremos hablar español.' },
+      { ru: 'Вы можете помочь. Вы хотите говорить по-испански.', es: 'Podéis ayudar. Queréis hablar español.' },
+      { ru: 'Они могут помочь. Они хотят говорить по-испански.', es: 'Pueden ayudar. Quieren hablar español.' },
+    ],
+  },
+  'kespa-tener-more': {
+    title: 'Техника речи 1',
+    subtitle: 'Tener que во всех лицах и числах',
+    items: [
+      { ru: 'Мне нужно работать. Мне нужно заниматься.', es: 'Tengo que trabajar. Tengo que estudiar.' },
+      { ru: 'Тебе нужно работать. Тебе нужно заниматься.', es: 'Tienes que trabajar. Tienes que estudiar.' },
+      { ru: 'Ему нужно работать. Ему нужно заниматься.', es: 'Tiene que trabajar. Tiene que estudiar.' },
+      { ru: 'Ей нужно работать. Ей нужно заниматься.', es: 'Tiene que trabajar. Tiene que estudiar.' },
+      { ru: 'Нам нужно работать. Нам нужно заниматься.', es: 'Tenemos que trabajar. Tenemos que estudiar.' },
+      { ru: 'Вам нужно работать. Вам нужно заниматься.', es: 'Tenéis que trabajar. Tenéis que estudiar.' },
+      { ru: 'Им нужно работать. Им нужно заниматься.', es: 'Tienen que trabajar. Tienen que estudiar.' },
+    ],
+  },
+};
+
+const narrativeAdditions: Record<string, { text: Pair; dialogue: DialogueLine[] }> = {
+  'kespa-pronouns': {
+    text: { ru: 'После занятий мы пьём кофе во дворе школы. Там мы лучше узнаём друг друга и много разговариваем.', es: 'Después de clase tomamos café en el patio de la escuela. Allí nos conocemos mejor y hablamos mucho.' },
+    dialogue: [{ speaker: 'Лео', side: 'right', ru: 'Рад со всеми познакомиться. Вы часто занимаетесь вместе?', es: 'Me alegro de conoceros a todos. ¿Estudiáis juntos a menudo?' }, { speaker: 'Ана', side: 'left', ru: 'Да, мы встречаемся здесь два раза в неделю.', es: 'Sí, nos reunimos aquí dos veces por semana.' }],
+  },
+  'kespa-ser': {
+    text: { ru: 'Наш офис находится в центре города. Мы очень разные, но вместе делаем один большой проект.', es: 'Nuestra oficina está en el centro de la ciudad. Somos muy diferentes, pero juntos hacemos un gran proyecto.' },
+    dialogue: [{ speaker: 'Тимур', side: 'right', ru: 'А Лео тоже преподаватель?', es: '¿Leo también es profesor?' }, { speaker: 'Ана', side: 'left', ru: 'Да, он преподаватель испанского и очень хороший коллега.', es: 'Sí, es profesor de español y es un compañero muy bueno.' }],
+  },
+  'kespa-articles': {
+    text: { ru: 'У него зелёные глаза и длинный хвост. Днём кот спит на диване, а вечером играет с маленьким мячом.', es: 'Tiene los ojos verdes y la cola larga. De día el gato duerme en el sofá y por la noche juega con una pelota pequeña.' },
+    dialogue: [{ speaker: 'Гость', side: 'right', ru: 'Она любит играть с детьми?', es: '¿Le gusta jugar con niños?' }, { speaker: 'Сотрудница', side: 'left', ru: 'Да, она ласковая и хорошо знает людей.', es: 'Sí, es cariñosa y está acostumbrada a la gente.' }],
+  },
+  'kespa-family': {
+    text: { ru: 'По воскресеньям к нам приезжают бабушка и дедушка. Мы готовим большой обед, смотрим фотографии и рассказываем семейные истории.', es: 'Los domingos vienen nuestros abuelos. Preparamos una gran comida, miramos fotos y contamos historias de la familia.' },
+    dialogue: [{ speaker: 'Лус', side: 'left', ru: 'Вы часто встречаетесь всей семьёй?', es: '¿Os reunís a menudo toda la familia?' }, { speaker: 'Маркос', side: 'right', ru: 'Да, каждое воскресенье мы обедаем у родителей.', es: 'Sí, todos los domingos comemos en casa de mis padres.' }],
+  },
+  'kespa-possessives': {
+    text: { ru: 'У каждого питомца есть своё любимое место. Но когда приходят наши друзья, кот и собака встречают их вместе у двери.', es: 'Cada mascota tiene su lugar favorito. Pero cuando vienen nuestros amigos, el gato y el perro los reciben juntos en la puerta.' },
+    dialogue: [{ speaker: 'Карла', side: 'left', ru: 'Можно принести сюда игрушку моего кота?', es: '¿Puedo traer aquí el juguete de mi gato?' }, { speaker: 'Пабло', side: 'right', ru: 'Конечно, наши питомцы могут играть вместе.', es: 'Claro, nuestras mascotas pueden jugar juntas.' }],
+  },
+  'kespa-description': {
+    text: { ru: 'Лаура любит читать и спокойно проводить время дома. Марта часто приглашает друзей, шутит и придумывает новые планы.', es: 'A Laura le gusta leer y pasar tiempo tranquilamente en casa. Marta invita a menudo a sus amigos, hace bromas e inventa nuevos planes.' },
+    dialogue: [{ speaker: 'Администратор', side: 'left', ru: 'Рядом с ней стоит весёлая девушка. Это её сестра?', es: 'Hay una chica alegre a su lado. ¿Es su hermana?' }, { speaker: 'Даниэль', side: 'right', ru: 'Да, это Марта. Они близнецы, но характер у них разный.', es: 'Sí, es Marta. Son gemelas, pero tienen un carácter diferente.' }],
+  },
+  'kespa-ar': {
+    text: { ru: 'По выходным мой распорядок меняется. Я долго гуляю, готовлю что-нибудь новое и созваниваюсь с семьёй.', es: 'Los fines de semana cambia mi rutina. Camino mucho, preparo algo nuevo y hablo por teléfono con mi familia.' },
+    dialogue: [{ speaker: 'Нора', side: 'left', ru: 'А по выходным ты тоже работаешь?', es: '¿Y los fines de semana también trabajas?' }, { speaker: 'Луис', side: 'right', ru: 'Нет, по субботам я отдыхаю и гуляю с друзьями.', es: 'No, los sábados descanso y paseo con mis amigos.' }],
+  },
+  'kespa-er-ir': {
+    text: { ru: 'По субботам мы не спешим и долго завтракаем. Потом идём в библиотеку, выбираем книги и читаем в ближайшем кафе.', es: 'Los sábados no tenemos prisa y desayunamos durante mucho tiempo. Después vamos a la biblioteca, elegimos libros y leemos en un café cercano.' },
+    dialogue: [{ speaker: 'Продавец', side: 'left', ru: 'Хотите также книгу с короткими упражнениями?', es: '¿Quiere también un libro con ejercicios cortos?' }, { speaker: 'Покупатель', side: 'right', ru: 'Да, я занимаюсь каждый день и много пишу.', es: 'Sí, estudio todos los días y escribo mucho.' }],
+  },
+  'kespa-irregular': {
+    text: { ru: 'На выходных мы можем заниматься вместе по видеосвязи. Так я быстрее исправляю ошибки и увереннее использую новые формы.', es: 'Los fines de semana podemos estudiar juntos por videollamada. Así corrijo los errores más rápido y uso las formas nuevas con más confianza.' },
+    dialogue: [{ speaker: 'Инес', side: 'left', ru: 'После занятия хочешь посмотреть фильм на испанском?', es: '¿Después de estudiar quieres ver una película en español?' }, { speaker: 'Рауль', side: 'right', ru: 'Конечно. Я могу выбрать фильм и сделать чай.', es: 'Claro. Puedo elegir la película y hacer té.' }],
+  },
+  'kespa-article-system': {
+    text: { ru: 'Продавец кладёт покупки в бумажный пакет и дарит мне карту города. На карте отмечены музеи, площади и небольшой книжный рынок.', es: 'El vendedor pone las compras en una bolsa de papel y me regala un mapa de la ciudad. En el mapa aparecen museos, plazas y un pequeño mercado de libros.' },
+    dialogue: [{ speaker: 'Покупатель', side: 'right', ru: 'У вас также есть карта центра?', es: '¿Tiene también un mapa del centro?' }, { speaker: 'Продавец', side: 'left', ru: 'Да, вот карта с музеями и книжными магазинами.', es: 'Sí, aquí tiene un mapa con museos y librerías.' }],
+  },
+  'kespa-article-special': {
+    text: { ru: 'Перед прогулкой сестра оставляет чемодан в отеле и надевает лёгкую куртку. Мы возвращаемся в отель поздно, но на следующий день снова едем в центр.', es: 'Antes del paseo mi hermana deja la maleta en el hotel y se pone una chaqueta ligera. Volvemos al hotel tarde, pero al día siguiente vamos otra vez al centro.' },
+    dialogue: [{ speaker: 'Лус', side: 'left', ru: 'После музея пойдём к реке?', es: '¿Después del museo vamos al río?' }, { speaker: 'Даниэль', side: 'right', ru: 'Да, от музея до реки всего десять минут.', es: 'Sí, del museo al río hay solo diez minutos.' }],
+  },
+  'kespa-gender-details': {
+    text: { ru: 'Редактор проверяет заголовок и выбирает красивую фотографию для обложки. На следующий день новая статья появляется в утренней газете.', es: 'El editor revisa el titular y elige una foto bonita para la portada. Al día siguiente el nuevo artículo aparece en el periódico de la mañana.' },
+    dialogue: [{ speaker: 'Редактор', side: 'left', ru: 'Нам ещё нужен заголовок для новой страницы.', es: 'También necesitamos un titular para la página nueva.' }, { speaker: 'Лаура', side: 'right', ru: 'У меня есть идея, а в программе фестиваля указаны все детали.', es: 'Tengo una idea y el programa del festival tiene todos los detalles.' }],
+  },
+  'kespa-lo-determiners': {
+    text: { ru: 'После чтения я закрываю книгу и пересказываю главное своими словами. Если что-то непонятно, я отмечаю это и спрашиваю преподавателя на следующем уроке.', es: 'Después de leer cierro el libro y cuento lo más importante con mis propias palabras. Si algo no está claro, lo marco y se lo pregunto al profesor en la clase siguiente.' },
+    dialogue: [{ speaker: 'Марта', side: 'left', ru: 'Ты каждый день занимаешься по этой книге?', es: '¿Estudias con este libro todos los días?' }, { speaker: 'Пабло', side: 'right', ru: 'Да, но самое важное — повторять то, что я уже знаю.', es: 'Sí, pero lo más importante es repasar lo que ya sé.' }],
+  },
+  'kespa-tener-more': {
+    text: { ru: 'После ужина у меня уже нет дел, и я могу отдохнуть. Завтра мне не нужно вставать рано, поэтому я читаю перед сном.', es: 'Después de cenar ya no tengo nada que hacer y puedo descansar. Mañana no tengo que levantarme temprano, así que leo antes de dormir.' },
+    dialogue: [{ speaker: 'Нора', side: 'left', ru: 'После звонка тебе ещё нужно работать?', es: '¿Después de la llamada todavía tienes que trabajar?' }, { speaker: 'Луис', side: 'right', ru: 'Нет, потом я свободен и у нас есть время на обед.', es: 'No, después estoy libre y tenemos tiempo para comer.' }],
+  },
+  'kespa-demonstratives': {
+    text: { ru: 'На полке над столом стоят мои словари и старые тетради. А в том ящике у окна я храню ручки, наушники и зарядное устройство.', es: 'En la estantería encima del escritorio están mis diccionarios y mis cuadernos viejos. En ese cajón junto a la ventana guardo bolígrafos, auriculares y un cargador.' },
+    dialogue: [{ speaker: 'Марта', side: 'left', ru: 'А куда поставить этот маленький пакет?', es: '¿Y dónde pongo este paquete pequeño?' }, { speaker: 'Пабло', side: 'right', ru: 'Положи его на тот стул рядом с окном.', es: 'Ponlo en esa silla junto a la ventana.' }],
+  },
+};
+
 const highlightedTerms = new Set([
   'местоимение', 'местоимения', 'глагол', 'глаголы', 'профессия', 'профессии',
   'артикль', 'артикли', 'существительное', 'прилагательное', 'основа', 'окончание',
@@ -289,8 +434,16 @@ function HighlightedText({ text }: { text: string }) {
 }
 
 const progressKey = 'ritmo-kespa-progress-v1';
-const steps = ['theory', 'fresh', 'mixed', 'text', 'dialogue'] as const;
-const stepLabels = ['Теория', 'Только новое', 'Новое + старое', 'Мини-текст', 'Диалог'];
+const steps = ['theory', 'speech', 'fresh', 'mixed', 'text', 'dialogue'] as const;
+type LessonStep = (typeof steps)[number];
+const stepLabels: Record<LessonStep, string> = {
+  theory: 'Теория',
+  speech: 'Техника речи',
+  fresh: 'Только новое',
+  mixed: 'Новое + старое',
+  text: 'Мини-текст',
+  dialogue: 'Диалог',
+};
 
 function speakSpanish(text: string) {
   if (!('speechSynthesis' in window)) return;
@@ -349,7 +502,7 @@ function PracticeLine({ item, index }: { item: Pair; index: number }) {
 export function KespaView() {
   const [lessonId, setLessonId] = useState(kespaLessons[0].id);
   const [catalogOpen, setCatalogOpen] = useState(false);
-  const [activeStep, setActiveStep] = useState<(typeof steps)[number]>('theory');
+  const [activeStep, setActiveStep] = useState<LessonStep>('theory');
   const [tag, setTag] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [completed, setCompleted] = useState<string[]>([]);
@@ -361,8 +514,22 @@ export function KespaView() {
   const dialogueStream = useRef<MediaStream | null>(null);
   const [dialogueRecordError, setDialogueRecordError] = useState(false);
   const lesson = kespaLessons.find((item) => item.id === lessonId) || kespaLessons[0];
+  const speechDrill = speechDrills[lesson.id];
+  const lessonSteps = steps.filter((step) => step !== 'speech' || speechDrill);
   const theoryPanels = [...lesson.theory, ...(theoryExpansions[lesson.id] || [])];
-  const narrative = narrativeExpansions[lesson.id] || { miniText: lesson.miniText, dialogue: lesson.dialogue };
+  const baseNarrative = narrativeExpansions[lesson.id] || { miniText: lesson.miniText, dialogue: lesson.dialogue };
+  const narrativeAddition = narrativeAdditions[lesson.id];
+  const narrative = narrativeAddition ? {
+    miniText: {
+      ...baseNarrative.miniText,
+      ru: `${baseNarrative.miniText.ru} ${narrativeAddition.text.ru}`,
+      es: `${baseNarrative.miniText.es} ${narrativeAddition.text.es}`,
+    },
+    dialogue: {
+      ...baseNarrative.dialogue,
+      lines: [...baseNarrative.dialogue.lines, ...narrativeAddition.dialogue],
+    },
+  } : baseNarrative;
   const allTags = useMemo(() => [...new Set(kespaLessons.flatMap((item) => item.tags))], []);
   const visibleLessons = kespaLessons.filter((item) =>
     (!tag || item.tags.includes(tag)) &&
@@ -410,7 +577,7 @@ export function KespaView() {
     dialogueStream.current?.getTracks().forEach((track) => track.stop());
   }, []);
   useEffect(() => {
-    const sections = steps
+    const sections = lessonSteps
       .map((step) => document.getElementById(`kespa-${step}`))
       .filter((node): node is HTMLElement => !!node);
     const observer = new IntersectionObserver(
@@ -418,7 +585,7 @@ export function KespaView() {
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((first, second) => first.boundingClientRect.top - second.boundingClientRect.top)[0];
-        if (visible) setActiveStep(visible.target.id.replace('kespa-', '') as (typeof steps)[number]);
+        if (visible) setActiveStep(visible.target.id.replace('kespa-', '') as LessonStep);
       },
       { rootMargin: '-12% 0px -72% 0px', threshold: 0 },
     );
@@ -456,8 +623,8 @@ export function KespaView() {
           <div><span>УРОК {lesson.number}</span><small>{lesson.source}</small><h2>{lesson.title}</h2><p>{lesson.subtitle}</p></div>
           <button onClick={complete} className={completed.includes(lesson.id) ? 'completed' : ''}>{completed.includes(lesson.id) ? <><Check /> Завершено</> : 'Отметить пройденным'}</button>
         </header>
-        <nav className="kespa-sequence" aria-label="Последовательность урока">
-          {steps.map((step, index) => <button type="button" className={activeStep === step ? 'active' : ''} aria-current={activeStep === step ? 'step' : undefined} onClick={() => { setActiveStep(step); document.getElementById(`kespa-${step}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} key={step}><span>{index + 1}</span>{stepLabels[index]}</button>)}
+        <nav className={`kespa-sequence${speechDrill ? ' with-speech' : ''}`} aria-label="Последовательность урока">
+          {lessonSteps.map((step, index) => <button type="button" className={activeStep === step ? 'active' : ''} aria-current={activeStep === step ? 'step' : undefined} onClick={() => { setActiveStep(step); document.getElementById(`kespa-${step}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} key={step}><span>{index + 1}</span>{stepLabels[step]}</button>)}
         </nav>
         <div className="kespa-lesson-tags"><Tag />{lesson.tags.map((item) => <button onClick={() => { setTag(item); setCatalogOpen(true); window.requestAnimationFrame(() => window.requestAnimationFrame(() => document.getElementById('kespa-library')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))); }} key={item}>#{item}</button>)}</div>
 
@@ -473,23 +640,28 @@ export function KespaView() {
           </article>)}
         </section>
 
+        {speechDrill && <section id="kespa-speech" className="kespa-section kespa-training kespa-speech">
+          <header><span>02</span><div><small>ДОВОДИМ ФОРМЫ ДО АВТОМАТИЗМА</small><h2>{speechDrill.title}</h2><p>{`${speechDrill.subtitle}. Сначала скажите фразу сами, затем откройте и прослушайте ответ.`}</p></div></header>
+          <div>{speechDrill.items.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
+        </section>}
+
         <section id="kespa-fresh" className="kespa-section kespa-training">
-          <header><span>02</span><div><small>ЗАКРЕПЛЯЕМ ОДИН НОВЫЙ СЛОЙ</small><h2>Тренировка «Только новое»</h2><p>Здесь используются только слова и конструкция текущего урока.</p></div></header>
+          <header><span>{speechDrill ? '03' : '02'}</span><div><small>ЗАКРЕПЛЯЕМ ОДИН НОВЫЙ СЛОЙ</small><h2>Тренировка «Только новое»</h2><p>Здесь используются только слова и конструкция текущего урока.</p></div></header>
           <div>{lesson.fresh.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
         </section>
 
         <section id="kespa-mixed" className="kespa-section kespa-training mixed">
-          <header><span>03</span><div><small>СОЕДИНЯЕМ С ПРОЙДЕННЫМ</small><h2>Тренировка «Новое + старое»</h2><p>{lesson.number === '01' ? 'Это первый урок: здесь новое соединяется внутри коротких связных фраз.' : 'Новая конструкция встречается вместе с материалом предыдущих уроков.'}</p></div></header>
+          <header><span>{speechDrill ? '04' : '03'}</span><div><small>СОЕДИНЯЕМ С ПРОЙДЕННЫМ</small><h2>Тренировка «Новое + старое»</h2><p>{lesson.number === '01' ? 'Это первый урок: здесь новое соединяется внутри коротких связных фраз.' : 'Новая конструкция встречается вместе с материалом предыдущих уроков.'}</p></div></header>
           <div>{lesson.mixed.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
         </section>
 
         <section id="kespa-text" className="kespa-section kespa-mini-text">
-          <header><span>04</span><div><small>ЧИТАЕМ В КОНТЕКСТЕ</small><h2>Мини-текст «{narrative.miniText.title}»</h2><p>Сначала прочитайте по-русски и попробуйте собрать испанскую версию вслух.</p></div></header>
+          <header><span>{speechDrill ? '05' : '04'}</span><div><small>ЧИТАЕМ В КОНТЕКСТЕ</small><h2>Мини-текст «{narrative.miniText.title}»</h2><p>Сначала прочитайте по-русски и попробуйте собрать испанскую версию вслух.</p></div></header>
           <article><p>{narrative.miniText.ru}</p>{textShown && <b>{narrative.miniText.es}</b>}<footer><button onClick={() => setTextShown((value) => !value)}><Eye /> {textShown ? 'Скрыть перевод' : 'Показать перевод'}</button><button onClick={() => speakSpanish(narrative.miniText.es)}><Play /> Слушать</button></footer></article>
         </section>
 
         <section id="kespa-dialogue" className="kespa-section kespa-dialogue">
-          <header><span>05</span><div><small>В КОНЦЕ — ЖИВАЯ СЦЕНА · {narrative.dialogue.lines.length} РЕПЛИК</small><h2>Диалог «{narrative.dialogue.title}»</h2><p>Нажмите на любое сообщение, чтобы перевести только эту реплику на испанский.</p></div></header>
+          <header><span>{speechDrill ? '06' : '05'}</span><div><small>В КОНЦЕ — ЖИВАЯ СЦЕНА · {narrative.dialogue.lines.length} РЕПЛИК</small><h2>Диалог «{narrative.dialogue.title}»</h2><p>Нажмите на любое сообщение, чтобы перевести только эту реплику на испанский.</p></div></header>
           <div>{narrative.dialogue.lines.map((line, index) => { const shown = dialogueShown.includes(index); return <button className={line.side} onClick={() => setDialogueShown((current) => shown ? current.filter((item) => item !== index) : [...current, index])} key={`${line.speaker}-${index}`}><i aria-hidden="true">{line.side === 'left' ? '👩🏻' : '🧑🏼'}</i><small>{line.speaker}</small><p>{shown ? line.es : line.ru}</p>{shown && <span onClick={(event) => { event.stopPropagation(); speakSpanish(line.es); }}><Play /></span>}</button>; })}</div>
           <footer className="kespa-dialogue-controls">
             <button type="button" onClick={() => setDialogueShown((current) => current.length === narrative.dialogue.lines.length ? [] : narrative.dialogue.lines.map((_, index) => index))} aria-label="Показать или скрыть весь перевод"><Eye /><span>{dialogueShown.length === narrative.dialogue.lines.length ? 'Скрыть' : 'Перевод'}</span></button>

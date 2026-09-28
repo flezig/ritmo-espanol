@@ -13446,6 +13446,7 @@ body {
 .kespa-lesson-head>button.completed { display:flex; align-items:center; gap:7px; background:color-mix(in srgb,var(--aqua) 18%,var(--soft)); color:var(--aqua); }
 .kespa-lesson-head>button svg { width:17px; }
 .kespa-sequence { display:grid; grid-template-columns:repeat(5,1fr); border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--soft); }
+.kespa-sequence.with-speech { grid-template-columns:repeat(6,1fr); }
 .kespa-sequence button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:58px; border:0; border-right:1px solid var(--line); background:transparent; color:var(--muted); font-size:11px; font-weight:850; cursor:pointer; }
 .kespa-sequence button:last-child { border-right:0; }
 .kespa-sequence button span,.kespa-section>header>span { width:27px; height:27px; display:grid; place-items:center; border-radius:50%; background:var(--purple); color:white; font-size:10px; }
@@ -13491,6 +13492,7 @@ body {
 .kespa-practice-line p { margin:0; font-size:clamp(16px,2vw,21px); line-height:1.45; }
 .kespa-practice-line>b { grid-column:3/5; color:var(--aqua); font-size:16px; line-height:1.5; }
 .kespa-training.mixed { background:color-mix(in srgb,var(--purple) 4%,var(--panel)); }
+.kespa-speech { background:color-mix(in srgb,var(--aqua) 4%,var(--panel)); }
 .kespa-mini-text article { padding:clamp(20px,4vw,36px); border:1px solid var(--line); border-radius:20px; background:var(--soft); }
 .kespa-mini-text article>p,.kespa-mini-text article>b { display:block; max-width:900px; font:500 clamp(19px,2.5vw,27px)/1.65 var(--font-syne); }
 .kespa-mini-text article>b { margin-top:16px; color:var(--aqua); }
@@ -13513,7 +13515,7 @@ body {
 .kespa-finish>div:last-child { display:flex; gap:8px; }
 .kespa-finish button svg { width:17px; }
 .kespa-finish button.next { border:1px solid var(--line); background:var(--panel); color:var(--purple); }
-@media(max-width:900px){.kespa-hero{grid-template-columns:1fr}.kespa-hero-progress{grid-template-columns:auto 1fr;align-items:center}.kespa-hero-progress i{grid-column:1/-1}.kespa-lesson-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kespa-sequence{overflow-x:auto;grid-template-columns:repeat(5,minmax(150px,1fr));}.kespa-finish{align-items:flex-start;flex-direction:column}}
+@media(max-width:900px){.kespa-hero{grid-template-columns:1fr}.kespa-hero-progress{grid-template-columns:auto 1fr;align-items:center}.kespa-hero-progress i{grid-column:1/-1}.kespa-lesson-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kespa-sequence{overflow-x:auto;grid-template-columns:repeat(5,minmax(150px,1fr));}.kespa-sequence.with-speech{grid-template-columns:repeat(6,minmax(150px,1fr))}.kespa-finish{align-items:flex-start;flex-direction:column}}
 @media(max-width:620px){.kespa-hero,.kespa-library{padding:18px;border-radius:20px}.kespa-hero h1{font-size:37px}.kespa-library>header,.kespa-lesson-head{align-items:stretch;flex-direction:column}.kespa-library label{width:100%}.kespa-lesson-grid{grid-template-columns:1fr}.kespa-lesson-grid>button{min-height:166px}.kespa-lesson{border-radius:20px}.kespa-lesson-head{padding:23px 18px}.kespa-section{padding:32px 17px}.kespa-practice-line{grid-template-columns:24px 74px minmax(0,1fr) 32px;padding:16px 0}.kespa-practice-line>b{grid-column:2/5;padding-left:0}.kespa-practice-line p{font-size:16px}.kespa-line-actions button,.kespa-eye{width:31px;height:31px}.kespa-mini-text footer,.kespa-finish>div:last-child{width:100%;display:grid;grid-template-columns:1fr}.kespa-mini-text button,.kespa-finish button{justify-content:center}.kespa-dialogue>div>button{width:88%}}
 
 /* Active theory surface: graphite-violet with a darker example layer. */
@@ -13623,6 +13625,7 @@ body {
   .kespa-lesson-head p { font-size:15px; }
   .kespa-lesson-head>button { width:100%; margin-top:28px; }
   .kespa-sequence { display:grid; grid-template-columns:1fr; overflow:visible; padding:14px 20px 22px; }
+  .kespa-sequence.with-speech { grid-template-columns:1fr; }
   .kespa-sequence button { min-height:44px; padding-left:15px; font-size:14px; }
   .kespa-lesson-tags { padding:18px 20px 24px; }
   .kespa-section { padding-right:20px; padding-left:20px; }
