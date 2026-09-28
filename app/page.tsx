@@ -3432,7 +3432,8 @@ function useTaskMotion() {
 }
 
 function LessonsView() {
-  const { speakText } = useSpanishVoices();
+  const { speakText } = useSpanishVoices(),
+    { preferences } = useSitePreferences();
   const [lessonIndex, setLessonIndex] = useState(0),
     [mode, setMode] = useState<'theory' | 'practice'>('theory'),
     [theoryBlockIndex, setTheoryBlockIndex] = useState(0),
@@ -3594,7 +3595,10 @@ function LessonsView() {
       score: correct ? 1 : 0,
     });
     playFeedbackSound(correct);
-    if (!/^(?:верно|неверно)$/iu.test(exercise.answer.trim()))
+    if (
+      preferences.autoSpeak &&
+      !/^(?:верно|неверно)$/iu.test(exercise.answer.trim())
+    )
       window.setTimeout(() => speakText(exercise.answer, 0.92), 180);
     setCatState(
       question === exerciseTotal - 1 ? 'love' : correct ? 'happy' : 'wrong',
@@ -8893,14 +8897,8 @@ function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }: { show
       baseline: sessionBaseline,
       sessionId,
     };
-    const saveTimer = window.setTimeout(
-      () => {
-        localStorage.setItem('ritmo-practice-session', JSON.stringify(saved));
-        window.dispatchEvent(new Event('ritmo-cloud-progress-changed'));
-      },
-      typed ? 1000 : 0,
-    );
-    return () => window.clearTimeout(saveTimer);
+    localStorage.setItem('ritmo-practice-session', JSON.stringify(saved));
+    window.dispatchEvent(new Event('ritmo-cloud-progress-changed'));
   }, [
     sessionHydrated,
     mode,
@@ -11764,7 +11762,7 @@ function AccessibilitySettings() {
       key: 'autoSpeak',
       icon: <Volume2 />,
       title: 'Автоматическая озвучка',
-      copy: 'Произносить новое слово сразу после появления карточки.',
+      copy: 'Автоматически произносить слова и предложения в практике и уроках.',
     },
   ];
   return (

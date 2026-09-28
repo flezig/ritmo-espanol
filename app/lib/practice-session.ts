@@ -7,12 +7,11 @@ export type PracticeSnapshot = {
   awaitingStart?: boolean;
 };
 
-/** Resume only after the learner has completed at least two graded cards. */
+/** Resume every active session, including its first card. */
 export const shouldAutoResumePractice = (snapshot: PracticeSnapshot | null) =>
   !!snapshot &&
   !snapshot.awaitingStart &&
-  snapshot.session.length > 0 &&
-  (snapshot.finished === true || snapshot.index >= 2);
+  snapshot.session.length > 0;
 
 /** Keep the current card by identity when earlier cards disappear. */
 export function reconcilePracticeCards<T extends { key: string; answer: string; es: string; ru: string }>(

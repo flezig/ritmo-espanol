@@ -82,7 +82,7 @@ test('practice session parser rejects incomplete state', () => {
   assert.equal(parsePracticeSnapshot(JSON.stringify({ version: 5, topic: 'Все темы', level: 'B1–B2', session: [{ key: 'tesis' }], index: 0 }))?.topic, 'Все темы');
 });
 
-test('practice resumes automatically only after two completed cards', () => {
+test('practice resumes automatically from every active card', () => {
   const snapshot = (index: number, awaitingStart = false) => ({
     version: 5 as const,
     topic: 'Все темы',
@@ -90,8 +90,8 @@ test('practice resumes automatically only after two completed cards', () => {
     index,
     awaitingStart,
   });
-  assert.equal(shouldAutoResumePractice(snapshot(0)), false);
-  assert.equal(shouldAutoResumePractice(snapshot(1)), false);
+  assert.equal(shouldAutoResumePractice(snapshot(0)), true);
+  assert.equal(shouldAutoResumePractice(snapshot(1)), true);
   assert.equal(shouldAutoResumePractice(snapshot(2)), true);
   assert.equal(shouldAutoResumePractice(snapshot(5, true)), false);
 });
