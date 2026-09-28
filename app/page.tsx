@@ -38,6 +38,7 @@ import {
 import { vocabularyBrowseTopics, vocabularyTopics, type VocabularyLevel } from './vocabulary';
 import { courseLessons } from './lessons';
 import { YouTubeEmbed } from './components/youtube-embed';
+import { KespaView } from './components/kespa-view';
 import { useAccount } from './components/account-provider';
 import { ReportExerciseButton } from './components/report-exercise-button';
 import { trackLocalEvent } from './lib/local-analytics';
@@ -99,6 +100,7 @@ type Section =
   | 'Home'
   | 'Learn'
   | 'Lessons'
+  | 'Kespa'
   | 'Vocabulary'
   | 'Grammar'
   | 'Music'
@@ -114,6 +116,7 @@ const nav: { name: Section; label: string; icon: typeof Home }[] = [
   { name: 'Home', label: 'Главная', icon: Home },
   { name: 'Learn', label: 'Быстрый старт', icon: BookOpen },
   { name: 'Lessons', label: 'Уроки', icon: GraduationCap },
+  { name: 'Kespa', label: 'kespa', icon: Sparkles },
   { name: 'Vocabulary', label: 'Словарь', icon: Library },
   { name: 'Grammar', label: 'Грамматика', icon: Languages },
   { name: 'Music', label: 'Музыка', icon: Music2 },
@@ -12573,6 +12576,7 @@ function RitmoApp() {
     Home: <HomeView go={navigate} profile={profile} />,
     Learn: <LearnView go={navigate} />,
     Lessons: <LessonsView />,
+    Kespa: <KespaView />,
     Vocabulary: <VocabularyView />,
     Grammar: <GrammarView />,
     Music: <MusicView />,
@@ -12583,7 +12587,7 @@ function RitmoApp() {
     Profile: <ProfileView />,
   };
   const mobile = nav.filter((n) =>
-    ['Home', 'Lessons', 'Learn', 'Music', 'Practice', 'Profile'].includes(
+    ['Home', 'Lessons', 'Kespa', 'Practice', 'Profile'].includes(
       n.name,
     ),
   );
@@ -12691,6 +12695,8 @@ function RitmoApp() {
                       ? 'Старт'
                       : n.name === 'Lessons'
                         ? 'Уроки'
+                        : n.name === 'Kespa'
+                          ? 'kespa'
                         : n.name === 'Music'
                           ? 'Музыка'
                           : n.name === 'Practice'
