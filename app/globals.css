@@ -13644,3 +13644,27 @@ body {
   .kespa-dialogue-controls button { min-height:54px; display:grid; gap:2px; border:0; background:transparent; font-size:9px; }
   .kespa-dialogue-controls button svg { width:25px; margin:auto; }
 }
+
+/* Kespa uses one lesson section per page. */
+.kespa-theory-summary { display:grid; gap:14px; margin-top:28px; padding:clamp(22px,4vw,34px); border:1px solid color-mix(in srgb,var(--aqua) 32%,var(--line)); border-radius:20px; background:linear-gradient(145deg,color-mix(in srgb,var(--aqua) 9%,var(--panel)),var(--panel)); }
+.kespa-theory-summary>small { color:var(--aqua); font-size:10px; font-weight:900; letter-spacing:.12em; }
+.kespa-theory-summary>h3 { margin:0; font:750 clamp(22px,2.5vw,30px) var(--font-syne); }
+.kespa-theory-summary ul { display:grid; gap:11px; margin:0; padding:0; list-style:none; }
+.kespa-theory-summary li { display:grid; grid-template-columns:minmax(150px,.7fr) minmax(0,1.3fr); gap:16px; padding-top:11px; border-top:1px solid var(--line); }
+.kespa-theory-summary li b { color:var(--text); font-size:14px; }
+.kespa-theory-summary li span { color:var(--muted); font-size:14px; line-height:1.5; }
+.kespa-practice-line>b { white-space:pre-line; }
+.kespa-speech .kespa-practice-line { align-items:start; }
+.kespa-speech .kespa-practice-line>b { padding:4px 0 10px; line-height:1.7; }
+.kespa-section-next { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:25px clamp(20px,6vw,72px); border-top:1px solid var(--line); background:color-mix(in srgb,var(--purple) 5%,var(--panel)); }
+.kespa-section-next>div { display:grid; gap:4px; }
+.kespa-section-next small { color:var(--muted); font-size:9px; font-weight:900; letter-spacing:.12em; }
+.kespa-section-next b { font:750 18px var(--font-syne); }
+.kespa-section-next button { min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:12px; background:var(--purple); color:white; padding:0 17px; font-weight:850; cursor:pointer; }
+.kespa-section-next button svg { width:18px; }
+
+@media (max-width:700px) {
+  .kespa-theory-summary li { grid-template-columns:1fr; gap:5px; }
+  .kespa-section-next { align-items:stretch; flex-direction:column; }
+  .kespa-section-next button { width:100%; }
+}

@@ -277,84 +277,80 @@ const narrativeExpansions: Record<string, { miniText: Pair & { title: string }; 
   'kespa-irregular': { miniText: { title: 'Почему я учусь', ru: 'Я хочу жить в Испании и свободно говорить с людьми. Поэтому сейчас занимаюсь каждый день. Утром читаю новости и делаю короткое задание. Днём могу слушать испанское радио во время работы. Вечером пишу несколько фраз и разговариваю с сестрой. Она хорошо знает язык и всегда может мне помочь.', es: 'Quiero vivir en España y hablar con la gente con soltura. Por eso ahora estudio todos los días. Por la mañana leo las noticias y hago un ejercicio corto. Durante el día puedo escuchar la radio española mientras trabajo. Por la noche escribo varias frases y hablo con mi hermana. Ella conoce bien el idioma y siempre puede ayudarme.' }, dialogue: { title: 'План на вечер', lines: [{ speaker: 'Инес', side: 'left', ru: 'Ты можешь заниматься сегодня вечером?', es: '¿Puedes estudiar esta noche?' }, { speaker: 'Рауль', side: 'right', ru: 'Да. Я хочу повторить неправильные глаголы.', es: 'Sí. Quiero repasar los verbos irregulares.' }, { speaker: 'Инес', side: 'left', ru: 'Отлично. Сначала сделаем упражнения?', es: 'Genial. ¿Hacemos primero los ejercicios?' }, { speaker: 'Рауль', side: 'right', ru: 'Да, а потом я могу прочитать текст вслух.', es: 'Sí, y después puedo leer el texto en voz alta.' }, { speaker: 'Инес', side: 'left', ru: 'У тебя есть вопросы по querer и poder?', es: '¿Tienes preguntas sobre querer y poder?' }, { speaker: 'Рауль', side: 'right', ru: 'Один вопрос. Потом можем поговорить без учебника.', es: 'Tengo una pregunta. Después podemos hablar sin el libro.' }] } },
 };
 
+const speechPeople = ['Yo', 'Tú', 'Él', 'Ella', 'Nosotros', 'Vosotros', 'Ellos'];
+const makeSpeechItems = (
+  prompts: Array<{ ru: string; present: string[]; past: string[] }>,
+): Pair[] => prompts.map(({ ru, present, past }) => ({
+  ru,
+  es: speechPeople.map((person, index) => `${person} ${present[index]}. ${person} ${past[index]}.`).join('\n'),
+}));
+
 const speechDrills: Record<string, SpeechDrill> = {
   'kespa-ser': {
     title: 'Техника речи 1',
-    subtitle: 'Утверждения с ser во всех лицах и числах',
-    items: [
-      { ru: 'Я дизайнер. Я из России.', es: 'Soy diseñador. Soy de Rusia.' },
-      { ru: 'Ты преподаватель. Ты из Перу.', es: 'Eres profesor. Eres de Perú.' },
-      { ru: 'Он врач. Он из Чили.', es: 'Es médico. Es de Chile.' },
-      { ru: 'Она студентка. Она из Испании.', es: 'Es estudiante. Es de España.' },
-      { ru: 'Мы коллеги. Мы из разных стран.', es: 'Somos colegas. Somos de países diferentes.' },
-      { ru: 'Вы друзья. Вы из Мадрида.', es: 'Sois amigos. Sois de Madrid.' },
-      { ru: 'Они музыканты. Они из Колумбии.', es: 'Son músicos. Son de Colombia.' },
-    ],
+    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    items: makeSpeechItems([
+      { ru: 'Я член команды. Я был членом команды.', present: ['soy parte del equipo', 'eres parte del equipo', 'es parte del equipo', 'es parte del equipo', 'somos parte del equipo', 'sois parte del equipo', 'son parte del equipo'], past: ['fui parte del equipo', 'fuiste parte del equipo', 'fue parte del equipo', 'fue parte del equipo', 'fuimos parte del equipo', 'fuisteis parte del equipo', 'fueron parte del equipo'] },
+      { ru: 'Я отвечаю за проект. Я отвечал за проект.', present: ['soy responsable del proyecto', 'eres responsable del proyecto', 'es responsable del proyecto', 'es responsable del proyecto', 'somos responsables del proyecto', 'sois responsables del proyecto', 'son responsables del proyecto'], past: ['fui responsable del proyecto', 'fuiste responsable del proyecto', 'fue responsable del proyecto', 'fue responsable del proyecto', 'fuimos responsables del proyecto', 'fuisteis responsables del proyecto', 'fueron responsables del proyecto'] },
+      { ru: 'Я студент. Я был студентом.', present: ['soy estudiante', 'eres estudiante', 'es estudiante', 'es estudiante', 'somos estudiantes', 'sois estudiantes', 'son estudiantes'], past: ['fui estudiante', 'fuiste estudiante', 'fue estudiante', 'fue estudiante', 'fuimos estudiantes', 'fuisteis estudiantes', 'fueron estudiantes'] },
+      { ru: 'Я лидер группы. Я был лидером группы.', present: ['soy líder del grupo', 'eres líder del grupo', 'es líder del grupo', 'es líder del grupo', 'somos líderes del grupo', 'sois líderes del grupo', 'son líderes del grupo'], past: ['fui líder del grupo', 'fuiste líder del grupo', 'fue líder del grupo', 'fue líder del grupo', 'fuimos líderes del grupo', 'fuisteis líderes del grupo', 'fueron líderes del grupo'] },
+      { ru: 'Я преподаватель. Я был преподавателем.', present: ['soy profesor', 'eres profesor', 'es profesor', 'es profesora', 'somos profesores', 'sois profesores', 'son profesores'], past: ['fui profesor', 'fuiste profesor', 'fue profesor', 'fue profesora', 'fuimos profesores', 'fuisteis profesores', 'fueron profesores'] },
+    ]),
   },
   'kespa-family': {
     title: 'Техника речи 1',
-    subtitle: 'Tener во всех лицах и числах',
-    items: [
-      { ru: 'У меня есть брат. Мне тридцать лет.', es: 'Tengo un hermano. Tengo treinta años.' },
-      { ru: 'У тебя есть сестра. Тебе двадцать лет.', es: 'Tienes una hermana. Tienes veinte años.' },
-      { ru: 'У него есть сын. Ему сорок лет.', es: 'Tiene un hijo. Tiene cuarenta años.' },
-      { ru: 'У неё есть дочь. Ей тридцать пять лет.', es: 'Tiene una hija. Tiene treinta y cinco años.' },
-      { ru: 'У нас есть двое детей. У нас большая семья.', es: 'Tenemos dos hijos. Tenemos una familia grande.' },
-      { ru: 'У вас есть бабушка. У вас добрые родители.', es: 'Tenéis una abuela. Tenéis unos padres amables.' },
-      { ru: 'У них есть внук. У них маленький дом.', es: 'Tienen un nieto. Tienen una casa pequeña.' },
-    ],
+    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    items: makeSpeechItems([
+      { ru: 'У меня есть брат. У меня был брат.', present: ['tengo un hermano', 'tienes un hermano', 'tiene un hermano', 'tiene un hermano', 'tenemos un hermano', 'tenéis un hermano', 'tienen un hermano'], past: ['tuve un hermano', 'tuviste un hermano', 'tuvo un hermano', 'tuvo un hermano', 'tuvimos un hermano', 'tuvisteis un hermano', 'tuvieron un hermano'] },
+      { ru: 'У меня есть вопрос. У меня был вопрос.', present: ['tengo una pregunta', 'tienes una pregunta', 'tiene una pregunta', 'tiene una pregunta', 'tenemos una pregunta', 'tenéis una pregunta', 'tienen una pregunta'], past: ['tuve una pregunta', 'tuviste una pregunta', 'tuvo una pregunta', 'tuvo una pregunta', 'tuvimos una pregunta', 'tuvisteis una pregunta', 'tuvieron una pregunta'] },
+      { ru: 'У меня есть время. У меня было время.', present: ['tengo tiempo', 'tienes tiempo', 'tiene tiempo', 'tiene tiempo', 'tenemos tiempo', 'tenéis tiempo', 'tienen tiempo'], past: ['tuve tiempo', 'tuviste tiempo', 'tuvo tiempo', 'tuvo tiempo', 'tuvimos tiempo', 'tuvisteis tiempo', 'tuvieron tiempo'] },
+      { ru: 'У меня есть собака. У меня была собака.', present: ['tengo un perro', 'tienes un perro', 'tiene un perro', 'tiene un perro', 'tenemos un perro', 'tenéis un perro', 'tienen un perro'], past: ['tuve un perro', 'tuviste un perro', 'tuvo un perro', 'tuvo un perro', 'tuvimos un perro', 'tuvisteis un perro', 'tuvieron un perro'] },
+      { ru: 'У меня есть идея. У меня была идея.', present: ['tengo una idea', 'tienes una idea', 'tiene una idea', 'tiene una idea', 'tenemos una idea', 'tenéis una idea', 'tienen una idea'], past: ['tuve una idea', 'tuviste una idea', 'tuvo una idea', 'tuvo una idea', 'tuvimos una idea', 'tuvisteis una idea', 'tuvieron una idea'] },
+    ]),
   },
   'kespa-ar': {
     title: 'Техника речи 1',
-    subtitle: 'Глаголы на -ar во всех лицах и числах',
-    items: [
-      { ru: 'Я говорю по-испански. Я работаю дома.', es: 'Hablo español. Trabajo en casa.' },
-      { ru: 'Ты говоришь по-испански. Ты работаешь дома.', es: 'Hablas español. Trabajas en casa.' },
-      { ru: 'Он говорит по-испански. Он работает дома.', es: 'Habla español. Trabaja en casa.' },
-      { ru: 'Она говорит по-испански. Она работает дома.', es: 'Habla español. Trabaja en casa.' },
-      { ru: 'Мы говорим по-испански. Мы работаем дома.', es: 'Hablamos español. Trabajamos en casa.' },
-      { ru: 'Вы говорите по-испански. Вы работаете дома.', es: 'Habláis español. Trabajáis en casa.' },
-      { ru: 'Они говорят по-испански. Они работают дома.', es: 'Hablan español. Trabajan en casa.' },
-    ],
+    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    items: makeSpeechItems([
+      { ru: 'Я говорю по-испански. Я говорил по-испански.', present: ['hablo español', 'hablas español', 'habla español', 'habla español', 'hablamos español', 'habláis español', 'hablan español'], past: ['hablé español', 'hablaste español', 'habló español', 'habló español', 'hablamos español', 'hablasteis español', 'hablaron español'] },
+      { ru: 'Я работаю дома. Я работал дома.', present: ['trabajo en casa', 'trabajas en casa', 'trabaja en casa', 'trabaja en casa', 'trabajamos en casa', 'trabajáis en casa', 'trabajan en casa'], past: ['trabajé en casa', 'trabajaste en casa', 'trabajó en casa', 'trabajó en casa', 'trabajamos en casa', 'trabajasteis en casa', 'trabajaron en casa'] },
+      { ru: 'Я занимаюсь каждый день. Я занимался каждый день.', present: ['estudio cada día', 'estudias cada día', 'estudia cada día', 'estudia cada día', 'estudiamos cada día', 'estudiáis cada día', 'estudian cada día'], past: ['estudié cada día', 'estudiaste cada día', 'estudió cada día', 'estudió cada día', 'estudiamos cada día', 'estudiasteis cada día', 'estudiaron cada día'] },
+      { ru: 'Я слушаю музыку. Я слушал музыку.', present: ['escucho música', 'escuchas música', 'escucha música', 'escucha música', 'escuchamos música', 'escucháis música', 'escuchan música'], past: ['escuché música', 'escuchaste música', 'escuchó música', 'escuchó música', 'escuchamos música', 'escuchasteis música', 'escucharon música'] },
+      { ru: 'Я танцую вечером. Я танцевал вечером.', present: ['bailo por la noche', 'bailas por la noche', 'baila por la noche', 'baila por la noche', 'bailamos por la noche', 'bailáis por la noche', 'bailan por la noche'], past: ['bailé por la noche', 'bailaste por la noche', 'bailó por la noche', 'bailó por la noche', 'bailamos por la noche', 'bailasteis por la noche', 'bailaron por la noche'] },
+    ]),
   },
   'kespa-er-ir': {
     title: 'Техника речи 1',
-    subtitle: 'Глаголы на -er и -ir во всех лицах и числах',
-    items: [
-      { ru: 'Я живу в Мадриде. Я ем дома.', es: 'Vivo en Madrid. Como en casa.' },
-      { ru: 'Ты живёшь в Мадриде. Ты ешь дома.', es: 'Vives en Madrid. Comes en casa.' },
-      { ru: 'Он живёт в Мадриде. Он ест дома.', es: 'Vive en Madrid. Come en casa.' },
-      { ru: 'Она живёт в Мадриде. Она ест дома.', es: 'Vive en Madrid. Come en casa.' },
-      { ru: 'Мы живём в Мадриде. Мы едим дома.', es: 'Vivimos en Madrid. Comemos en casa.' },
-      { ru: 'Вы живёте в Мадриде. Вы едите дома.', es: 'Vivís en Madrid. Coméis en casa.' },
-      { ru: 'Они живут в Мадриде. Они едят дома.', es: 'Viven en Madrid. Comen en casa.' },
-    ],
+    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    items: makeSpeechItems([
+      { ru: 'Я живу в Мадриде. Я жил в Мадриде.', present: ['vivo en Madrid', 'vives en Madrid', 'vive en Madrid', 'vive en Madrid', 'vivimos en Madrid', 'vivís en Madrid', 'viven en Madrid'], past: ['viví en Madrid', 'viviste en Madrid', 'vivió en Madrid', 'vivió en Madrid', 'vivimos en Madrid', 'vivisteis en Madrid', 'vivieron en Madrid'] },
+      { ru: 'Я ем дома. Я ел дома.', present: ['como en casa', 'comes en casa', 'come en casa', 'come en casa', 'comemos en casa', 'coméis en casa', 'comen en casa'], past: ['comí en casa', 'comiste en casa', 'comió en casa', 'comió en casa', 'comimos en casa', 'comisteis en casa', 'comieron en casa'] },
+      { ru: 'Я читаю книгу. Я читал книгу.', present: ['leo un libro', 'lees un libro', 'lee un libro', 'lee un libro', 'leemos un libro', 'leéis un libro', 'leen un libro'], past: ['leí un libro', 'leíste un libro', 'leyó un libro', 'leyó un libro', 'leímos un libro', 'leísteis un libro', 'leyeron un libro'] },
+      { ru: 'Я пишу сообщение. Я написал сообщение.', present: ['escribo un mensaje', 'escribes un mensaje', 'escribe un mensaje', 'escribe un mensaje', 'escribimos un mensaje', 'escribís un mensaje', 'escriben un mensaje'], past: ['escribí un mensaje', 'escribiste un mensaje', 'escribió un mensaje', 'escribió un mensaje', 'escribimos un mensaje', 'escribisteis un mensaje', 'escribieron un mensaje'] },
+      { ru: 'Я открываю окно. Я открыл окно.', present: ['abro la ventana', 'abres la ventana', 'abre la ventana', 'abre la ventana', 'abrimos la ventana', 'abrís la ventana', 'abren la ventana'], past: ['abrí la ventana', 'abriste la ventana', 'abrió la ventana', 'abrió la ventana', 'abrimos la ventana', 'abristeis la ventana', 'abrieron la ventana'] },
+    ]),
   },
   'kespa-irregular': {
     title: 'Техника речи 1',
-    subtitle: 'Poder и querer во всех лицах и числах',
-    items: [
-      { ru: 'Я могу помочь. Я хочу говорить по-испански.', es: 'Puedo ayudar. Quiero hablar español.' },
-      { ru: 'Ты можешь помочь. Ты хочешь говорить по-испански.', es: 'Puedes ayudar. Quieres hablar español.' },
-      { ru: 'Он может помочь. Он хочет говорить по-испански.', es: 'Puede ayudar. Quiere hablar español.' },
-      { ru: 'Она может помочь. Она хочет говорить по-испански.', es: 'Puede ayudar. Quiere hablar español.' },
-      { ru: 'Мы можем помочь. Мы хотим говорить по-испански.', es: 'Podemos ayudar. Queremos hablar español.' },
-      { ru: 'Вы можете помочь. Вы хотите говорить по-испански.', es: 'Podéis ayudar. Queréis hablar español.' },
-      { ru: 'Они могут помочь. Они хотят говорить по-испански.', es: 'Pueden ayudar. Quieren hablar español.' },
-    ],
+    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    items: makeSpeechItems([
+      { ru: 'Я могу помочь. Я смог помочь.', present: ['puedo ayudar', 'puedes ayudar', 'puede ayudar', 'puede ayudar', 'podemos ayudar', 'podéis ayudar', 'pueden ayudar'], past: ['pude ayudar', 'pudiste ayudar', 'pudo ayudar', 'pudo ayudar', 'pudimos ayudar', 'pudisteis ayudar', 'pudieron ayudar'] },
+      { ru: 'Я хочу поехать. Я захотел поехать.', present: ['quiero ir', 'quieres ir', 'quiere ir', 'quiere ir', 'queremos ir', 'queréis ir', 'quieren ir'], past: ['quise ir', 'quisiste ir', 'quiso ir', 'quiso ir', 'quisimos ir', 'quisisteis ir', 'quisieron ir'] },
+      { ru: 'Я делаю задание. Я сделал задание.', present: ['hago la tarea', 'haces la tarea', 'hace la tarea', 'hace la tarea', 'hacemos la tarea', 'hacéis la tarea', 'hacen la tarea'], past: ['hice la tarea', 'hiciste la tarea', 'hizo la tarea', 'hizo la tarea', 'hicimos la tarea', 'hicisteis la tarea', 'hicieron la tarea'] },
+      { ru: 'Я прихожу рано. Я пришёл рано.', present: ['vengo temprano', 'vienes temprano', 'viene temprano', 'viene temprano', 'venimos temprano', 'venís temprano', 'vienen temprano'], past: ['vine temprano', 'viniste temprano', 'vino temprano', 'vino temprano', 'vinimos temprano', 'vinisteis temprano', 'vinieron temprano'] },
+      { ru: 'Я говорю правду. Я сказал правду.', present: ['digo la verdad', 'dices la verdad', 'dice la verdad', 'dice la verdad', 'decimos la verdad', 'decís la verdad', 'dicen la verdad'], past: ['dije la verdad', 'dijiste la verdad', 'dijo la verdad', 'dijo la verdad', 'dijimos la verdad', 'dijisteis la verdad', 'dijeron la verdad'] },
+    ]),
   },
   'kespa-tener-more': {
     title: 'Техника речи 1',
-    subtitle: 'Tener que во всех лицах и числах',
-    items: [
-      { ru: 'Мне нужно работать. Мне нужно заниматься.', es: 'Tengo que trabajar. Tengo que estudiar.' },
-      { ru: 'Тебе нужно работать. Тебе нужно заниматься.', es: 'Tienes que trabajar. Tienes que estudiar.' },
-      { ru: 'Ему нужно работать. Ему нужно заниматься.', es: 'Tiene que trabajar. Tiene que estudiar.' },
-      { ru: 'Ей нужно работать. Ей нужно заниматься.', es: 'Tiene que trabajar. Tiene que estudiar.' },
-      { ru: 'Нам нужно работать. Нам нужно заниматься.', es: 'Tenemos que trabajar. Tenemos que estudiar.' },
-      { ru: 'Вам нужно работать. Вам нужно заниматься.', es: 'Tenéis que trabajar. Tenéis que estudiar.' },
-      { ru: 'Им нужно работать. Им нужно заниматься.', es: 'Tienen que trabajar. Tienen que estudiar.' },
-    ],
+    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    items: makeSpeechItems([
+      { ru: 'Мне нужно работать. Мне пришлось работать.', present: ['tengo que trabajar', 'tienes que trabajar', 'tiene que trabajar', 'tiene que trabajar', 'tenemos que trabajar', 'tenéis que trabajar', 'tienen que trabajar'], past: ['tuve que trabajar', 'tuviste que trabajar', 'tuvo que trabajar', 'tuvo que trabajar', 'tuvimos que trabajar', 'tuvisteis que trabajar', 'tuvieron que trabajar'] },
+      { ru: 'Мне нужно заниматься. Мне пришлось заниматься.', present: ['tengo que estudiar', 'tienes que estudiar', 'tiene que estudiar', 'tiene que estudiar', 'tenemos que estudiar', 'tenéis que estudiar', 'tienen que estudiar'], past: ['tuve que estudiar', 'tuviste que estudiar', 'tuvo que estudiar', 'tuvo que estudiar', 'tuvimos que estudiar', 'tuvisteis que estudiar', 'tuvieron que estudiar'] },
+      { ru: 'Мне нужно готовить. Мне пришлось готовить.', present: ['tengo que cocinar', 'tienes que cocinar', 'tiene que cocinar', 'tiene que cocinar', 'tenemos que cocinar', 'tenéis que cocinar', 'tienen que cocinar'], past: ['tuve que cocinar', 'tuviste que cocinar', 'tuvo que cocinar', 'tuvo que cocinar', 'tuvimos que cocinar', 'tuvisteis que cocinar', 'tuvieron que cocinar'] },
+      { ru: 'Мне нужно уйти. Мне пришлось уйти.', present: ['tengo que salir', 'tienes que salir', 'tiene que salir', 'tiene que salir', 'tenemos que salir', 'tenéis que salir', 'tienen que salir'], past: ['tuve que salir', 'tuviste que salir', 'tuvo que salir', 'tuvo que salir', 'tuvimos que salir', 'tuvisteis que salir', 'tuvieron que salir'] },
+      { ru: 'Мне нужно позвонить. Мне пришлось позвонить.', present: ['tengo que llamar', 'tienes que llamar', 'tiene que llamar', 'tiene que llamar', 'tenemos que llamar', 'tenéis que llamar', 'tienen que llamar'], past: ['tuve que llamar', 'tuviste que llamar', 'tuvo que llamar', 'tuvo que llamar', 'tuvimos que llamar', 'tuvisteis que llamar', 'tuvieron que llamar'] },
+    ]),
   },
 };
 
@@ -576,22 +572,12 @@ export function KespaView() {
     if (dialogueRecordTimer.current) window.clearTimeout(dialogueRecordTimer.current);
     dialogueStream.current?.getTracks().forEach((track) => track.stop());
   }, []);
-  useEffect(() => {
-    const sections = lessonSteps
-      .map((step) => document.getElementById(`kespa-${step}`))
-      .filter((node): node is HTMLElement => !!node);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((first, second) => first.boundingClientRect.top - second.boundingClientRect.top)[0];
-        if (visible) setActiveStep(visible.target.id.replace('kespa-', '') as LessonStep);
-      },
-      { rootMargin: '-12% 0px -72% 0px', threshold: 0 },
-    );
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, [lessonId]);
+  const activeStepIndex = lessonSteps.indexOf(activeStep);
+  const nextStep = lessonSteps[activeStepIndex + 1];
+  const goToStep = (step: LessonStep) => {
+    setActiveStep(step);
+    window.requestAnimationFrame(() => lessonTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
   return (
     <div className="view-stack kespa-view">
       <section className="kespa-toolbar">
@@ -624,11 +610,11 @@ export function KespaView() {
           <button onClick={complete} className={completed.includes(lesson.id) ? 'completed' : ''}>{completed.includes(lesson.id) ? <><Check /> Завершено</> : 'Отметить пройденным'}</button>
         </header>
         <nav className={`kespa-sequence${speechDrill ? ' with-speech' : ''}`} aria-label="Последовательность урока">
-          {lessonSteps.map((step, index) => <button type="button" className={activeStep === step ? 'active' : ''} aria-current={activeStep === step ? 'step' : undefined} onClick={() => { setActiveStep(step); document.getElementById(`kespa-${step}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} key={step}><span>{index + 1}</span>{stepLabels[step]}</button>)}
+          {lessonSteps.map((step, index) => <button type="button" className={activeStep === step ? 'active' : ''} aria-current={activeStep === step ? 'step' : undefined} onClick={() => goToStep(step)} key={step}><span>{index + 1}</span>{stepLabels[step]}</button>)}
         </nav>
         <div className="kespa-lesson-tags"><Tag />{lesson.tags.map((item) => <button onClick={() => { setTag(item); setCatalogOpen(true); window.requestAnimationFrame(() => window.requestAnimationFrame(() => document.getElementById('kespa-library')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))); }} key={item}>#{item}</button>)}</div>
 
-        <section id="kespa-theory" className="kespa-section kespa-theory">
+        {activeStep === 'theory' && <section id="kespa-theory" className="kespa-section kespa-theory">
           <header><span>01</span><div><small>СНАЧАЛА РАЗБИРАЕМ · ТЕОРЕТИЧЕСКИХ БЛОКОВ: {theoryPanels.length}</small><h2>Теория</h2><p>Читайте последовательно: от основной идеи к нюансам и частым вопросам.</p></div></header>
           {theoryPanels.map((block, blockIndex) => <article key={block.title}>
             <div className="kespa-theory-title"><BookOpen /><span>{String(blockIndex + 1).padStart(2, '0')}</span><h3>{block.title}</h3></div>
@@ -638,29 +624,34 @@ export function KespaView() {
             {block.note && <aside className="kespa-theory-note"><b>Обратите внимание</b><p><HighlightedText text={block.note} /></p></aside>}
             {block.faq && <details className="kespa-theory-faq"><summary>Частый вопрос: {block.faq.ru}</summary><p>{block.faq.es}</p></details>}
           </article>)}
-        </section>
+          <aside className="kespa-theory-summary">
+            <small>РЕЗЮМЕ УРОКА</small>
+            <h3>Что важно запомнить</h3>
+            <ul>{theoryPanels.map((block) => <li key={block.title}><b>{block.title}</b><span><HighlightedText text={block.formula || block.text.split(/[.!?]/)[0]} /></span></li>)}</ul>
+          </aside>
+        </section>}
 
-        {speechDrill && <section id="kespa-speech" className="kespa-section kespa-training kespa-speech">
+        {activeStep === 'speech' && speechDrill && <section id="kespa-speech" className="kespa-section kespa-training kespa-speech">
           <header><span>02</span><div><small>ДОВОДИМ ФОРМЫ ДО АВТОМАТИЗМА</small><h2>{speechDrill.title}</h2><p>{`${speechDrill.subtitle}. Сначала скажите фразу сами, затем откройте и прослушайте ответ.`}</p></div></header>
           <div>{speechDrill.items.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
         </section>}
 
-        <section id="kespa-fresh" className="kespa-section kespa-training">
+        {activeStep === 'fresh' && <section id="kespa-fresh" className="kespa-section kespa-training">
           <header><span>{speechDrill ? '03' : '02'}</span><div><small>ЗАКРЕПЛЯЕМ ОДИН НОВЫЙ СЛОЙ</small><h2>Тренировка «Только новое»</h2><p>Здесь используются только слова и конструкция текущего урока.</p></div></header>
           <div>{lesson.fresh.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
-        </section>
+        </section>}
 
-        <section id="kespa-mixed" className="kespa-section kespa-training mixed">
+        {activeStep === 'mixed' && <section id="kespa-mixed" className="kespa-section kespa-training mixed">
           <header><span>{speechDrill ? '04' : '03'}</span><div><small>СОЕДИНЯЕМ С ПРОЙДЕННЫМ</small><h2>Тренировка «Новое + старое»</h2><p>{lesson.number === '01' ? 'Это первый урок: здесь новое соединяется внутри коротких связных фраз.' : 'Новая конструкция встречается вместе с материалом предыдущих уроков.'}</p></div></header>
           <div>{lesson.mixed.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
-        </section>
+        </section>}
 
-        <section id="kespa-text" className="kespa-section kespa-mini-text">
+        {activeStep === 'text' && <section id="kespa-text" className="kespa-section kespa-mini-text">
           <header><span>{speechDrill ? '05' : '04'}</span><div><small>ЧИТАЕМ В КОНТЕКСТЕ</small><h2>Мини-текст «{narrative.miniText.title}»</h2><p>Сначала прочитайте по-русски и попробуйте собрать испанскую версию вслух.</p></div></header>
           <article><p>{narrative.miniText.ru}</p>{textShown && <b>{narrative.miniText.es}</b>}<footer><button onClick={() => setTextShown((value) => !value)}><Eye /> {textShown ? 'Скрыть перевод' : 'Показать перевод'}</button><button onClick={() => speakSpanish(narrative.miniText.es)}><Play /> Слушать</button></footer></article>
-        </section>
+        </section>}
 
-        <section id="kespa-dialogue" className="kespa-section kespa-dialogue">
+        {activeStep === 'dialogue' && <section id="kespa-dialogue" className="kespa-section kespa-dialogue">
           <header><span>{speechDrill ? '06' : '05'}</span><div><small>В КОНЦЕ — ЖИВАЯ СЦЕНА · {narrative.dialogue.lines.length} РЕПЛИК</small><h2>Диалог «{narrative.dialogue.title}»</h2><p>Нажмите на любое сообщение, чтобы перевести только эту реплику на испанский.</p></div></header>
           <div>{narrative.dialogue.lines.map((line, index) => { const shown = dialogueShown.includes(index); return <button className={line.side} onClick={() => setDialogueShown((current) => shown ? current.filter((item) => item !== index) : [...current, index])} key={`${line.speaker}-${index}`}><i aria-hidden="true">{line.side === 'left' ? '👩🏻' : '🧑🏼'}</i><small>{line.speaker}</small><p>{shown ? line.es : line.ru}</p>{shown && <span onClick={(event) => { event.stopPropagation(); speakSpanish(line.es); }}><Play /></span>}</button>; })}</div>
           <footer className="kespa-dialogue-controls">
@@ -669,12 +660,17 @@ export function KespaView() {
             <button type="button" className={dialogueRecording ? 'recording' : ''} onClick={recordDialogue} aria-label="Записать диалог своим голосом"><Mic /><span>{dialogueRecording ? 'Запись…' : 'Говорить'}</span></button>
           </footer>
           {(dialogueRecording || dialogueRecordError) && <small className={dialogueRecordError ? 'kespa-dialogue-record-status error' : 'kespa-dialogue-record-status'} aria-live="polite">{dialogueRecordError ? 'Не удалось получить доступ к микрофону. Проверьте разрешение браузера.' : 'Идёт запись. Она автоматически остановится через 15 секунд.'}</small>}
-        </section>
+        </section>}
 
-        <footer className="kespa-finish">
+        {nextStep && <footer className="kespa-section-next">
+          <div><small>ДАЛЬШЕ</small><b>{stepLabels[nextStep]}</b></div>
+          <button type="button" onClick={() => goToStep(nextStep)}>Перейти к следующему разделу <ArrowRight /></button>
+        </footer>}
+
+        {activeStep === 'dialogue' && <footer className="kespa-finish">
           <div><small>УРОК {lesson.number} ЗАВЕРШЁН</small><h2>Новый материал уже работает в речи.</h2><p>Отметьте урок пройденным или переходите к следующему слою.</p></div>
           <div><button onClick={complete}>{completed.includes(lesson.id) ? <><Check /> Пройдено</> : 'Завершить урок'}</button>{Number(lesson.number) < kespaLessons.length && <button className="next" onClick={() => openLesson(kespaLessons[Number(lesson.number)].id)}>Следующий урок <ArrowRight /></button>}</div>
-        </footer>
+        </footer>}
       </div>
     </div>
   );
