@@ -13496,6 +13496,15 @@ body {
 .kespa-mini-text article { padding:clamp(20px,4vw,36px); border:1px solid var(--line); border-radius:20px; background:var(--soft); }
 .kespa-mini-text article>p,.kespa-mini-text article>b { display:block; max-width:900px; font:500 clamp(19px,2.5vw,27px)/1.65 var(--font-syne); }
 .kespa-mini-text article>b { margin-top:16px; color:var(--aqua); }
+.kespa-sentence-list { display:flex; flex-wrap:wrap; gap:7px; max-width:900px; }
+.kespa-sentence-list>button { min-height:0; padding:5px 8px; border:1px solid transparent; border-radius:8px; background:transparent; color:var(--text); font:500 clamp(19px,2.5vw,27px)/1.5 var(--font-syne); text-align:left; }
+.kespa-sentence-list>button:hover { border-color:color-mix(in srgb,var(--purple) 35%,var(--line)); background:color-mix(in srgb,var(--purple) 8%,var(--panel)); }
+.kespa-sentence-list>button.selected { border-color:var(--purple); background:color-mix(in srgb,var(--purple) 16%,var(--panel)); color:var(--purple); box-shadow:0 0 0 2px color-mix(in srgb,var(--purple) 10%,transparent); }
+.kespa-sentence-translation { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 18px; align-items:center; max-width:900px; margin-top:18px; padding:18px; border-left:4px solid var(--aqua); border-radius:0 14px 14px 0; background:var(--panel); }
+.kespa-sentence-translation small { grid-column:1/-1; color:var(--muted); font-size:9px; font-weight:900; letter-spacing:.1em; }
+.kespa-sentence-translation b { color:var(--aqua); font:700 clamp(18px,2vw,24px)/1.45 var(--font-syne); }
+.kespa-sentence-translation>button { white-space:nowrap; }
+@media(max-width:620px){.kespa-sentence-translation{grid-template-columns:1fr}.kespa-sentence-translation>button{width:100%;justify-content:center}.kespa-sentence-list{display:grid}.kespa-sentence-list>button{width:100%}}
 .kespa-mini-text footer { display:flex; gap:8px; margin-top:22px; }
 .kespa-mini-text button,.kespa-finish button { min-height:42px; display:flex; align-items:center; gap:7px; border:0; border-radius:11px; background:var(--purple); color:white; padding:0 14px; font-weight:850; cursor:pointer; }
 .kespa-mini-text button:last-child { background:var(--panel); color:var(--purple); border:1px solid var(--line); }
@@ -13567,7 +13576,12 @@ body {
 .kespa-toolbar>div { min-width:0; display:flex; align-items:baseline; gap:10px; }
 .kespa-toolbar b { color:var(--purple); font:850 18px var(--font-syne); }
 .kespa-toolbar span { overflow:hidden; color:var(--muted); font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
-.kespa-toolbar>button { flex:0 0 auto; min-height:36px; border:1px solid color-mix(in srgb,var(--purple) 40%,var(--line)); border-radius:10px; background:color-mix(in srgb,var(--purple) 10%,var(--panel)); color:var(--purple); padding:0 12px; font-size:11px; font-weight:850; cursor:pointer; }
+.kespa-toolbar-actions { flex:0 0 auto; align-items:center!important; }
+.kespa-toolbar-actions>button { flex:0 0 auto; min-height:36px; border:1px solid color-mix(in srgb,var(--purple) 40%,var(--line)); border-radius:10px; background:color-mix(in srgb,var(--purple) 10%,var(--panel)); color:var(--purple); padding:0 12px; font-size:11px; font-weight:850; cursor:pointer; }
+.kespa-voice-picker { height:36px; display:flex; align-items:center; gap:7px; padding:0 9px; border:1px solid var(--line); border-radius:10px; background:var(--soft); color:var(--purple); }
+.kespa-voice-picker svg { width:16px; flex:0 0 auto; }
+.kespa-voice-picker select { width:min(190px,22vw); border:0; outline:0; background:transparent; color:var(--text); font:750 11px var(--font-manrope); text-overflow:ellipsis; }
+.kespa-voice-picker:has(select:disabled) { opacity:.58; }
 .kespa-lesson { box-shadow:none; scroll-margin-top:90px; }
 .kespa-library { scroll-margin-top:90px; }
 .kespa-section { scroll-margin-top:105px; }
@@ -13619,7 +13633,10 @@ body {
 @media (max-width:700px) {
   .kespa-toolbar { position:sticky; top:6px; z-index:18; box-shadow:0 8px 24px color-mix(in srgb,#000 18%,transparent); }
   .kespa-lesson,.kespa-library,.kespa-section { scroll-margin-top:125px; }
-  .kespa-toolbar span { display:none; }
+  .kespa-toolbar>div:first-child span { display:none; }
+  .kespa-toolbar-actions { gap:6px!important; }
+  .kespa-voice-picker { padding:0 7px; }
+  .kespa-voice-picker select { width:112px; }
   .kespa-lesson-head { min-height:310px; display:block; padding:58px 20px 36px; }
   .kespa-lesson-head h2 { margin-top:14px; font-size:clamp(37px,11vw,51px); }
   .kespa-lesson-head p { font-size:15px; }
@@ -13662,6 +13679,65 @@ body {
 .kespa-section-next b { font:750 18px var(--font-syne); }
 .kespa-section-next button { min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:12px; background:var(--purple); color:white; padding:0 17px; font-weight:850; cursor:pointer; }
 .kespa-section-next button svg { width:18px; }
+
+/* Kespa theory colors must follow the active theme. The original reader used
+   fixed dark-theme inks, which became nearly invisible on the light surface. */
+.kespa-view {
+  --kespa-theory-copy: color-mix(in srgb,var(--text) 82%,var(--muted));
+  --kespa-theory-secondary: var(--muted);
+  --kespa-formula-ink: #6330c9;
+  --kespa-aqua-ink: #087f75;
+  --kespa-highlight-bg: #eadffc;
+  --kespa-highlight-ink: #5b299f;
+  --kespa-example-bg: color-mix(in srgb,var(--soft) 82%,var(--panel));
+}
+.dark .kespa-view {
+  --kespa-theory-copy: #ded7e8;
+  --kespa-theory-secondary: #c1b9c9;
+  --kespa-formula-ink: #cbb8ff;
+  --kespa-aqua-ink: #75e4cf;
+  --kespa-highlight-bg: color-mix(in srgb,var(--purple) 42%,#f2c46d);
+  --kespa-highlight-ink: #fff2d5;
+  --kespa-example-bg: color-mix(in srgb,var(--soft) 72%,transparent);
+}
+.kespa-theory>article { color:var(--text); }
+.kespa-theory article h3 { color:var(--text); }
+.kespa-theory-title>span { color:var(--purple); }
+.kespa-theory article>p { color:var(--kespa-theory-copy); }
+.kespa-theory article>strong {
+  border-color:var(--purple);
+  background:color-mix(in srgb,var(--purple) 8%,var(--panel));
+  color:var(--kespa-formula-ink);
+}
+.kespa-example-table { border-color:var(--line); }
+.kespa-example-table button {
+  border-color:var(--line);
+  background:var(--kespa-example-bg);
+  color:var(--text);
+}
+.kespa-example-table button:hover { background:var(--soft); }
+.kespa-example-table button span { color:var(--kespa-theory-secondary); }
+.kespa-example-table button b { color:var(--text); }
+.kespa-theory article mark,.kespa-theory-note mark {
+  background:var(--kespa-highlight-bg);
+  color:var(--kespa-highlight-ink);
+}
+.kespa-theory article em,.kespa-theory-note em {
+  background:color-mix(in srgb,var(--aqua) 16%,var(--panel));
+  color:var(--kespa-aqua-ink);
+}
+.kespa-theory-note {
+  border-color:color-mix(in srgb,var(--aqua) 45%,var(--line));
+  background:color-mix(in srgb,var(--aqua) 7%,var(--panel));
+}
+.kespa-theory-note>b { color:var(--kespa-aqua-ink); }
+.kespa-theory-note>p { color:var(--kespa-theory-copy); }
+.kespa-theory-faq {
+  border-color:color-mix(in srgb,var(--purple) 30%,var(--line));
+  background:color-mix(in srgb,var(--purple) 5%,var(--panel));
+}
+.kespa-theory-faq summary { color:var(--text); }
+.kespa-theory-faq p { color:var(--kespa-formula-ink); }
 
 @media (max-width:700px) {
   .kespa-theory-summary li { grid-template-columns:1fr; gap:5px; }

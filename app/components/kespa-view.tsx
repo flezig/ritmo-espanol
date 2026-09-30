@@ -10,6 +10,7 @@ import {
   Play,
   Search,
   Tag,
+  Volume2,
   X,
 } from 'lucide-react';
 import { kespaPracticeSupplements } from '../data/kespa-practice';
@@ -480,6 +481,7 @@ function HighlightedText({ text }: { text: string }) {
 }
 
 const progressKey = 'ritmo-kespa-progress-v1';
+const voicePreferenceKey = 'ritmo-kespa-spanish-voice-v1';
 const steps = ['theory', 'speech', 'fresh', 'mixed', 'text', 'dialogue'] as const;
 type LessonStep = (typeof steps)[number];
 const stepLabels: Record<LessonStep, string> = {
@@ -491,16 +493,43 @@ const stepLabels: Record<LessonStep, string> = {
   dialogue: 'Диалог',
 };
 
-function speakSpanish(text: string) {
+function spanishVoiceScore(voice: SpeechSynthesisVoice) {
+  const name = `${voice.name} ${voice.voiceURI}`.toLowerCase();
+  let score = voice.lang.toLowerCase() === 'es-es' ? 160 : 90;
+  if (/natural|neural|premium|enhanced|studio|siri|compact/u.test(name)) score += 140;
+  if (/ximena|elvira|marta|mónica|monica|google español/u.test(name)) score += 100;
+  if (/álvaro|alvaro|jorge|paulina|dalia|paloma|helena/u.test(name)) score += 70;
+  if (voice.default) score += 20;
+  return score;
+}
+
+function bestSpanishVoices(voices: SpeechSynthesisVoice[]) {
+  return voices
+    .filter((voice) => voice.lang.toLowerCase().startsWith('es'))
+    .sort((first, second) => spanishVoiceScore(second) - spanishVoiceScore(first))
+    .slice(0, 6);
+}
+
+function voiceLabel(voice: SpeechSynthesisVoice) {
+  return `${voice.name.replace(/^Microsoft\s+/u, '')} · ${voice.lang}`;
+}
+
+function speakSpanish(text: string, voiceURI?: string) {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
   const voice = new SpeechSynthesisUtterance(text);
   voice.lang = 'es-ES';
-  voice.rate = 0.88;
+  voice.rate = 0.92;
+  voice.pitch = 1;
+  const selectedVoice = window.speechSynthesis.getVoices().find((item) => item.voiceURI === voiceURI);
+  if (selectedVoice) {
+    voice.voice = selectedVoice;
+    voice.lang = selectedVoice.lang;
+  }
   window.speechSynthesis.speak(voice);
 }
 
-function PracticeLine({ item, index }: { item: Pair; index: number }) {
+function PracticeLine({ item, index, voiceURI }: { item: Pair; index: number; voiceURI?: string }) {
   const [shown, setShown] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordError, setRecordError] = useState(false);
@@ -534,7 +563,7 @@ function PracticeLine({ item, index }: { item: Pair; index: number }) {
     <article className="kespa-practice-line">
       <span>{String(index + 1).padStart(2, '0')}</span>
       <div className="kespa-line-actions">
-        <button type="button" onClick={() => speakSpanish(item.es)} aria-label="Прослушать на испанском"><Play /></button>
+        <button type="button" onClick={() => speakSpanish(item.es, voiceURI)} aria-label="Прослушать на испанском"><Play /></button>
         <button type="button" className={recording ? 'recording' : ''} onClick={record} aria-label="Записать свой голос"><Mic /></button>
       </div>
       <p>{item.ru}</p>
@@ -555,6 +584,8 @@ export function KespaView() {
   const [textShown, setTextShown] = useState(false);
   const [dialogueShown, setDialogueShown] = useState<number[]>([]);
   const [dialogueRecording, setDialogueRecording] = useState(false);
+  const [spanishVoices, setSpanishVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceURI, setVoiceURI] = useState('');
   const lessonTop = useRef<HTMLDivElement>(null);
   const dialogueRecordTimer = useRef<number | null>(null);
   const dialogueStream = useRef<MediaStream | null>(null);
@@ -584,6 +615,27 @@ export function KespaView() {
   useEffect(() => {
     try { setCompleted(JSON.parse(localStorage.getItem(progressKey) || '[]')); } catch {}
   }, []);
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+    const loadVoices = () => {
+      const recommended = bestSpanishVoices(window.speechSynthesis.getVoices());
+      setSpanishVoices(recommended);
+      setVoiceURI((current) => {
+        const saved = localStorage.getItem(voicePreferenceKey) || '';
+        if (recommended.some((voice) => voice.voiceURI === current)) return current;
+        if (recommended.some((voice) => voice.voiceURI === saved)) return saved;
+        return recommended[0]?.voiceURI || '';
+      });
+    };
+    loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+  }, []);
+  const chooseVoice = (nextVoiceURI: string) => {
+    setVoiceURI(nextVoiceURI);
+    localStorage.setItem(voicePreferenceKey, nextVoiceURI);
+    speakSpanish('Hola. Esta es la voz seleccionada para el curso.', nextVoiceURI);
+  };
   const openLesson = (id: string) => {
     setLessonId(id);
     setCatalogOpen(false);
@@ -635,7 +687,15 @@ export function KespaView() {
           <b>kespa</b>
           <span>{completed.length} из {kespaLessons.length} уроков завершено</span>
         </div>
-        <button type="button" aria-expanded={catalogOpen} aria-controls="kespa-library" onClick={() => setCatalogOpen((value) => !value)}>{catalogOpen ? 'Скрыть уроки' : `Все уроки · ${kespaLessons.length}`}</button>
+        <div className="kespa-toolbar-actions">
+          {spanishVoices.length > 0 && <label className="kespa-voice-picker" title="Выбрать испанский голос">
+            <Volume2 />
+            <select aria-label="Голос озвучки" value={voiceURI} onChange={(event) => chooseVoice(event.target.value)}>
+              {spanishVoices.map((voice) => <option value={voice.voiceURI} key={voice.voiceURI}>{voiceLabel(voice)}</option>)}
+            </select>
+          </label>}
+          <button type="button" aria-expanded={catalogOpen} aria-controls="kespa-library" onClick={() => setCatalogOpen((value) => !value)}>{catalogOpen ? 'Скрыть уроки' : `Все уроки · ${kespaLessons.length}`}</button>
+        </div>
       </section>
 
       {catalogOpen && <section className="kespa-library" id="kespa-library" aria-label="Все уроки kespa">
@@ -670,7 +730,7 @@ export function KespaView() {
             <div className="kespa-theory-title"><BookOpen /><span>{String(blockIndex + 1).padStart(2, '0')}</span><h3>{block.title}</h3></div>
             <p><HighlightedText text={block.text} /></p>
             {block.formula && <strong><HighlightedText text={block.formula} /></strong>}
-            <div className="kespa-example-table">{block.examples.map((example) => <button onClick={() => speakSpanish(example.es)} key={example.es}><span>{example.ru}</span><b>{example.es}</b><Play /></button>)}</div>
+            <div className="kespa-example-table">{block.examples.map((example) => <button onClick={() => speakSpanish(example.es, voiceURI)} key={example.es}><span>{example.ru}</span><b>{example.es}</b><Play /></button>)}</div>
             {block.note && <aside className="kespa-theory-note"><b>Обратите внимание</b><p><HighlightedText text={block.note} /></p></aside>}
             {block.faq && <details className="kespa-theory-faq"><summary>Частый вопрос: {block.faq.ru}</summary><p>{block.faq.es}</p></details>}
           </article>)}
@@ -683,30 +743,30 @@ export function KespaView() {
 
         {activeStep === 'speech' && speechDrill && <section id="kespa-speech" className="kespa-section kespa-training kespa-speech">
           <header><span>02</span><div><small>ДОВОДИМ ФОРМЫ ДО АВТОМАТИЗМА</small><h2>{speechDrill.title}</h2><p>{`${speechDrill.subtitle}. Сначала скажите фразу сами, затем откройте и прослушайте ответ.`}</p></div></header>
-          <div>{speechDrill.items.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
+          <div>{speechDrill.items.map((item, index) => <PracticeLine item={item} index={index} voiceURI={voiceURI} key={item.ru} />)}</div>
         </section>}
 
         {activeStep === 'fresh' && <section id="kespa-fresh" className="kespa-section kespa-training">
           <header><span>{speechDrill ? '03' : '02'}</span><div><small>ЗАКРЕПЛЯЕМ ОДИН НОВЫЙ СЛОЙ</small><h2>Тренировка «Только новое»</h2><p>Здесь используются только слова и конструкция текущего урока.</p></div></header>
-          <div>{lesson.fresh.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
+          <div>{lesson.fresh.map((item, index) => <PracticeLine item={item} index={index} voiceURI={voiceURI} key={item.ru} />)}</div>
         </section>}
 
         {activeStep === 'mixed' && <section id="kespa-mixed" className="kespa-section kespa-training mixed">
           <header><span>{speechDrill ? '04' : '03'}</span><div><small>СОЕДИНЯЕМ С ПРОЙДЕННЫМ</small><h2>Тренировка «Новое + старое»</h2><p>{lesson.number === '01' ? 'Это первый урок: здесь новое соединяется внутри коротких связных фраз.' : 'Новая конструкция встречается вместе с материалом предыдущих уроков.'}</p></div></header>
-          <div>{lesson.mixed.map((item, index) => <PracticeLine item={item} index={index} key={item.ru} />)}</div>
+          <div>{lesson.mixed.map((item, index) => <PracticeLine item={item} index={index} voiceURI={voiceURI} key={item.ru} />)}</div>
         </section>}
 
         {activeStep === 'text' && <section id="kespa-text" className="kespa-section kespa-mini-text">
           <header><span>{speechDrill ? '05' : '04'}</span><div><small>ЧИТАЕМ В КОНТЕКСТЕ</small><h2>Мини-текст «{narrative.miniText.title}»</h2><p>Сначала прочитайте по-русски и попробуйте собрать испанскую версию вслух.</p></div></header>
-          <article><p>{narrative.miniText.ru}</p>{textShown && <b>{narrative.miniText.es}</b>}<footer><button onClick={() => setTextShown((value) => !value)}><Eye /> {textShown ? 'Скрыть перевод' : 'Показать перевод'}</button><button onClick={() => speakSpanish(narrative.miniText.es)}><Play /> Слушать</button></footer></article>
+          <article><p>{narrative.miniText.ru}</p>{textShown && <b>{narrative.miniText.es}</b>}<footer><button onClick={() => setTextShown((value) => !value)}><Eye /> {textShown ? 'Скрыть перевод' : 'Показать перевод'}</button><button onClick={() => speakSpanish(narrative.miniText.es, voiceURI)}><Play /> Слушать</button></footer></article>
         </section>}
 
         {activeStep === 'dialogue' && <section id="kespa-dialogue" className="kespa-section kespa-dialogue">
           <header><span>{speechDrill ? '06' : '05'}</span><div><small>В КОНЦЕ — ЖИВАЯ СЦЕНА · {narrative.dialogue.lines.length} РЕПЛИК</small><h2>Диалог «{narrative.dialogue.title}»</h2><p>Нажмите на любое сообщение, чтобы перевести только эту реплику на испанский.</p></div></header>
-          <div>{narrative.dialogue.lines.map((line, index) => { const shown = dialogueShown.includes(index); return <button className={line.side} onClick={() => setDialogueShown((current) => shown ? current.filter((item) => item !== index) : [...current, index])} key={`${line.speaker}-${index}`}><i aria-hidden="true">{line.side === 'left' ? '👩🏻' : '🧑🏼'}</i><small>{line.speaker}</small><p>{shown ? line.es : line.ru}</p>{shown && <span onClick={(event) => { event.stopPropagation(); speakSpanish(line.es); }}><Play /></span>}</button>; })}</div>
+          <div>{narrative.dialogue.lines.map((line, index) => { const shown = dialogueShown.includes(index); return <button className={line.side} onClick={() => setDialogueShown((current) => shown ? current.filter((item) => item !== index) : [...current, index])} key={`${line.speaker}-${index}`}><i aria-hidden="true">{line.side === 'left' ? '👩🏻' : '🧑🏼'}</i><small>{line.speaker}</small><p>{shown ? line.es : line.ru}</p>{shown && <span onClick={(event) => { event.stopPropagation(); speakSpanish(line.es, voiceURI); }}><Play /></span>}</button>; })}</div>
           <footer className="kespa-dialogue-controls">
             <button type="button" onClick={() => setDialogueShown((current) => current.length === narrative.dialogue.lines.length ? [] : narrative.dialogue.lines.map((_, index) => index))} aria-label="Показать или скрыть весь перевод"><Eye /><span>{dialogueShown.length === narrative.dialogue.lines.length ? 'Скрыть' : 'Перевод'}</span></button>
-            <button type="button" onClick={() => speakSpanish(narrative.dialogue.lines.map((line) => line.es).join(' '))} aria-label="Прослушать весь диалог"><Play /><span>Слушать</span></button>
+            <button type="button" onClick={() => speakSpanish(narrative.dialogue.lines.map((line) => line.es).join(' '), voiceURI)} aria-label="Прослушать весь диалог"><Play /><span>Слушать</span></button>
             <button type="button" className={dialogueRecording ? 'recording' : ''} onClick={recordDialogue} aria-label="Записать диалог своим голосом"><Mic /><span>{dialogueRecording ? 'Запись…' : 'Говорить'}</span></button>
           </footer>
           {(dialogueRecording || dialogueRecordError) && <small className={dialogueRecordError ? 'kespa-dialogue-record-status error' : 'kespa-dialogue-record-status'} aria-live="polite">{dialogueRecordError ? 'Не удалось получить доступ к микрофону. Проверьте разрешение браузера.' : 'Идёт запись. Она автоматически остановится через 15 секунд.'}</small>}
