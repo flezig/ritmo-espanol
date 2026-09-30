@@ -12,6 +12,7 @@ import {
   Tag,
   X,
 } from 'lucide-react';
+import { kespaPracticeSupplements } from '../data/kespa-practice';
 
 type Pair = { ru: string; es: string };
 type DialogueLine = Pair & { speaker: string; side: 'left' | 'right' };
@@ -49,9 +50,9 @@ const baseKespaLessons: KespaLesson[] = [
     dialogue: { title: 'На встрече', lines: [{ speaker: 'Ана', side: 'left', ru: 'Привет! Я Ана.', es: '¡Hola! Soy Ana.' }, { speaker: 'Лео', side: 'right', ru: 'Очень приятно. Я Лео.', es: 'Mucho gusto. Soy Leo.' }, { speaker: 'Ана', side: 'left', ru: 'Мы теперь друзья.', es: 'Ahora somos amigos.' }] },
   },
   {
-    id: 'kespa-ser', number: '02', title: 'Ser: кто я и откуда', subtitle: 'Имя, профессия, происхождение и постоянный признак', source: 'Урок 01 · Знакомство и о себе',
+    id: 'kespa-ser', number: '02', title: 'Ser: кто я и откуда', subtitle: 'Имя, профессия, происхождение и характеристика', source: 'Урок 01 · Знакомство и о себе',
     tags: ['ser', 'профессии', 'знакомство'],
-    theory: [{ title: 'Шесть форм ser', text: 'Ser описывает личность, профессию, происхождение и постоянную характеристику. После ser перед профессией артикль обычно не нужен.', formula: 'soy · eres · es · somos · sois · son', examples: [{ es: 'Soy diseñador.', ru: 'Я дизайнер.' }, { es: 'Eres de Perú.', ru: 'Ты из Перу.' }, { es: 'El gato es tranquilo.', ru: 'Кот спокойный.' }] }],
+    theory: [{ title: 'Шесть форм ser', text: 'Ser используют для идентификации, профессии, происхождения и общей характеристики. При простом указании профессии после ser артикль обычно не нужен.', formula: 'soy · eres · es · somos · sois · son', examples: [{ es: 'Soy diseñador.', ru: 'Я дизайнер.' }, { es: 'Eres de Perú.', ru: 'Ты из Перу.' }, { es: 'El gato es tranquilo.', ru: 'Кот спокойный.' }] }],
     fresh: [{ ru: 'Я дизайнер.', es: 'Soy diseñador.' }, { ru: 'Ты из Перу.', es: 'Eres de Perú.' }, { ru: 'Кот спокойный.', es: 'El gato es tranquilo.' }, { ru: 'Они из Колумбии.', es: 'Son de Colombia.' }],
     mixed: [{ ru: 'Я Ана, я врач.', es: 'Soy Ana, soy médica.' }, { ru: 'Мы друзья и мы из Мадрида.', es: 'Somos amigos y somos de Madrid.' }, { ru: 'Она преподаватель, а он дизайнер.', es: 'Ella es profesora y él es diseñador.' }],
     miniText: { title: 'Новая команда', ru: 'Мы небольшая команда. Я дизайнер. Ана врач, а Лео преподаватель. Мы из разных стран.', es: 'Somos un equipo pequeño. Soy diseñador. Ana es médica y Leo es profesor. Somos de países diferentes.' },
@@ -130,11 +131,11 @@ const additionalKespaLessons: KespaLesson[] = [
       { title: 'Три варианта перед существительным', text: 'В испанском перед существительным выбирают определённый артикль el, la, los, las, неопределённый un, una, unos, unas либо не ставят ничего. Выбор зависит не от самого слова, а от смысла: предмет известен, вводится впервые или называется как категория.', formula: 'el libro · un libro · comprar libros', examples: [{ es: 'El libro está aquí.', ru: 'Эта книга здесь.' }, { es: 'Busco un libro.', ru: 'Я ищу какую-нибудь книгу.' }, { es: 'Compro libros.', ru: 'Я покупаю книги.' }], note: 'Одно существительное может появляться со всеми тремя вариантами в разных ситуациях.' },
       { title: 'Определённый артикль и обобщение', text: 'El и la нужны не только для конкретного предмета. С ними говорят о классе предметов вообще: El café es popular. Во множественном числе los и las охватывают всю группу или уже известную группу.', formula: 'El + категория · Los/las + группа', examples: [{ es: 'El español es bonito.', ru: 'Испанский язык красив.' }, { es: 'Los gatos son curiosos.', ru: 'Кошки любопытны.' }, { es: 'Las llaves están en la mesa.', ru: 'Ключи лежат на столе.' }], faq: { ru: 'Почему в общем утверждении стоит el?', es: 'Определённый артикль может обозначать весь класс предметов или явлений.' } },
       { title: 'Неопределённый артикль', text: 'Un и una вводят один новый или неконкретный предмет. Формы unos и unas могут означать несколько предметов либо приблизительное количество. С профессией после ser артикль обычно исчезает, если нет дополнительного описания.', formula: 'un / una · unos / unas', examples: [{ es: 'Necesito una silla.', ru: 'Мне нужен какой-нибудь стул.' }, { es: 'Hay unos cafés cerca.', ru: 'Рядом есть несколько кафе.' }, { es: 'Es profesora.', ru: 'Она преподавательница.' }], note: 'Es una profesora excelente — артикль вернулся, потому что профессию описывает прилагательное.' },
-      { title: 'Нулевой артикль', text: 'Без артикля часто называют профессию после ser, язык после hablar, неисчисляемое вещество или предметы во множественном числе в общем значении. Но после aprender и estudiar язык обычно получает определённый артикль.', formula: 'Soy médico. · Hablo español. · Bebo agua.', examples: [{ es: 'Somos estudiantes.', ru: 'Мы студенты.' }, { es: 'Habla francés.', ru: 'Он/она говорит по-французски.' }, { es: 'Estudio el español.', ru: 'Я изучаю испанский язык.' }], faq: { ru: 'Почему Hablo español, но Estudio el español?', es: 'После hablar язык обычно идёт без артикля, а как предмет изучения допускает определённый артикль.' } },
+      { title: 'Нулевой артикль', text: 'Без артикля часто называют профессию после ser, язык после hablar или estudiar, неисчисляемое вещество и неопределённые предметы во множественном числе. Определённый артикль появляется, когда язык становится темой высказывания или уточняется.', formula: 'Soy médico. · Hablo español. · Estudio español.', examples: [{ es: 'Somos estudiantes.', ru: 'Мы студенты.' }, { es: 'Habla francés.', ru: 'Он/она говорит по-французски.' }, { es: 'El español de esta región es diferente.', ru: 'Испанский язык этого региона отличается.' }], faq: { ru: 'Можно ли сказать Estudio el español?', es: 'Да, но нейтральное Estudio español очень употребительно; артикль особенно естественен при уточнении языка.' } },
       { title: 'El перед женскими словами с ударным a-', text: 'Некоторые существительные женского рода начинаются с ударного a- или ha-. В единственном числе перед ними ставят el или un, чтобы избежать двух одинаковых ударных звуков подряд. Само слово остаётся женского рода, поэтому прилагательное получает женскую форму. Во множественном числе возвращается las.', formula: 'el agua fría · un águila blanca · las aguas frías', examples: [{ es: 'el agua fría', ru: 'холодная вода' }, { es: 'un águila blanca', ru: 'белый орёл' }, { es: 'las aulas grandes', ru: 'большие аудитории' }], note: 'El здесь не меняет род слова: правильно el agua fría, а не el agua frío.' },
     ],
     fresh: [{ ru: 'Я ищу какую-нибудь книгу.', es: 'Busco un libro.' }, { ru: 'Эта книга здесь.', es: 'El libro está aquí.' }, { ru: 'Я покупаю книги.', es: 'Compro libros.' }, { ru: 'Я говорю по-испански.', es: 'Hablo español.' }],
-    mixed: [{ ru: 'Я преподаватель и изучаю испанский язык.', es: 'Soy profesor y estudio el español.' }, { ru: 'У нас есть кот. Кошки очень любопытны.', es: 'Tenemos un gato. Los gatos son muy curiosos.' }, { ru: 'Она пьёт воду и ищет чашку.', es: 'Bebe agua y busca una taza.' }],
+    mixed: [{ ru: 'Я преподаватель и изучаю испанский язык.', es: 'Soy profesor y estudio español.' }, { ru: 'У нас есть кот. Кошки очень любопытны.', es: 'Tenemos un gato. Los gatos son muy curiosos.' }, { ru: 'Она пьёт воду и ищет чашку.', es: 'Bebe agua y busca una taza.' }],
     miniText: { title: 'В книжном магазине', ru: 'Я ищу книгу для сестры. Продавец показывает мне одну книгу о Мадриде. Книга красивая, но дорогая. Рядом лежат путеводители без фотографий. Я покупаю путеводитель и несколько открыток. Открытки очень яркие.', es: 'Busco un libro para mi hermana. El vendedor me muestra un libro sobre Madrid. El libro es bonito, pero caro. Al lado hay guías sin fotos. Compro una guía y unas postales. Las postales son muy alegres.' },
     dialogue: { title: 'Какую книгу?', lines: [{ speaker: 'Продавец', side: 'left', ru: 'Вы ищете конкретную книгу?', es: '¿Busca un libro concreto?' }, { speaker: 'Покупатель', side: 'right', ru: 'Нет, мне нужна книга об Испании.', es: 'No, necesito un libro sobre España.' }, { speaker: 'Продавец', side: 'left', ru: 'Вот книга о Мадриде.', es: 'Aquí tiene un libro sobre Madrid.' }, { speaker: 'Покупатель', side: 'right', ru: 'В книге есть фотографии?', es: '¿El libro tiene fotos?' }, { speaker: 'Продавец', side: 'left', ru: 'Да, фотографии очень красивые.', es: 'Sí, las fotos son muy bonitas.' }, { speaker: 'Покупатель', side: 'right', ru: 'Отлично, я беру эту книгу.', es: 'Perfecto, me llevo el libro.' }] },
   },
@@ -175,7 +176,7 @@ const additionalKespaLessons: KespaLesson[] = [
       { title: 'Артикль и другие определители', text: 'Артикль обычно не ставят рядом с притяжательным или указательным словом перед одним существительным: mi casa, esta casa. Количественные слова также могут занимать эту позицию самостоятельно.', formula: 'mi casa · esta casa · dos casas · algunas casas', examples: [{ es: 'Mi hermana vive aquí.', ru: 'Моя сестра живёт здесь.' }, { es: 'Esta ciudad es grande.', ru: 'Этот город большой.' }, { es: 'Algunos amigos vienen hoy.', ru: 'Несколько друзей придут сегодня.' }], note: 'Формы la mi casa и la esta ciudad в нейтральном современном испанском неверны.' },
       { title: 'Финальная проверка', text: 'Перед существительным задайте три вопроса: предмет известен или вводится впервые; говорится об одном предмете или о категории; нет ли уже другого определителя. Затем проверьте род и число, а также особые случаи al, del и нулевого артикля.', formula: 'смысл → определённость → род/число → особый случай', examples: [{ es: 'Esta es mi casa.', ru: 'Это мой дом.' }, { es: 'La casa tiene un jardín.', ru: 'У дома есть сад.' }, { es: 'El jardín es pequeño.', ru: 'Этот сад маленький.' }], faq: { ru: 'Что важнее: окончание слова или смысл фразы?', es: 'Сначала определяется смысл и тип определителя, затем согласуются род и число.' } },
     ],
-    fresh: [{ ru: 'Я хочу один.', es: 'Quiero uno.' }, { ru: 'Главное — практиковаться.', es: 'Lo importante es practicar.' }, { ru: 'Это мой дом.', es: 'Esta es mi casa.' }, { ru: 'Несколько друзей приходят сегодня.', es: 'Algunos amigos vienen hoy.' }],
+    fresh: [{ ru: 'Я хочу один.', es: 'Quiero uno.' }, { ru: 'Главное — практиковаться.', es: 'Lo importante es practicar.' }, { ru: 'Мне нужен один новый.', es: 'Necesito uno nuevo.' }, { ru: 'Несколько друзей приходят сегодня.', es: 'Algunos amigos vienen hoy.' }],
     mixed: [{ ru: 'У моей сестры двадцать одна книга.', es: 'Mi hermana tiene veintiún libros.' }, { ru: 'Я понимаю то, что говорит преподаватель.', es: 'Entiendo lo que dice el profesor.' }, { ru: 'Этот дом большой, но его сад маленький.', es: 'Esta casa es grande, pero su jardín es pequeño.' }],
     miniText: { title: 'Что действительно важно', ru: 'У меня двадцать одна книга по испанскому, но каждый день я использую только одну. Эта книга небольшая и очень понятная. Главное для меня — не количество, а регулярная практика. Я читаю одну страницу, выписываю несколько слов и повторяю то, что уже знаю. Такой простой план работает лучше большой коллекции учебников.', es: 'Tengo veintiún libros de español, pero cada día uso solo uno. Este libro es pequeño y muy claro. Lo importante para mí no es la cantidad, sino la práctica regular. Leo una página, escribo algunas palabras y repaso lo que ya sé. Este plan sencillo funciona mejor que una gran colección de manuales.' },
     dialogue: { title: 'Выбор учебника', lines: [{ speaker: 'Марта', side: 'left', ru: 'Сколько у тебя учебников?', es: '¿Cuántos manuales tienes?' }, { speaker: 'Пабло', side: 'right', ru: 'Двадцать один, но я использую только один.', es: 'Veintiuno, pero uso solo uno.' }, { speaker: 'Марта', side: 'left', ru: 'Какой учебник твой любимый?', es: '¿Cuál es tu manual favorito?' }, { speaker: 'Пабло', side: 'right', ru: 'Вот этот маленький учебник.', es: 'Este manual pequeño.' }, { speaker: 'Марта', side: 'left', ru: 'Что в нём самое полезное?', es: '¿Qué es lo más útil de él?' }, { speaker: 'Пабло', side: 'right', ru: 'Главное — короткие тексты и понятные примеры.', es: 'Lo importante son los textos cortos y los ejemplos claros.' }] },
@@ -210,9 +211,58 @@ const additionalKespaLessons: KespaLesson[] = [
   },
 ];
 
-const kespaLessons: KespaLesson[] = [...baseKespaLessons, ...additionalKespaLessons]
-  .sort((first, second) => first.source.localeCompare(second.source, 'ru'))
-  .map((lesson, index) => ({ ...lesson, number: String(index + 1).padStart(2, '0') }));
+const kespaLessonOrder = [
+  'kespa-pronouns',
+  'kespa-ser',
+  'kespa-articles',
+  'kespa-article-system',
+  'kespa-article-special',
+  'kespa-gender-details',
+  'kespa-lo-determiners',
+  'kespa-family',
+  'kespa-possessives',
+  'kespa-description',
+  'kespa-tener-more',
+  'kespa-demonstratives',
+  'kespa-ar',
+  'kespa-er-ir',
+  'kespa-irregular',
+] as const;
+
+const lessonsById = new Map(
+  [...baseKespaLessons, ...additionalKespaLessons].map((lesson) => [lesson.id, lesson]),
+);
+
+const lessonGoals: Record<string, string> = {
+  'kespa-pronouns': 'После урока вы сможете назвать участников разговора и выбрать уместное обращение «ты» или «Вы».',
+  'kespa-ser': 'После урока вы сможете представиться, назвать профессию и сказать, откуда вы.',
+  'kespa-articles': 'После урока вы сможете назвать новый или уже известный предмет и согласовать его описание.',
+  'kespa-article-system': 'После урока вы сможете выбирать определённый, неопределённый или нулевой артикль по смыслу.',
+  'kespa-article-special': 'После урока вы сможете употреблять al и del, говорить о времени и узнавать особые случаи с артиклем.',
+  'kespa-gender-details': 'После урока вы сможете надёжнее определять род существительных и проверять частые исключения.',
+  'kespa-lo-determiners': 'После урока вы сможете заменять уже названный предмет словами uno и una и понимать конструкции с lo.',
+  'kespa-family': 'После урока вы сможете рассказать, кто есть в вашей семье, и назвать возраст.',
+  'kespa-possessives': 'После урока вы сможете сказать, кому принадлежит предмет, и уточнить неоднозначное su.',
+  'kespa-description': 'После урока вы сможете кратко описать внешность, характер и временное состояние человека.',
+  'kespa-tener-more': 'После урока вы сможете говорить о физических ощущениях и необходимости с tener que.',
+  'kespa-demonstratives': 'После урока вы сможете указать на предмет и объяснить, где он находится.',
+  'kespa-ar': 'После урока вы сможете говорить о регулярных действиях с правильными глаголами на -ar.',
+  'kespa-er-ir': 'После урока вы сможете употреблять правильные глаголы на -er и -ir в настоящем времени.',
+  'kespa-irregular': 'После урока вы сможете использовать частотные неправильные формы presente в живых фразах.',
+};
+
+const kespaLessons: KespaLesson[] = kespaLessonOrder.map((id, index) => {
+  const lesson = lessonsById.get(id);
+  if (!lesson) throw new Error(`Kespa lesson is missing: ${id}`);
+  const supplement = kespaPracticeSupplements[id];
+  return {
+    ...lesson,
+    number: String(index + 1).padStart(2, '0'),
+    subtitle: lessonGoals[id],
+    fresh: [...lesson.fresh, ...(supplement?.fresh || [])],
+    mixed: [...lesson.mixed, ...(supplement?.mixed || [])],
+  };
+});
 
 const theoryExpansions: Record<string, TheoryPanel[]> = {
   'kespa-pronouns': [
@@ -280,15 +330,15 @@ const narrativeExpansions: Record<string, { miniText: Pair & { title: string }; 
 const speechPeople = ['Yo', 'Tú', 'Él', 'Ella', 'Nosotros', 'Vosotros', 'Ellos'];
 const makeSpeechItems = (
   prompts: Array<{ ru: string; present: string[]; past: string[] }>,
-): Pair[] => prompts.map(({ ru, present, past }) => ({
-  ru,
-  es: speechPeople.map((person, index) => `${person} ${present[index]}. ${person} ${past[index]}.`).join('\n'),
+): Pair[] => prompts.map(({ ru, present }) => ({
+  ru: ru.split(/(?<=\.)\s/u)[0],
+  es: speechPeople.map((person, index) => `${person} ${present[index]}.`).join('\n'),
 }));
 
 const speechDrills: Record<string, SpeechDrill> = {
   'kespa-ser': {
     title: 'Техника речи 1',
-    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    subtitle: 'Одна модель во всех лицах настоящего времени',
     items: makeSpeechItems([
       { ru: 'Я член команды. Я был членом команды.', present: ['soy parte del equipo', 'eres parte del equipo', 'es parte del equipo', 'es parte del equipo', 'somos parte del equipo', 'sois parte del equipo', 'son parte del equipo'], past: ['fui parte del equipo', 'fuiste parte del equipo', 'fue parte del equipo', 'fue parte del equipo', 'fuimos parte del equipo', 'fuisteis parte del equipo', 'fueron parte del equipo'] },
       { ru: 'Я отвечаю за проект. Я отвечал за проект.', present: ['soy responsable del proyecto', 'eres responsable del proyecto', 'es responsable del proyecto', 'es responsable del proyecto', 'somos responsables del proyecto', 'sois responsables del proyecto', 'son responsables del proyecto'], past: ['fui responsable del proyecto', 'fuiste responsable del proyecto', 'fue responsable del proyecto', 'fue responsable del proyecto', 'fuimos responsables del proyecto', 'fuisteis responsables del proyecto', 'fueron responsables del proyecto'] },
@@ -299,7 +349,7 @@ const speechDrills: Record<string, SpeechDrill> = {
   },
   'kespa-family': {
     title: 'Техника речи 1',
-    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    subtitle: 'Одна модель во всех лицах настоящего времени',
     items: makeSpeechItems([
       { ru: 'У меня есть брат. У меня был брат.', present: ['tengo un hermano', 'tienes un hermano', 'tiene un hermano', 'tiene un hermano', 'tenemos un hermano', 'tenéis un hermano', 'tienen un hermano'], past: ['tuve un hermano', 'tuviste un hermano', 'tuvo un hermano', 'tuvo un hermano', 'tuvimos un hermano', 'tuvisteis un hermano', 'tuvieron un hermano'] },
       { ru: 'У меня есть вопрос. У меня был вопрос.', present: ['tengo una pregunta', 'tienes una pregunta', 'tiene una pregunta', 'tiene una pregunta', 'tenemos una pregunta', 'tenéis una pregunta', 'tienen una pregunta'], past: ['tuve una pregunta', 'tuviste una pregunta', 'tuvo una pregunta', 'tuvo una pregunta', 'tuvimos una pregunta', 'tuvisteis una pregunta', 'tuvieron una pregunta'] },
@@ -310,7 +360,7 @@ const speechDrills: Record<string, SpeechDrill> = {
   },
   'kespa-ar': {
     title: 'Техника речи 1',
-    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    subtitle: 'Одна модель во всех лицах настоящего времени',
     items: makeSpeechItems([
       { ru: 'Я говорю по-испански. Я говорил по-испански.', present: ['hablo español', 'hablas español', 'habla español', 'habla español', 'hablamos español', 'habláis español', 'hablan español'], past: ['hablé español', 'hablaste español', 'habló español', 'habló español', 'hablamos español', 'hablasteis español', 'hablaron español'] },
       { ru: 'Я работаю дома. Я работал дома.', present: ['trabajo en casa', 'trabajas en casa', 'trabaja en casa', 'trabaja en casa', 'trabajamos en casa', 'trabajáis en casa', 'trabajan en casa'], past: ['trabajé en casa', 'trabajaste en casa', 'trabajó en casa', 'trabajó en casa', 'trabajamos en casa', 'trabajasteis en casa', 'trabajaron en casa'] },
@@ -321,7 +371,7 @@ const speechDrills: Record<string, SpeechDrill> = {
   },
   'kespa-er-ir': {
     title: 'Техника речи 1',
-    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    subtitle: 'Одна модель во всех лицах настоящего времени',
     items: makeSpeechItems([
       { ru: 'Я живу в Мадриде. Я жил в Мадриде.', present: ['vivo en Madrid', 'vives en Madrid', 'vive en Madrid', 'vive en Madrid', 'vivimos en Madrid', 'vivís en Madrid', 'viven en Madrid'], past: ['viví en Madrid', 'viviste en Madrid', 'vivió en Madrid', 'vivió en Madrid', 'vivimos en Madrid', 'vivisteis en Madrid', 'vivieron en Madrid'] },
       { ru: 'Я ем дома. Я ел дома.', present: ['como en casa', 'comes en casa', 'come en casa', 'come en casa', 'comemos en casa', 'coméis en casa', 'comen en casa'], past: ['comí en casa', 'comiste en casa', 'comió en casa', 'comió en casa', 'comimos en casa', 'comisteis en casa', 'comieron en casa'] },
@@ -332,7 +382,7 @@ const speechDrills: Record<string, SpeechDrill> = {
   },
   'kespa-irregular': {
     title: 'Техника речи 1',
-    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    subtitle: 'Одна модель во всех лицах настоящего времени',
     items: makeSpeechItems([
       { ru: 'Я могу помочь. Я смог помочь.', present: ['puedo ayudar', 'puedes ayudar', 'puede ayudar', 'puede ayudar', 'podemos ayudar', 'podéis ayudar', 'pueden ayudar'], past: ['pude ayudar', 'pudiste ayudar', 'pudo ayudar', 'pudo ayudar', 'pudimos ayudar', 'pudisteis ayudar', 'pudieron ayudar'] },
       { ru: 'Я хочу поехать. Я захотел поехать.', present: ['quiero ir', 'quieres ir', 'quiere ir', 'quiere ir', 'queremos ir', 'queréis ir', 'quieren ir'], past: ['quise ir', 'quisiste ir', 'quiso ir', 'quiso ir', 'quisimos ir', 'quisisteis ir', 'quisieron ir'] },
@@ -343,7 +393,7 @@ const speechDrills: Record<string, SpeechDrill> = {
   },
   'kespa-tener-more': {
     title: 'Техника речи 1',
-    subtitle: 'Одна фраза во всех лицах: presente + pretérito indefinido',
+    subtitle: 'Одна модель во всех лицах настоящего времени',
     items: makeSpeechItems([
       { ru: 'Мне нужно работать. Мне пришлось работать.', present: ['tengo que trabajar', 'tienes que trabajar', 'tiene que trabajar', 'tiene que trabajar', 'tenemos que trabajar', 'tenéis que trabajar', 'tienen que trabajar'], past: ['tuve que trabajar', 'tuviste que trabajar', 'tuvo que trabajar', 'tuvo que trabajar', 'tuvimos que trabajar', 'tuvisteis que trabajar', 'tuvieron que trabajar'] },
       { ru: 'Мне нужно заниматься. Мне пришлось заниматься.', present: ['tengo que estudiar', 'tienes que estudiar', 'tiene que estudiar', 'tiene que estudiar', 'tenemos que estudiar', 'tenéis que estudiar', 'tienen que estudiar'], past: ['tuve que estudiar', 'tuviste que estudiar', 'tuvo que estudiar', 'tuvo que estudiar', 'tuvimos que estudiar', 'tuvisteis que estudiar', 'tuvieron que estudiar'] },
@@ -668,7 +718,13 @@ export function KespaView() {
         </footer>}
 
         {activeStep === 'dialogue' && <footer className="kespa-finish">
-          <div><small>УРОК {lesson.number} ЗАВЕРШЁН</small><h2>Новый материал уже работает в речи.</h2><p>Отметьте урок пройденным или переходите к следующему слою.</p></div>
+          <div>
+            <small>{lesson.number === '15' ? 'КУРС KESPA ЗАВЕРШЁН' : `УРОК ${lesson.number} ЗАВЕРШЁН`}</small>
+            <h2>{lesson.number === '15' ? 'Поздравляем: базовый маршрут A0–A1 пройден.' : 'Поздравляем: новый материал уже работает в речи.'}</h2>
+            <p>{lesson.number === '15'
+              ? 'Теперь вы умеете представляться, описывать людей и предметы, говорить о семье, местоположении и повседневных действиях. Вернитесь к разделам, где ответы давались не сразу.'
+              : `${lesson.subtitle} Вы можете объяснить основное правило, выбрать нужную форму и построить собственную фразу. Если ответы давались не сразу, повторите теорию или одну из тренировок.`}</p>
+          </div>
           <div><button onClick={complete}>{completed.includes(lesson.id) ? <><Check /> Пройдено</> : 'Завершить урок'}</button>{Number(lesson.number) < kespaLessons.length && <button className="next" onClick={() => openLesson(kespaLessons[Number(lesson.number)].id)}>Следующий урок <ArrowRight /></button>}</div>
         </footer>}
       </div>
