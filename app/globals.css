@@ -13784,6 +13784,48 @@ body {
 .kespa-theory-faq summary { color:var(--text); }
 .kespa-theory-faq p { color:var(--kespa-formula-ink); }
 
+/* Light KESPA must not depend on inherited theme variables. The reader's
+   original dark palette used literal near-white inks; pin every text layer to
+   a light-mode ink here so an old/global dark context cannot wash the card out. */
+.app:not(.dark) .kespa-theory>article {
+  background:#fff;
+  color:#171421;
+}
+.app:not(.dark) .kespa-theory article h3 { color:#171421; }
+.app:not(.dark) .kespa-theory article>p { color:#4f485b; }
+.app:not(.dark) .kespa-theory-title>span {
+  background:#eee8fb;
+  color:#6732d1;
+}
+.app:not(.dark) .kespa-theory article>strong {
+  background:#f5f0ff;
+  color:#5b299f;
+}
+.app:not(.dark) .kespa-example-table {
+  border-color:#e7e3ec;
+  background:#f7f5fa;
+}
+.app:not(.dark) .kespa-example-table button {
+  border-color:#e7e3ec;
+  background:#f7f5fa;
+  color:#171421;
+}
+.app:not(.dark) .kespa-example-table button:hover { background:#efedf5; }
+.app:not(.dark) .kespa-example-table button span { color:#625b6d; }
+.app:not(.dark) .kespa-example-table button b { color:#171421; }
+.app:not(.dark) .kespa-theory-note {
+  border-color:#9bddd5;
+  background:#eef9f7;
+}
+.app:not(.dark) .kespa-theory-note>b { color:#087f75; }
+.app:not(.dark) .kespa-theory-note>p { color:#4f485b; }
+.app:not(.dark) .kespa-theory-faq {
+  border-color:#d5c7ef;
+  background:#f8f5fd;
+}
+.app:not(.dark) .kespa-theory-faq summary { color:#171421; }
+.app:not(.dark) .kespa-theory-faq p { color:#5b299f; }
+
 @media (max-width:700px) {
   .kespa-theory-summary li { grid-template-columns:1fr; gap:5px; }
   .kespa-section-next { align-items:stretch; flex-direction:column; }
