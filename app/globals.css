@@ -13519,6 +13519,14 @@ body {
 .kespa-mini-text button,.kespa-finish button { min-height:42px; display:flex; align-items:center; gap:7px; border:0; border-radius:11px; background:var(--purple); color:white; padding:0 14px; font-weight:850; cursor:pointer; }
 .kespa-mini-text button:last-child { background:var(--panel); color:var(--purple); border:1px solid var(--line); }
 .kespa-mini-text button svg { width:17px; }
+.kespa-mini-text .kespa-sentences .kespa-sentence { display:inline; min-height:0; padding:2px 4px; margin:0 -4px; border:0; border-radius:5px; background:transparent; color:inherit; font:inherit; text-align:left; box-decoration-break:clone; -webkit-box-decoration-break:clone; transition:background .15s; }
+.kespa-mini-text .kespa-sentences .kespa-sentence:hover { background:color-mix(in srgb,var(--purple) 10%,transparent); }
+.kespa-mini-text .kespa-sentences .kespa-sentence.selected { background:color-mix(in srgb,var(--purple) 20%,transparent); color:var(--purple); }
+.kespa-mini-text .kespa-sentence:focus-visible { outline:2px solid var(--purple); outline-offset:3px; }
+.kespa-sentence-detail { margin-top:20px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+.kespa-sentence-detail>small { color:var(--muted); font-size:11px; font-weight:850; letter-spacing:.08em; }
+.kespa-sentence-detail>p { margin-top:12px; color:var(--aqua); font:500 clamp(19px,2.5vw,27px)/1.65 var(--font-syne); }
+.kespa-mini-text .kespa-sentence-detail footer { flex-wrap:wrap; margin-top:14px; }
 .kespa-dialogue>div { width:min(760px,100%); display:grid; gap:15px; margin:0 auto; }
 .kespa-dialogue>div>button { position:relative; width:min(78%,560px); border:0; background:transparent; color:var(--text); padding:0; text-align:left; cursor:pointer; }
 .kespa-dialogue>div>button.right { justify-self:end; text-align:right; }

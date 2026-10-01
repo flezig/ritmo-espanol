@@ -533,6 +533,32 @@ function speakSpanish(text: string, voiceURI?: string) {
   window.speechSynthesis.speak(voice);
 }
 
+function MiniText({ text, voiceURI }: { text: Pair; voiceURI?: string }) {
+  const [selected, setSelected] = useState<number | null>(null);
+  const [translationShown, setTranslationShown] = useState(false);
+  const [allShown, setAllShown] = useState(false);
+  const splitSentences = (value: string) => value.match(/[^.!?]+(?:[.!?]+|$)/gu)?.map((sentence) => sentence.trim()).filter(Boolean) || [];
+  const russian = splitSentences(text.ru);
+  const spanish = splitSentences(text.es);
+  const selectedSpanish = selected === null ? null : spanish[selected];
+  return <article>
+    <p className="kespa-sentences">{russian.map((sentence, index) => <span key={index}>
+      {index > 0 && ' '}
+      <button type="button" className={`kespa-sentence${selected === index ? ' selected' : ''}`} aria-pressed={selected === index} onClick={() => { setSelected(index); setTranslationShown(false); }}>{sentence}</button>
+    </span>)}</p>
+    {selectedSpanish && <div className="kespa-sentence-detail" aria-live="polite">
+      <small>ПРЕДЛОЖЕНИЕ {selected! + 1}</small>
+      {translationShown && <p lang="es">{selectedSpanish}</p>}
+      <footer>
+        <button type="button" onClick={() => setTranslationShown((value) => !value)}><Eye /> {translationShown ? 'Скрыть перевод' : 'Перевод предложения'}</button>
+        <button type="button" onClick={() => speakSpanish(selectedSpanish, voiceURI)}><Play /> Слушать предложение</button>
+      </footer>
+    </div>}
+    {allShown && <b lang="es">{text.es}</b>}
+    <footer><button type="button" onClick={() => setAllShown((value) => !value)}><Eye /> {allShown ? 'Скрыть весь перевод' : 'Перевод всего текста'}</button><button type="button" onClick={() => speakSpanish(text.es, voiceURI)}><Play /> Слушать весь текст</button></footer>
+  </article>;
+}
+
 function PracticeLine({ item, index, voiceURI }: { item: Pair; index: number; voiceURI?: string }) {
   const [shown, setShown] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -585,7 +611,6 @@ export function KespaView() {
   const [tag, setTag] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [completed, setCompleted] = useState<string[]>([]);
-  const [textShown, setTextShown] = useState(false);
   const [dialogueShown, setDialogueShown] = useState<number[]>([]);
   const [dialogueRecording, setDialogueRecording] = useState(false);
   const [spanishVoices, setSpanishVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -645,7 +670,6 @@ export function KespaView() {
     setCatalogOpen(false);
     setActiveStep('theory');
     setTag(null);
-    setTextShown(false);
     setDialogueShown([]);
     window.requestAnimationFrame(() => lessonTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
@@ -761,8 +785,8 @@ export function KespaView() {
         </section>}
 
         {activeStep === 'text' && <section id="kespa-text" className="kespa-section kespa-mini-text">
-          <header><span>{speechDrill ? '05' : '04'}</span><div><small>ЧИТАЕМ В КОНТЕКСТЕ</small><h2>Мини-текст «{narrative.miniText.title}»</h2><p>Сначала прочитайте по-русски и попробуйте собрать испанскую версию вслух.</p></div></header>
-          <article><p>{narrative.miniText.ru}</p>{textShown && <b>{narrative.miniText.es}</b>}<footer><button onClick={() => setTextShown((value) => !value)}><Eye /> {textShown ? 'Скрыть перевод' : 'Показать перевод'}</button><button onClick={() => speakSpanish(narrative.miniText.es, voiceURI)}><Play /> Слушать</button></footer></article>
+          <header><span>{speechDrill ? '05' : '04'}</span><div><small>ЧИТАЕМ В КОНТЕКСТЕ</small><h2>Мини-текст «{narrative.miniText.title}»</h2><p>Сначала прочитайте по-русски и попробуйте собрать испанскую версию вслух. Нажмите на предложение, чтобы выделить его, посмотреть перевод и послушать отдельно.</p></div></header>
+          <MiniText key={lesson.id} text={narrative.miniText} voiceURI={voiceURI} />
         </section>}
 
         {activeStep === 'dialogue' && <section id="kespa-dialogue" className="kespa-section kespa-dialogue">
