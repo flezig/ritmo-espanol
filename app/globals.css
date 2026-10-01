@@ -13527,19 +13527,36 @@ body {
 @media(max-width:900px){.kespa-hero{grid-template-columns:1fr}.kespa-hero-progress{grid-template-columns:auto 1fr;align-items:center}.kespa-hero-progress i{grid-column:1/-1}.kespa-lesson-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kespa-sequence{overflow-x:auto;grid-template-columns:repeat(5,minmax(150px,1fr));}.kespa-sequence.with-speech{grid-template-columns:repeat(6,minmax(150px,1fr))}.kespa-finish{align-items:flex-start;flex-direction:column}}
 @media(max-width:620px){.kespa-hero,.kespa-library{padding:18px;border-radius:20px}.kespa-hero h1{font-size:37px}.kespa-library>header,.kespa-lesson-head{align-items:stretch;flex-direction:column}.kespa-library label{width:100%}.kespa-lesson-grid{grid-template-columns:1fr}.kespa-lesson-grid>button{min-height:166px}.kespa-lesson{border-radius:20px}.kespa-lesson-head{padding:23px 18px}.kespa-section{padding:32px 17px}.kespa-practice-line{grid-template-columns:24px 74px minmax(0,1fr) 32px;padding:16px 0}.kespa-practice-line>b{grid-column:2/5;padding-left:0}.kespa-practice-line p{font-size:16px}.kespa-line-actions button,.kespa-eye{width:31px;height:31px}.kespa-mini-text footer,.kespa-finish>div:last-child{width:100%;display:grid;grid-template-columns:1fr}.kespa-mini-text button,.kespa-finish button{justify-content:center}.kespa-dialogue>div>button{width:88%}}
 
-/* Active theory surface: graphite-violet with a darker example layer. */
+/* Lesson theory follows the active theme instead of always rendering the
+   graphite surface that was originally designed only for dark mode. */
 .theory-block {
+  --theory-surface: #fff;
+  --theory-inset: #f6f3fa;
+  --theory-note-surface: #eef9f7;
+  --theory-copy: var(--text);
+  --theory-secondary: #625b6d;
+  --theory-accent: #6732d1;
+  border-color: color-mix(in srgb,var(--purple) 24%,var(--line));
+  background: var(--theory-surface);
+  color: var(--theory-copy);
+  box-shadow: 0 14px 36px color-mix(in srgb,#251439 9%,transparent);
+}
+.dark .theory-block {
+  --theory-surface: linear-gradient(145deg,#25202f,#1f1a2a);
+  --theory-inset: #17131f;
+  --theory-note-surface: #181d2b;
+  --theory-copy: #f7f3ff;
+  --theory-secondary: #c9c1d4;
+  --theory-accent: #b896ff;
   border-color: #5d4a754d;
-  background: linear-gradient(145deg, #25202f, #1f1a2a);
-  color: #f7f3ff;
   box-shadow: 0 20px 48px #08060d42;
 }
 .theory-block h3,
 .theory-block > p {
-  color: #f7f3ff;
+  color: var(--theory-copy);
 }
 .theory-block > span.theory-rule-label {
-  color: #a985ff;
+  color: var(--theory-accent);
   font-family: var(--font-manrope), sans-serif;
   font-size: 11px;
   font-weight: 850;
@@ -13548,26 +13565,26 @@ body {
   letter-spacing: .075em;
 }
 .theory-block .save-rule {
-  border-color: #ffffff1f;
-  background: #17131f;
-  color: #c6b1ff;
+  border-color: color-mix(in srgb,var(--purple) 25%,var(--line));
+  background: var(--theory-inset);
+  color: var(--theory-accent);
 }
 .theory-examples > div {
-  background: #17131f;
+  background: var(--theory-inset);
 }
 .theory-examples b {
-  color: #9d72ff;
+  color: var(--theory-accent);
 }
 .theory-examples small {
-  color: #c9c1d4;
+  color: var(--theory-secondary);
 }
 .theory-grammar-highlight {
-  background: #17131f;
-  color: #b896ff;
+  background: var(--theory-inset);
+  color: var(--theory-accent);
 }
 .theory-note {
-  background: #181d2b;
-  color: #f1edfa;
+  background: var(--theory-note-surface);
+  color: var(--theory-copy);
 }
 
 /* Kespa lesson composition follows the supplied long-form mobile reader. */
@@ -13690,6 +13707,8 @@ body {
   --kespa-highlight-bg: #eadffc;
   --kespa-highlight-ink: #5b299f;
   --kespa-example-bg: color-mix(in srgb,var(--soft) 82%,var(--panel));
+  --kespa-theory-surface: #fff;
+  --kespa-training-surface: #fff;
 }
 .dark .kespa-view {
   --kespa-theory-copy: #ded7e8;
@@ -13699,8 +13718,24 @@ body {
   --kespa-highlight-bg: color-mix(in srgb,var(--purple) 42%,#f2c46d);
   --kespa-highlight-ink: #fff2d5;
   --kespa-example-bg: color-mix(in srgb,var(--soft) 72%,transparent);
+  --kespa-theory-surface: transparent;
+  --kespa-training-surface: var(--panel);
 }
-.kespa-theory>article { color:var(--text); }
+.kespa-theory>article {
+  margin-top:12px;
+  padding:clamp(22px,4vw,34px);
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:var(--kespa-theory-surface);
+  color:var(--text);
+  box-shadow:0 10px 28px color-mix(in srgb,#251439 7%,transparent);
+}
+.kespa-theory>article:first-of-type { border-top:1px solid var(--line); }
+.kespa-theory>article:last-child { border-bottom:1px solid var(--line); }
+.dark .kespa-theory>article { margin-top:0; border-right:0; border-left:0; border-radius:0; box-shadow:none; }
+.kespa-training { background:var(--kespa-training-surface); }
+.kespa-training.mixed { background:color-mix(in srgb,var(--purple) 3%,var(--kespa-training-surface)); }
+.kespa-practice-line { border-color:var(--line); }
 .kespa-theory article h3 { color:var(--text); }
 .kespa-theory-title>span { color:var(--purple); }
 .kespa-theory article>p { color:var(--kespa-theory-copy); }
