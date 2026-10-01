@@ -265,6 +265,10 @@ const kespaLessons: KespaLesson[] = kespaLessonOrder.map((id, index) => {
   };
 });
 
+export const kespaLessonSummaries = kespaLessons.map(
+  ({ id, number, title }) => ({ id, number, title }),
+);
+
 const theoryExpansions: Record<string, TheoryPanel[]> = {
   'kespa-pronouns': [
     { title: 'Когда местоимение можно убрать', text: 'В русском мы почти всегда называем того, кто действует. В испанском окончание глагола уже хранит эту информацию: soy однозначно указывает на yo, а somos — на nosotros. Поэтому короткое Soy Ana звучит естественно и полно. Местоимение возвращают, когда нужно противопоставить людей или особенно подчеркнуть говорящего.', formula: 'Soy Ana. · Yo soy Ana, y él es Leo.', examples: [{ es: 'Vivo en Madrid.', ru: 'Я живу в Мадриде.' }, { es: 'Ella vive en Lima.', ru: 'Она живёт в Лиме.' }, { es: 'Yo soy médico, pero él es profesor.', ru: 'Я врач, а он преподаватель.' }], note: 'Не пытайтесь механически ставить yo перед каждой фразой: это делает речь тяжёлой.' },
