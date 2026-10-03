@@ -1,5 +1,7 @@
 'use client';
 
+import { appendLessonError, lessonErrorsForTeacher, LEGACY_HOME_EXERCISE_KEYS, type LessonErrorAttempt } from './lib/lesson-errors';
+
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -1360,44 +1362,44 @@ const grammarReviewCards: StudyCard[] = [
     prompt: 'Yo ___ una familia grande. (tener)',
   },
   {
-    key: 'lesson4-hay-salon',
-    topic: 'Дом и квартира',
-    es: 'Hay un sofá en el salón',
-    ru: 'В гостиной есть диван',
-    example: 'Hay un sofá cómodo en el salón.',
-    exampleRu: 'В гостиной есть удобный диван.',
-    extraExample: 'En mi salón hay un sofá junto a la ventana.',
-    extraExampleRu: 'В моей гостиной есть диван рядом с окном.',
-    skill: 'production',
-    answer: 'Hay un sofá en el salón',
-    prompt: 'В гостиной есть диван.',
-  },
+  "key": "lesson4-hay-salon",
+  "topic": "Предлоги",
+  "es": "a casa",
+  "ru": "домой",
+  "example": "Voy a casa.",
+  "exampleRu": "Я иду домой.",
+  "extraExample": "Después de la clase voy a casa.",
+  "extraExampleRu": "После занятия я иду домой.",
+  "skill": "context",
+  "answer": "a",
+  "prompt": "Voy ___ casa. (иду домой)"
+},
   {
-    key: 'lesson4-estar-mesa',
-    topic: 'Дом и квартира',
-    es: 'está encima de',
-    ru: 'находится на',
-    example: 'El libro está encima de la mesa.',
-    exampleRu: 'Книга находится на столе.',
-    extraExample: 'La lámpara está encima de la mesita de noche.',
-    extraExampleRu: 'Лампа стоит на прикроватной тумбочке.',
-    skill: 'context',
-    answer: 'está encima de',
-    prompt: 'El libro ___ la mesa. (находится на)',
-  },
+    "key": "lesson4-estar-mesa",
+  "topic": "Предлоги",
+  "es": "en casa",
+  "ru": "дома",
+  "example": "Estoy en casa.",
+  "exampleRu": "Я дома.",
+  "extraExample": "Hoy estudio en casa.",
+  "extraExampleRu": "Сегодня я учусь дома.",
+  "skill": "context",
+  "answer": "en",
+  "prompt": "Estoy ___ casa. (нахожусь дома)"
+},
   {
-    key: 'lesson4-demonstrative',
-    topic: 'Дом и квартира',
-    es: 'esta habitación',
-    ru: 'эта комната',
-    example: 'Esta habitación tiene mucha luz.',
-    exampleRu: 'В этой комнате много света.',
-    extraExample: 'Esta habitación está al lado de la cocina.',
-    extraExampleRu: 'Эта комната находится рядом с кухней.',
-    skill: 'article',
-    answer: 'esta habitación',
-    prompt: 'Поставьте «este» в правильную форму: ___ habitación.',
-  },
+    "key": "lesson4-demonstrative",
+  "topic": "Предлоги",
+  "es": "para viajar",
+  "ru": "чтобы путешествовать",
+  "example": "Estudio español para viajar.",
+  "exampleRu": "Я учу испанский, чтобы путешествовать.",
+  "extraExample": "Aprendo español para viajar por España.",
+  "extraExampleRu": "Я учу испанский, чтобы путешествовать по Испании.",
+  "skill": "context",
+  "answer": "para",
+  "prompt": "Estudio español ___ viajar. (цель: чтобы путешествовать)"
+} ,
   {
     key: 'lesson5-gustan',
     topic: 'Еда и напитки',
@@ -1572,55 +1574,73 @@ const lessonCoreVocabulary: Record<string, LessonWord[]> = {
     { es: 'conducir', ru: 'водить', example: 'Conduzco el coche.', exampleRu: 'Я вожу машину.' },
   ],
   home: [
-    {
-      es: 'hay',
-      ru: 'есть; имеется',
-      example: 'Hay dos habitaciones en el piso.',
-      exampleRu: 'В квартире есть две комнаты.',
-    },
-    {
-      es: 'estar',
-      ru: 'находиться',
-      example: 'La cocina está al lado del salón.',
-      exampleRu: 'Кухня находится рядом с гостиной.',
-    },
-    {
-      es: 'casa',
-      ru: 'дом',
-      example: 'Nuestra casa tiene un jardín.',
-      exampleRu: 'У нашего дома есть сад.',
-    },
-    {
-      es: 'piso',
-      ru: 'квартира',
-      example: 'Mi piso está en el centro.',
-      exampleRu: 'Моя квартира находится в центре.',
-    },
-    {
-      es: 'habitación',
-      ru: 'комната',
-      example: 'Esta habitación tiene mucha luz.',
-      exampleRu: 'В этой комнате много света.',
-    },
-    {
-      es: 'cocina',
-      ru: 'кухня',
-      example: 'La mesa está en la cocina.',
-      exampleRu: 'Стол находится на кухне.',
-    },
-    {
-      es: 'salón',
-      ru: 'гостиная',
-      example: 'Vemos la televisión en el salón.',
-      exampleRu: 'Мы смотрим телевизор в гостиной.',
-    },
-    {
-      es: 'baño',
-      ru: 'ванная комната',
-      example: 'El baño está detrás del dormitorio.',
-      exampleRu: 'Ванная находится за спальней.',
-    },
-  ],
+  {
+    "es": "a",
+    "ru": "в; к",
+    "example": "Voy a Madrid.",
+    "exampleRu": "Я еду в Мадрид."
+  },
+  {
+    "es": "en",
+    "ru": "в; на",
+    "example": "Vivo en Madrid.",
+    "exampleRu": "Я живу в Мадриде."
+  },
+  {
+    "es": "de",
+    "ru": "из; от",
+    "example": "Soy de Rusia.",
+    "exampleRu": "Я из России."
+  },
+  {
+    "es": "con",
+    "ru": "с",
+    "example": "Vivo con Ana.",
+    "exampleRu": "Я живу с Аной."
+  },
+  {
+    "es": "sin",
+    "ru": "без",
+    "example": "Quiero café sin azúcar.",
+    "exampleRu": "Я хочу кофе без сахара."
+  },
+  {
+    "es": "para",
+    "ru": "для; чтобы",
+    "example": "Estudio para viajar.",
+    "exampleRu": "Я учусь, чтобы путешествовать."
+  },
+  {
+    "es": "por",
+    "ru": "по; через; за",
+    "example": "Paseamos por el parque.",
+    "exampleRu": "Мы гуляем по парку."
+  },
+  {
+    "es": "desde",
+    "ru": "с; от",
+    "example": "Trabajo desde las nueve.",
+    "exampleRu": "Я работаю с девяти."
+  },
+  {
+    "es": "hasta",
+    "ru": "до",
+    "example": "Trabajo hasta las seis.",
+    "exampleRu": "Я работаю до шести."
+  },
+  {
+    "es": "entre",
+    "ru": "между",
+    "example": "La farmacia está entre el banco y el hotel.",
+    "exampleRu": "Аптека между банком и отелем."
+  },
+  {
+    "es": "sobre",
+    "ru": "на; о",
+    "example": "El libro está sobre la mesa.",
+    "exampleRu": "Книга на столе."
+  }
+],
   food: [
     {
       es: 'gustar',
@@ -2173,6 +2193,8 @@ type CatState =
   | 'sleeping'
   | 'love';
 type LessonState = {
+  errorHistory?: Record<string, LessonErrorAttempt>;
+  contentVersion?: string;
   done: number;
   completed: boolean;
   correct: number;
@@ -2193,6 +2215,16 @@ function useLessonProgress() {
         const current = { ...stored };
         for (const lesson of courseLessons) {
           const state = current[lesson.id];
+          if (lesson.id === 'home' && state && state.contentVersion !== 'prepositions-v1') {
+            const oldKeys = state.errorIds?.length ? state.errorIds : (state.errors || []).map((index) => LEGACY_HOME_EXERCISE_KEYS[index]).filter(Boolean);
+            const oldErrors = oldKeys.map((key) => {
+              const split = key.lastIndexOf('::');
+              return [key, { itemKey: key, prompt: key.slice(0, split), correctAnswer: key.slice(split + 2), studentAnswer: null, answeredAt: null, explanation: '', rule: 'Предыдущая версия урока 4' }] as const;
+            });
+            current[lesson.id] = { done: 0, completed: false, correct: 0, contentVersion: 'prepositions-v1', errorHistory: { ...Object.fromEntries(oldErrors), ...state.errorHistory } };
+            changed = true;
+            continue;
+          }
           if (state?.completed && state.done < lesson.exercises.length) {
             current[lesson.id] = { ...state, completed: false };
             changed = true;
@@ -3583,6 +3615,10 @@ function LessonsView() {
       nextErrorIds = correct
         ? storedErrorIds.filter((id) => id !== exerciseId)
         : [...new Set([...storedErrorIds, exerciseId])];
+    const previousErrorHistory = Object.fromEntries(
+      lessonErrorsForTeacher(lessonState, lesson.exercises, normalizeText)
+        .map(({ id, ...attempt }) => [id, attempt]),
+    );
     setAnswer(value);
     recordLearningInsight({
       correct,
@@ -3608,6 +3644,7 @@ function LessonsView() {
     );
     save(lesson.id, {
       ...lessonState,
+      contentVersion: lesson.id === 'home' ? 'prepositions-v1' : lessonState.contentVersion,
       done: mistakeMode
         ? lessonState.done
         : Math.max(lessonState.done, question + 1),
@@ -3619,6 +3656,11 @@ function LessonsView() {
         : lessonState.correct + (correct ? 1 : 0),
       errors: nextErrors,
       errorIds: nextErrorIds,
+      errorHistory: correct ? previousErrorHistory : appendLessonError(previousErrorHistory, {
+        itemKey: exerciseId, prompt: exercise.prompt, studentAnswer: value,
+        correctAnswer: exercise.answer, explanation: exercise.explanation,
+        rule: exercise.kind, answeredAt: new Date().toISOString(),
+      }, crypto.randomUUID()),
       lastExerciseId: mistakeMode ? lessonState.lastExerciseId : exerciseId,
     });
     recordLearningEvent(correct, correct ? 6 : 2);

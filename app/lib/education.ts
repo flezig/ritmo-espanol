@@ -1,3 +1,4 @@
+import type { LessonErrorAttempt } from './lesson-errors';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type Role = 'student' | 'teacher';
@@ -33,7 +34,7 @@ export type StudentLearningSummary = {
   level: string; xp: number; streak: number; activeDays: number; totalReviews: number;
   totalCorrect: number; completedLessons: number; activeToday: boolean;
   lastSeenAt: string | null; learningWords: string[];
-  lessonProgress: Record<string, { done?: number; completed?: boolean; correct?: number; errors?: number[]; errorIds?: string[] }>;
+  lessonProgress: Record<string, { done?: number; completed?: boolean; correct?: number; errors?: number[]; errorIds?: string[]; errorHistory?: Record<string, LessonErrorAttempt> }>;
   lessonRules: Record<string, Record<string, LearningMetric>>;
   reviewQueue: { dueNow: number; next24h: number; next7d: number; later: number };
   averageResponseMs: number; measuredAnswers: number; hintUses: number;
