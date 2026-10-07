@@ -8,24 +8,29 @@ import {
   placementQuestionSets,
   arrangedPlacementOptions,
   scorePlacement,
-  type PlacementLevel,
+  type PlacementResultLevel,
   type PlacementResult,
 } from '../lib/placement-test';
 
 type PlacementStorage = {
-  latest: PlacementResult | null;
-  history: PlacementResult[];
+  latest: StoredPlacementResult | null;
+  history: StoredPlacementResult[];
+};
+
+type StoredPlacementResult = Omit<PlacementResult, 'scoringVersion'> & {
+  scoringVersion: 1 | 2;
 };
 
 const placementStorageKey = 'ritmo-placement';
 const normalizeStoredResult = (
   value: Record<string, unknown>,
   attempt: number,
-): PlacementResult => {
-  const level = String(value.level || 'A1').slice(0, 2) as PlacementLevel;
+): StoredPlacementResult => {
+  const level = String(value.level || 'A1') as PlacementResultLevel;
   return {
     ...(value as unknown as PlacementResult),
-    level: ['A1', 'A2', 'B1', 'B2', 'C1'].includes(level) ? level : 'A1',
+    scoringVersion: value.scoringVersion === 2 ? 2 : 1,
+    level: ['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1'].includes(level) ? level : 'Pre-A1',
     levels:
       value.levels && typeof value.levels === 'object'
         ? (value.levels as PlacementResult['levels'])
@@ -75,6 +80,7 @@ export default function TodayPanel({
   lessonId,
   lessonTitle,
   lessonDone,
+  lessonTotal,
   todayDone,
   dailyTarget,
   go,
@@ -87,16 +93,17 @@ export default function TodayPanel({
   lessonId: string;
   lessonTitle: string;
   lessonDone: number;
+  lessonTotal: number;
   todayDone: number;
   dailyTarget: number;
   go: (section: 'Practice' | 'Lessons' | 'Grammar') => void;
-  onPlacementComplete: (level: PlacementLevel) => void;
+  onPlacementComplete: (level: PlacementResultLevel) => void;
 }) {
   const [placementOpen, setPlacementOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const [responses, setResponses] = useState<Record<string, string>>({});
-  const [placementHistory, setPlacementHistory] = useState<PlacementResult[]>([]);
-  const [result, setResult] = useState<PlacementResult | null>(null);
+  const [placementHistory, setPlacementHistory] = useState<StoredPlacementResult[]>([]);
+  const [result, setResult] = useState<StoredPlacementResult | null>(null);
   const [attemptIndex, setAttemptIndex] = useState(0);
   useEffect(() => {
     const stored = loadPlacementStorage();
@@ -151,7 +158,7 @@ export default function TodayPanel({
       : 'Закрепить изученные слова без добавления новых';
   const lessonRecommendation = lessonTitle
     ? lessonDone
-      ? `Продолжить «${lessonTitle}» · ${lessonDone}/50`
+      ? `Продолжить «${lessonTitle}» · ${Math.min(lessonDone, lessonTotal)}/${lessonTotal}`
       : `Начать «${lessonTitle}»`
     : 'Все доступные уроки завершены';
   const grammarRecommendation = weakTopic
@@ -171,7 +178,7 @@ export default function TodayPanel({
       number: 2,
       title: 'Следующий урок',
       description: lessonRecommendation,
-      action: lessonDone ? 'Продолжить' : 'Начать урок',
+      action: !lessonId ? 'Все уроки пройдены' : lessonDone ? 'Продолжить' : 'Начать урок',
       status: lessonDone ? 'active' : 'upcoming',
       statusLabel: lessonDone ? 'Продолжить' : 'Впереди',
       open: () => {
@@ -214,13 +221,13 @@ export default function TodayPanel({
             </header>
             <b>{step.number} · {step.title}</b>
             <p>{step.description}</p>
-            <button onClick={step.open}>{step.action}</button>
+            <button onClick={step.open} disabled={step.number === 2 && !lessonId}>{step.action}</button>
           </article>
         ))}
       </div>
       {result && (
         <div className="placement-result-card">
-          <div><small>РЕКОМЕНДОВАННЫЙ УРОВЕНЬ · ПОПЫТКА {result.attempt}</small><h3>{result.level}</h3><p>Общий результат {result.total}% · A1 {result.levels.A1}% · A2 {result.levels.A2}% · B1 {result.levels.B1}% · B2 {result.levels.B2}% · C1 {result.levels.C1}% · всего прохождений: {placementHistory.length}</p></div>
+          <div><small>{result.scoringVersion === 2 ? 'РЕКОМЕНДОВАННЫЙ УРОВЕНЬ' : 'РЕЗУЛЬТАТ ПРЕДЫДУЩЕЙ ВЕРСИИ'} · ПОПЫТКА {result.attempt}</small><h3>{result.scoringVersion !== 2 ? 'Пройдите тест для новой оценки' : result.level === 'Pre-A1' ? 'Начинающий · ниже A1' : result.level}</h3><p>Общий результат {result.total}% · A1 {result.levels.A1}% · A2 {result.levels.A2}% · B1 {result.levels.B1}% · B2 {result.levels.B2}% · C1 {result.levels.C1}% · всего прохождений: {placementHistory.length}</p><p>Это ориентир для занятий. Короткий тест не подтверждает уровень CEFR и не оценивает устную речь.</p></div>
           <div className="placement-skills">{Object.entries(result.skills).map(([skill, value]) => <span key={skill}><b>{skill}</b><i><em style={{ width: `${value}%` }} /></i><strong>{value}%</strong></span>)}</div>
           <button onClick={reset}><RotateCcw /> Пройти с новыми вопросами</button>
         </div>

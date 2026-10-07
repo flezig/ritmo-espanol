@@ -85,8 +85,8 @@ export function recordAssignedActivity(input: { type: ActivityType; contentId: s
   queueActivity({ ...input, eventKind: 'answer' });
 }
 
-export function beginAssignedSession(type: ActivityType, contentId: string, topicId = '') {
-  sessions.set(sessionKey(type, contentId, topicId), uuid());
+export function beginAssignedSession(type: ActivityType, contentId: string, topicId = '', sessionId = uuid()) {
+  sessions.set(sessionKey(type, contentId, topicId), sessionId);
   const active = activeAssignment();
   if (active?.type === type && (active.contentId === 'all' || active.contentId === contentId)) localStorage.setItem(ACTIVE_KEY, JSON.stringify({ ...active, sessionId: getSession(type, contentId, topicId) }));
 }

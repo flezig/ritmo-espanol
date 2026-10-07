@@ -2,14 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
-const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
-const rushSource = source.slice(
-  source.indexOf('const rushGrammar'),
-  source.indexOf('function PracticeHub'),
-);
+const gameData = readFileSync(new URL('../app/data/practice-games.ts', import.meta.url), 'utf8');
+const rushSource = gameData
+  + readFileSync(new URL('../app/lib/practice-engine.ts', import.meta.url), 'utf8')
+  + readFileSync(new URL('../app/components/learning/practice-games.tsx', import.meta.url), 'utf8');
 
 test('Spanish Rush has a substantial grammar bank and randomizes every launch', () => {
-  const grammarBlock = rushSource.slice(0, rushSource.indexOf('const randomOrder'));
+  const grammarBlock = gameData.slice(gameData.indexOf('const rushGrammar'));
   assert.equal((grammarBlock.match(/prompt:/g) || []).length >= 30, true);
   assert.match(rushSource, /setWordOrder\(randomOrder\(deck\.length\)\)/);
   assert.match(rushSource, /setGrammarOrder\(randomOrder\(rushGrammar\.length\)\)/);

@@ -1,5 +1,7 @@
 'use client';
 
+import { grammarModes } from '../data/grammar-practice';
+
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowLeft, Bell, BookOpen, Check, Clock3, GraduationCap, Headphones, Languages, LoaderCircle, Mail, MessageCircle, PenLine, Send, UserPlus, Users } from 'lucide-react';
 import { useAccount } from './account-provider';
@@ -147,6 +149,7 @@ function TeacherStudent({ studentId }: { studentId: string }) {
     { id: 'words:five', type: 'practice' as const, title: 'Practice: учить слова · 5 минут' },
     { id: 'words:errors', type: 'practice' as const, title: 'Practice: работа над ошибками' },
     { id: 'words:favorites', type: 'practice' as const, title: 'Practice: избранные слова' },
+    ...grammarModes.map(mode => ({ id: `grammar:${mode.id}`, type: 'practice' as const, title: `Practice: ${mode.title}` })),
     { id: 'articles', type: 'practice' as const, title: 'Practice: артикли' },
     { id: 'rush', type: 'practice' as const, title: 'Practice: Spanish Rush' },
     { id: 'detective:a1', type: 'practice' as const, title: 'Practice: детектив A1' },
@@ -189,6 +192,7 @@ function TeacherStudent({ studentId }: { studentId: string }) {
         <article className="education-card review-queue-card"><div className="card-title"><div><h2>Повторения</h2><p>Очередь карточек и навыков</p></div><Clock3 /></div><div className="queue-facts"><span className={summary.reviewQueue.dueNow ? 'urgent' : ''}><b>{summary.reviewQueue.dueNow}</b>уже пора</span><span><b>{summary.reviewQueue.next24h}</b>в ближайшие 24 часа</span><span><b>{summary.reviewQueue.next7d}</b>в следующие 7 дней</span><span><b>{summary.reviewQueue.later}</b>позже</span></div></article>
         <article className="education-card response-card"><div className="card-title"><div><h2>Темп и подсказки</h2><p>С момента включения подробной статистики</p></div><PenLine /></div><div className="response-facts"><span><b>{summary.measuredAnswers ? compactDuration(summary.averageResponseMs) : '—'}</b>среднее время ответа</span><span><b>{summary.hintUses}</b>использовано подсказок</span><small>{summary.measuredAnswers} измеренных ответов</small></div></article>
       </section>
+      <section className="education-card"><div className="card-title"><div><h2>Практика грамматики</h2><p>Все ответы ученика, включая самостоятельные тренировки</p></div></div><div className="recent-word-list">{grammarModes.map(mode => { const metric = summary.weakTopics[`Грамматика: ${mode.title}`]; return <article key={mode.id}><b>{mode.icon} {mode.title}</b><span>{metric?.answers || 0} ответов · {metric?.correct || 0} верно · {metricAccuracy(metric)}%</span></article>; })}</div></section>
       <section className="education-card skill-breakdown"><div className="card-title"><div><h2>Навыки</h2><p>Точность по типам самостоятельной работы</p></div><GraduationCap /></div><div className="skill-list">{skills.map(({ key, label, icon }) => { const metric = summary.skills[key], accuracy = metricAccuracy(metric); return <article key={key}>{icon}<div><b>{label}</b><i><span style={{ width: `${accuracy}%` }} /></i><small>{metric?.answers ? `${accuracy}% · ${metric.answers} ответов` : 'Пока нет измеренных ответов'}</small></div></article>; })}</div></section>
       <section className="education-card kespa-teacher-progress"><div className="card-title"><div><h2>KESPA</h2><p>Уроки, которые ученик отметил выполненными</p></div><Check /></div>{completedKespaLessons.length ? <div className="recent-word-list">{completedKespaLessons.map((lesson) => <article key={lesson.id}><b>Урок {lesson.number} · {lesson.title}</b><span className="word-state learned">Выполнено</span></article>)}</div> : <p className="muted">Завершённых уроков KESPA пока нет.</p>}</section>
       <details className="education-card insight-details"><summary><span><b>Ошибки во всех уроках</b><small>Включая самостоятельную работу и исправленные ошибки</small></span><span>Развернуть</span></summary><div className="insight-body"><div className="insight-filters"><label>Урок<select value={lessonFilter} onChange={(event) => setLessonFilter(event.target.value)}><option value="all">Все уроки</option>{courseLessons.map((lesson) => <option key={lesson.id} value={lesson.id}>{lesson.title}</option>)}</select></label></div>{visibleLessons.map((lesson) => {

@@ -42,6 +42,7 @@ export type AchievementStats = {
 };
 
 export type AchievementEvent =
+  | { type: 'grammar-answer'; mode: string; correct: boolean }
   | { type: 'practice-session'; topic: string; perfect: boolean; mode?: string; correct?: number; total?: number }
   | { type: 'song-session'; songId?: string; correct?: number; total?: number }
   | { type: 'dictation-session'; correct: number; total: number }
@@ -51,7 +52,7 @@ export type AchievementEvent =
   | { type: 'pronunciation-correct' }
   | { type: 'rush-session'; score: number; seconds: number }
   | { type: 'article-session'; score: number; total: number }
-  | { type: 'placement-test-complete'; level: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' }
+  | { type: 'placement-test-complete'; level: 'Pre-A1' | 'A1' | 'A2' | 'B1' | 'B2' | 'C1' }
   | { type: 'daily-challenge-complete'; day: string }
   | { type: 'daily-plan-complete'; day: string };
 
@@ -121,7 +122,12 @@ export const applyAchievementEvent = (
     detectiveCorrectByLevel: { ...current.detectiveCorrectByLevel },
     detectiveTotalByLevel: { ...current.detectiveTotalByLevel },
   };
-  if (event.type === 'practice-session') {
+  if (event.type === 'grammar-answer') {
+    next.practiceCorrect += Number(event.correct);
+    next.practiceTotal += 1;
+    next.practiceCorrectByMode[event.mode] = (next.practiceCorrectByMode[event.mode] || 0) + Number(event.correct);
+    next.practiceTotalByMode[event.mode] = (next.practiceTotalByMode[event.mode] || 0) + 1;
+  } else if (event.type === 'practice-session') {
     next.practiceSessions += 1;
     next.topicSessions[event.topic] =
       (next.topicSessions[event.topic] || 0) + 1;
@@ -182,7 +188,8 @@ export const applyAchievementEvent = (
   }
   else if (event.type === 'placement-test-complete') {
     next.placementTests += 1;
-    next.placementLevels = [...new Set([...next.placementLevels, event.level])];
+    if (event.level !== 'Pre-A1')
+      next.placementLevels = [...new Set([...next.placementLevels, event.level])];
   }
   else if (event.type === 'daily-challenge-complete')
     next.dailyChallengeDays = [

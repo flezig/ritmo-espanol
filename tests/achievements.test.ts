@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { achievementDefinitions } from '../app/data/achievement-definitions.ts';
 import {
   applyAchievementEvent,
   defaultAchievementStats,
@@ -154,19 +155,12 @@ test('daily achievements count calendar days once', () => {
 });
 
 test('every achievement has a unique id, positive target and progress rule', () => {
-  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8'),
-    catalog = source.slice(
-      source.indexOf('const achievementDefinitions'),
-      source.indexOf('const achievementContext'),
-    ),
-    ids = [...catalog.matchAll(/id: '([^']+)'/g)].map((match) => match[1]),
-    targets = [...catalog.matchAll(/target: (\d+)/g)].map((match) =>
-      Number(match[1]),
-    );
-  assert.equal(ids.length, 101);
+  const catalog = readFileSync(new URL('../app/data/achievement-definitions.ts', import.meta.url), 'utf8'),
+    ids = achievementDefinitions.map(item => item.id),
+    targets = achievementDefinitions.map(item => item.target);
+  assert.equal(ids.length, 113);
   assert.equal(new Set(ids).size, ids.length);
-  assert.equal((catalog.match(/progress:/g) || []).length, ids.length);
-  assert.equal(targets.length, ids.length);
+  assert.ok(achievementDefinitions.every(item => typeof item.progress === 'function'));
   assert.equal(targets.every((target) => target > 0), true);
   assert.match(
     catalog,

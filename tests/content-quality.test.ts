@@ -91,7 +91,7 @@ test('B1-B2 is a separate complete corpus with no A1-A2 overlap', () => {
       .flatMap((topic) => topic.entries.map((entry) => entry.es.toLocaleLowerCase('es'))),
   );
   const advancedWords = b1b2VocabularyTopics.flatMap((topic) => topic.entries);
-  assert.equal(advancedWords.length, 200);
+  assert.equal(advancedWords.length, 300);
   assert.equal(b1b2VocabularyTopics.length, 10);
   for (const entry of advancedWords) {
     assert.equal(beginnerWords.has(entry.es.toLocaleLowerCase('es')), false, `${entry.es} overlaps A1–A2`);
@@ -100,7 +100,7 @@ test('B1-B2 is a separate complete corpus with no A1-A2 overlap', () => {
     assert.match(entry.exampleRu, /[.!?]$/u, `${entry.es} needs a complete Russian translation`);
   }
   for (const topic of b1b2VocabularyTopics) {
-    assert.equal(topic.entries.length, 20, `${topic.name} needs 20 entries`);
+    assert.equal(topic.entries.length, 30, `${topic.name} needs 30 entries`);
     for (const entry of topic.entries.slice(10)) {
       assert.match(entry.extraExample || '', /[.!?]$/u, `${entry.es} needs a second Spanish example`);
       assert.match(entry.extraExampleRu || '', /[.!?]$/u, `${entry.es} needs a second Russian translation`);
@@ -147,7 +147,7 @@ test('known editorial defects never reach the learner', () => {
 });
 
 test('music clips have valid short timestamps', () => {
-  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../app/data/songs.ts', import.meta.url), 'utf8');
   const clips = [...source.matchAll(/clip:\s*\{\s*start:\s*(\d+),\s*end:\s*(\d+)\s*\}/g)];
   assert.ok(clips.length >= 20, 'expected a useful set of music clips');
   for (const [, startValue, endValue] of clips) {
@@ -158,14 +158,15 @@ test('music clips have valid short timestamps', () => {
 });
 
 test('practice uses unambiguous article and correction tasks', () => {
-  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../app/lib/practice-engine.ts', import.meta.url), 'utf8')
+    + readFileSync(new URL('../app/components/learning/adaptive-practice-view.tsx', import.meta.url), 'utf8');
   assert.match(source, /if \(card\.skill === 'article'\) return \['el', 'la'\]/);
   assert.match(source, /напишите только исправленное слово/i);
   assert.match(source, /correctionTask\?\.answer/);
 });
 
 test('translation choices are built as four-option questions', () => {
-  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../app/lib/practice-engine.ts', import.meta.url), 'utf8');
   assert.match(source, /alternatives\.slice\(0, 3\)/);
   assert.match(source, /\['recognition', 'listening'\]\.includes\(card\.skill\)/);
   assert.match(
@@ -311,15 +312,17 @@ test('lesson 3 covers only its three presente rules with varied stable practice'
 });
 
 test('every core word from lesson 3 exists in the canonical dictionary', () => {
-  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../app/data/lesson-vocabulary.ts', import.meta.url), 'utf8');
   const dayBlock = source.match(/\n  day: \[([\s\S]*?)\n  \],\n  home:/u)?.[1] || '';
   const lessonWords = [...dayBlock.matchAll(/es: '([^']+)'/gu)].map((match) => match[1]);
   const dictionaryWords = new Set(entries.map((entry) => entry.es));
   assert.equal(lessonWords.length, 30);
   for (const word of lessonWords)
     assert.ok(dictionaryWords.has(word), `lesson word is missing from dictionary: ${word}`);
-  assert.match(source, /type PracticeCollection = 'topics' \| 'units' \| 'lessons'/);
-  assert.match(source, /lessonIds: lessonIdsForWord\(entry\.es\)/);
+  const practiceTypes = readFileSync(new URL('../app/types/learning.ts', import.meta.url), 'utf8');
+  const studyDeck = readFileSync(new URL('../app/lib/study-deck.ts', import.meta.url), 'utf8');
+  assert.match(practiceTypes, /type PracticeCollection = 'topics' \| 'units' \| 'lessons'/);
+  assert.match(studyDeck, /lessonIds: lessonIdsForWord\(entry\.es\)/);
 });
 
 test('lesson 2 covers every expanded rule in exactly 60 clear tasks', () => {
@@ -373,7 +376,8 @@ test('lesson 2 covers every expanded rule in exactly 60 clear tasks', () => {
 });
 
 test('a lesson completed on an older shorter version reopens at the new tasks', () => {
-  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../app/lib/learning-runtime.ts', import.meta.url), 'utf8')
+    + readFileSync(new URL('../app/components/learning/lessons-view.tsx', import.meta.url), 'utf8');
   assert.match(source, /state\.done < lesson\.exercises\.length/);
   assert.match(source, /current\[lesson\.id\] = \{ \.\.\.state, completed: false \}/);
   assert.match(source, /state\?\.lastExerciseId/);
@@ -396,7 +400,8 @@ test('lesson 2 theory keeps related rules together and explains su/sus by posses
 });
 
 test('lesson and grammar choices use displayed shuffled options', () => {
-  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../app/components/learning/lessons-view.tsx', import.meta.url), 'utf8')
+    + readFileSync(new URL('../app/components/learning/grammar-view.tsx', import.meta.url), 'utf8');
   assert.match(source, /displayedOptions = shuffledOptions/);
   assert.match(source, /displayedOptions\.map\(\(option, index\)/);
   assert.match(source, /displayedGrammarOptions = shuffledOptions/);
@@ -404,11 +409,8 @@ test('lesson and grammar choices use displayed shuffled options', () => {
 });
 
 test('quick start uses meaningful checks and allows retry after an error', () => {
-  const source = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
-  const quickStart = source.slice(
-    source.indexOf('const starterLessons'),
-    source.indexOf('function shuffledOptions'),
-  );
+  const quickStart = readFileSync(new URL('../app/data/starter-lessons.ts', import.meta.url), 'utf8')
+    + readFileSync(new URL('../app/components/learning/quick-start-view.tsx', import.meta.url), 'utf8');
   assert.equal(quickStart.includes("prompt: 'Tú ___ café.'"), false);
   assert.match(quickStart, /prompt: 'Tú ___ pan\.'/);
   assert.match(quickStart, /choice === check\.answer \|\| answerLock\.current/);

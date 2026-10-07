@@ -2,6 +2,7 @@ import { analyzeAnswer, normalizeText } from './learning-core.ts';
 
 export type PlacementSkill = 'Грамматика' | 'Чтение' | 'Аудирование' | 'Письмо';
 export type PlacementLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
+export type PlacementResultLevel = 'Pre-A1' | PlacementLevel;
 export type PlacementQuestion = {
   id: string;
   skill: PlacementSkill;
@@ -13,7 +14,8 @@ export type PlacementQuestion = {
   answers: string[];
 };
 export type PlacementResult = {
-  level: PlacementLevel;
+  scoringVersion: 2;
+  level: PlacementResultLevel;
   total: number;
   levels: Record<PlacementLevel, number>;
   skills: Record<PlacementSkill, number>;
@@ -191,13 +193,26 @@ export const scorePlacement = (
   });
   const skills = Object.fromEntries(placementSkills.map((skill) => [skill, Math.round(skillCorrect[skill] / skillTotal[skill] * 100)])) as Record<PlacementSkill, number>,
     scores = Object.fromEntries(levels.map((level) => [level, Math.round(levelCorrect[level] / levelTotal[level] * 100)])) as Record<PlacementLevel, number>,
-    floor = Math.min(...Object.values(skills));
-  let level: PlacementLevel = 'A1';
-  if (scores.A1 >= 50 && scores.A2 >= 50 && floor >= 20) level = 'A2';
-  if (level === 'A2' && scores.A1 >= 60 && scores.A2 >= 55 && scores.B1 >= 50 && floor >= 30) level = 'B1';
-  if (level === 'B1' && scores.B2 >= 50 && floor >= 40) level = 'B2';
-  if (level === 'B2' && scores.C1 >= 50 && floor >= 50) level = 'C1';
+    cumulativeCorrect = emptySkills(), cumulativeTotal = emptySkills();
+  // Confirm each foundation before advancing. Eight questions per level make
+  // this a study recommendation, not a CEFR certification.
+  let level: PlacementResultLevel = 'Pre-A1';
+  for (const candidate of levels) {
+    for (const question of questions.filter((item) => item.level === candidate)) {
+      cumulativeTotal[question.skill] += 1;
+      if (placementAnswerIsCorrect(responses[question.id] || '', question.answers))
+        cumulativeCorrect[question.skill] += 1;
+    }
+    const skillThreshold = candidate === 'A1' || candidate === 'A2' ? 0.5 : 0.6;
+    const balanced = placementSkills.every((skill) =>
+      cumulativeTotal[skill] > 0 &&
+      cumulativeCorrect[skill] / cumulativeTotal[skill] >= skillThreshold,
+    );
+    if (scores[candidate] < 75 || !balanced) break;
+    level = candidate;
+  }
   return {
+    scoringVersion: 2,
     level,
     total: Math.round(correct / questions.length * 100),
     levels: scores,

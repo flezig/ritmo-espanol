@@ -1,4 +1,5 @@
 import { b2VocabularyExpansion, type B2ExpansionRow } from './b2-vocabulary-expansion.ts';
+import { b2AdditionalVocabulary } from './b2-additional-vocabulary.ts';
 
 export type B1B2VocabularyEntry = {
   id: number;
@@ -21,7 +22,7 @@ type Row = B2ExpansionRow;
 const topic = (name: string, icon: string, rows: Row[]): B1B2VocabularyTopic => ({
   name,
   icon,
-  entries: [...rows, ...(b2VocabularyExpansion[name] || [])].map(([es, ru, example, exampleRu, extraExample, extraExampleRu], index) => ({
+  entries: [...rows, ...(b2VocabularyExpansion[name] || []), ...(b2AdditionalVocabulary[name] || [])].map(([es, ru, example, exampleRu, extraExample, extraExampleRu], index) => ({
     id: index + 1,
     es,
     ru,

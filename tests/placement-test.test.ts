@@ -54,9 +54,57 @@ test('writing accepts listed natural alternatives and rejects another meaning', 
   assert.equal(placementAnswerIsCorrect('No quiero hacerlo', writing.answers), false);
 });
 
-test('perfect diagnostic reaches C1 and empty diagnostic stays at A1', () => {
+test('perfect diagnostic reaches C1 and empty diagnostic stays below A1', () => {
   const questions = placementQuestionSets[0],
     perfect = Object.fromEntries(questions.map((question) => [question.id, question.answers[0]]));
   assert.equal(scorePlacement(perfect, questions, 1).level, 'C1');
-  assert.equal(scorePlacement({}, questions, 1).level, 'A1');
+  assert.equal(scorePlacement({}, questions, 1).level, 'Pre-A1');
+});
+
+test('the former 22/40 false C1 result no longer confirms a level', () => {
+  const questions = placementQuestionSets[0], responses: Record<string, string> = {};
+  for (const level of levels) {
+    for (const skill of placementSkills) {
+      const question = questions.find((item) => item.level === level && item.skill === skill)!;
+      responses[question.id] = question.answers[0];
+    }
+  }
+  for (const level of ['A1', 'A2']) {
+    const question = questions.find((item) => item.level === level && !responses[item.id])!;
+    responses[question.id] = question.answers[0];
+  }
+  const result = scorePlacement(responses, questions, 1);
+  assert.equal(result.total, 55);
+  assert.equal(result.level, 'Pre-A1');
+});
+
+test('levels advance in order and stop at the first unconfirmed foundation', () => {
+  for (const questions of placementQuestionSets) {
+    for (const [index, expected] of levels.entries()) {
+      const responses = Object.fromEntries(
+        questions.filter((question) => levels.indexOf(question.level) <= index)
+          .map((question) => [question.id, question.answers[0]]),
+      );
+      assert.equal(scorePlacement(responses, questions, 1).level, expected);
+    }
+    const advancedOnly = Object.fromEntries(
+      questions.filter((question) => question.level !== 'A1')
+        .map((question) => [question.id, question.answers[0]]),
+    );
+    assert.equal(scorePlacement(advancedOnly, questions, 1).level, 'Pre-A1');
+  }
+});
+
+test('75 percent confirms a level only with evidence across all four skills', () => {
+  const questions = placementQuestionSets[0];
+  const balanced = Object.fromEntries(
+    questions.filter((question) => question.level === 'A1').filter((_, index) => ![3, 7].includes(index))
+      .map((question) => [question.id, question.answers[0]]),
+  );
+  assert.equal(scorePlacement(balanced, questions, 1).level, 'A1');
+  const noWriting = Object.fromEntries(
+    questions.filter((question) => question.level === 'A1' && question.skill !== 'Письмо')
+      .map((question) => [question.id, question.answers[0]]),
+  );
+  assert.equal(scorePlacement(noWriting, questions, 1).level, 'Pre-A1');
 });

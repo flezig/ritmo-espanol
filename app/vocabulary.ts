@@ -24,6 +24,7 @@ export type VocabularyTopic = {
 import { corpusExamples } from './vocabulary-corpus.ts';
 import { legacyExampleTranslations } from './legacy-translations.ts';
 import { a2VocabularyTopics } from './a2-vocabulary.ts';
+import { deleA2VocabularyTopic, deleA2TopicName } from './dele-a2-vocabulary.ts';
 import { b1b2VocabularyTopics } from './b1b2-vocabulary.ts';
 import { unidad2Vocabulary } from './unidad2-vocabulary.ts';
 import { unidad3Vocabulary } from './unidad3-vocabulary.ts';
@@ -3491,6 +3492,7 @@ const expandHeadword = (entry: VocabularyEntry): VocabularyEntry[] => {
 const mergedTopics = [
   ...coreTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
   ...a2VocabularyTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
+  { ...deleA2VocabularyTopic, level: 'A1–A2' as const },
   ...deduplicatedLegacyTopics.map((topic) => ({ ...topic, level: 'A1–A2' as const })),
   ...b1b2VocabularyTopics.map((topic) => ({ ...topic, level: 'B1–B2' as const })),
   { name: 'Unidad 2', icon: '📘', level: 'A1–A2' as const, entries: unidad2Vocabulary },
@@ -3532,6 +3534,7 @@ const preferredTopicOrder = [
   'Техника и устройства',
   'Погода и природа',
   'Связующие слова и полезные конструкции',
+  deleA2TopicName,
   'Знакомства и отношения',
   'Переписка и интернет',
   'Музыка',
