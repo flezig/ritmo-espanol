@@ -2,7 +2,11 @@ import type { VocabularyLevel } from '../vocabulary';
 import type { ProfileGender } from '../lib/profile-ranks';
 import type { AchievementStats } from '../lib/achievements';
 import type { LessonErrorAttempt } from '../lib/lesson-errors';
-import type { AnswerAnalysis, SRSRecord, WordStatus } from '../lib/learning-core';
+import type {
+  AnswerAnalysis,
+  SRSRecord,
+  WordStatus,
+} from '../lib/learning-core';
 import type { WordSessionRecord } from '../lib/word-sessions';
 
 export type Section =
@@ -12,6 +16,7 @@ export type Section =
   | 'Kespa'
   | 'Vocabulary'
   | 'Grammar'
+  | 'DeleB2'
   | 'Music'
   | 'Practice'
   | 'Dictation'

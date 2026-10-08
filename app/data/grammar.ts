@@ -50,7 +50,7 @@ const grammarTopicsBase = [
       'После ser перед профессией без уточнения артикль обычно не ставится: Soy profesora. Если есть характеристика, возможен артикль: Es una profesora excelente.',
       'Артикль часто опускается с неисчисляемым значением в общем смысле и после no hay: Bebo café; No hay pan.',
       'Перед женским существительным с начальным ударным a-/ha- в единственном числе употребляются el/un: el agua fría, un águila blanca. Само слово остаётся женского рода; во множественном числе: las aguas.',
-      'Слияния al и del обязательны только с мужским артиклем el: Voy al centro; Vengo del hotel. С именами собственными El Salvador слияние зависит от самого названия.',
+      'Слияния al и del обязательны только с мужским артиклем el: Voy al centro; Vengo del hotel. Если El входит в официальное название, слияния нет: a El Salvador, de El Salvador.',
       'Прилагательное согласуется с существительным по роду и числу, даже если форма артикля необычна: el agua fría.',
     ],
     examples: [
@@ -110,12 +110,12 @@ const grammarTopicsBase = [
     signals:
       'hoy · esta semana · este año · ya · todavía no · alguna vez · nunca',
     details:
-      'Составная форма образуется настоящим временем haber и причастием. Эти части не разделяются. Безударные местоимения ставятся перед haber: Lo he visto; Me he levantado. Причастие после haber не согласуется с подлежащим.',
+      'Составная форма образуется настоящим временем haber и причастием. Они образуют единое сказуемое; обычно стоят рядом. Безударные местоимения ставятся перед haber: Lo he visto; Me he levantado. Причастие после haber не согласуется с подлежащим.',
     rules: [
       'Правильное причастие: hablar → hablado; comer → comido; vivir → vivido.',
-      'Haber и причастие образуют единое сказуемое: нельзя вставлять между ними наречие или дополнение.',
+      'Haber и причастие обычно стоят рядом, но наречие иногда возможно между ними: He apenas dormido. Безударные местоимения ставьте перед haber: Lo he visto.',
       'Частые неправильные причастия: hecho, dicho, visto, escrito, puesto, abierto, roto, vuelto, muerto.',
-      'С закончившимся прошлым периодом обычно выбирают indefinido: Ayer fui. С незавершённым периодом: Hoy he ido.',
+      'С закончившимся прошлым периодом обычно выбирают indefinido: Ayer fui. С незавершённым периодом в значительной части Испании: Hoy he ido. В других регионах нормативно и Hoy fui; маркер не определяет время автоматически.',
       'Perfecto подходит для жизненного опыта без точной даты: ¿Has estado alguna vez en Perú?',
       'Текущий результат важнее самого момента действия: He perdido las llaves — сейчас у меня нет ключей.',
     ],
@@ -401,14 +401,14 @@ const grammarQuestionBanksBase: QuizQuestion[][] = [
     },
     {
       kind: 'Слияние',
-      prompt: 'Caminamos ___ centro.',
+      prompt: 'Направление: идём к центру. Caminamos ___ centro.',
       options: ['al', 'a el', 'del'],
       answer: 'al',
       tip: 'a + el = al.',
     },
     {
       kind: 'Слияние',
-      prompt: 'Salimos ___ hotel a las ocho.',
+      prompt: 'Откуда вышли? Salimos ___ hotel a las ocho.',
       options: ['del', 'de el', 'al'],
       answer: 'del',
       tip: 'de + el = del.',
@@ -459,28 +459,28 @@ const grammarQuestionBanksBase: QuizQuestion[][] = [
     },
     {
       kind: 'Причастие -AR',
-      prompt: 'hablar → …',
+      prompt: 'Причастие (participio): hablar → …',
       options: ['hablado', 'hablido', 'hablando'],
       answer: 'hablado',
       tip: '-ar меняется на -ado.',
     },
     {
       kind: 'Причастие -ER',
-      prompt: 'comer → …',
+      prompt: 'Причастие (participio): comer → …',
       options: ['comido', 'comado', 'comiendo'],
       answer: 'comido',
       tip: '-er меняется на -ido.',
     },
     {
       kind: 'Исключение',
-      prompt: 'hacer → …',
+      prompt: 'Причастие (participio): hacer → …',
       options: ['hecho', 'hacido', 'haciendo'],
       answer: 'hecho',
       tip: 'Неправильное причастие hacer — hecho.',
     },
     {
       kind: 'Исключение',
-      prompt: 'ver → …',
+      prompt: 'Причастие (participio): ver → …',
       options: ['visto', 'vido', 'viendo'],
       answer: 'visto',
       tip: 'Неправильное причастие ver — visto.',
@@ -490,7 +490,7 @@ const grammarQuestionBanksBase: QuizQuestion[][] = [
       prompt: 'Какой маркер лучше подходит к perfecto?',
       options: ['hoy', 'ayer', 'en 1999'],
       answer: 'hoy',
-      tip: 'Сегодняшний период ещё не закончился.',
+      tip: 'В значительной части Испании hoy часто сочетается с perfecto. В других регионах нормативно и indefinido.',
     },
     {
       kind: 'Отрицание',
@@ -522,7 +522,7 @@ const grammarQuestionBanksBase: QuizQuestion[][] = [
       prompt: '— ¿Has estado en Chile? — No, nunca ___.',
       options: ['he estado', 'estuve ayer', 'estaba'],
       answer: 'he estado',
-      tip: 'Опыт без законченного момента — perfecto.',
+      tip: 'В этом диалоге he estado продолжает вопрос в perfecto. Употребление времён для опыта зависит и от региона.',
     },
     {
       kind: 'Найди ошибку',
@@ -535,28 +535,29 @@ const grammarQuestionBanksBase: QuizQuestion[][] = [
   [
     {
       kind: 'Событие',
-      prompt: 'Anoche Marta ___ tarde.',
+      prompt: 'Завершённое событие, indefinido: Anoche Marta ___ tarde.',
       options: ['llegó', 'llegaba', 'ha llegado'],
       answer: 'llegó',
       tip: 'Завершённое событие anoche — indefinido.',
     },
     {
       kind: 'Привычка в прошлом',
-      prompt: 'De niño yo ___ al mar cada verano.',
+      prompt:
+        'Опишите привычку в imperfecto: De niño yo ___ al mar cada verano.',
       options: ['iba', 'fui', 'he ido'],
       answer: 'iba',
       tip: 'Повторяющаяся привычка — imperfecto.',
     },
     {
       kind: 'Фон + событие',
-      prompt: 'Yo cocinaba cuando él ___.',
+      prompt: 'Прерывающее событие, indefinido: Yo cocinaba cuando él ___.',
       options: ['llamó', 'llamaba', 'ha llamado'],
       answer: 'llamó',
       tip: 'Длительный фон прерывает короткое событие.',
     },
     {
       kind: 'Описание',
-      prompt: 'La casa ___ grande y luminosa.',
+      prompt: 'Фоновое описание в imperfecto: La casa ___ grande y luminosa.',
       options: ['era', 'fue', 'ha sido'],
       answer: 'era',
       tip: 'Описание обстановки — imperfecto.',
@@ -584,7 +585,8 @@ const grammarQuestionBanksBase: QuizQuestion[][] = [
     },
     {
       kind: 'Однократное действие',
-      prompt: 'El sábado pasado ___ a Lucía.',
+      prompt:
+        'Знакомство как завершённое событие, indefinido: El sábado pasado ___ a Lucía.',
       options: ['conocí', 'conocía', 'he conocido'],
       answer: 'conocí',
       tip: 'Конкретное завершённое событие — indefinido.',
@@ -616,14 +618,14 @@ const grammarQuestionBanksBase: QuizQuestion[][] = [
     },
     {
       kind: 'Найди ошибку',
-      prompt: 'Какой вариант нарушает логику времён?',
+      prompt: 'В каком предложении ошибочна форма indefinido для yo?',
       options: [
-        'Cuando era niño, fui al colegio cada día.',
+        'Ayer yo fuí al colegio.',
         'Ayer fui al colegio.',
         'Mientras estudiaba, sonó el teléfono.',
       ],
-      answer: 'Cuando era niño, fui al colegio cada día.',
-      tip: 'Для регулярного действия лучше: iba al colegio cada día.',
+      answer: 'Ayer yo fuí al colegio.',
+      tip: 'Правильно: fui, без знака ударения. Повторяемость сама по себе не запрещает indefinido: выбор зависит от границ периода и смысла.',
     },
   ],
 ];
@@ -632,8 +634,7 @@ const unidadOneTopic = {
   name: 'Unidad 1. Алфавит, чтение и произношение',
   source: 'Дышлевая И. А. — Unidad 1, стр. 3–8',
   use: 'Первый раздел учебника последовательно знакомит с алфавитом, устойчивым произношением пяти гласных, позиционным чтением согласных, дифтонгами, ударением и чтением слов. Это база для диктанта и правильного распознавания речи.',
-  formula:
-    'алфавит → гласные → согласные → дифтонги → ударение → чтение вслух',
+  formula: 'алфавит → гласные → согласные → дифтонги → ударение → чтение вслух',
   signals:
     'c + e/i · g + e/i · qu + e/i · r/rr · немая h · ñ · ll/y · gui/gue/güi/güe',
   details:
@@ -674,7 +675,11 @@ const unidadOneQuestions: QuizQuestion[] = [
   {
     kind: 'Гласные',
     prompt: 'Как произносятся безударные гласные в испанском?',
-    options: ['Чётко, без сильной редукции', 'Всегда исчезают', 'Как в английском'],
+    options: [
+      'Чётко, без сильной редукции',
+      'Всегда исчезают',
+      'Как в английском',
+    ],
     answer: 'Чётко, без сильной редукции',
     tip: 'a, e, i, o, u сохраняют качество и в безударном слоге.',
   },
@@ -723,14 +728,22 @@ const unidadOneQuestions: QuizQuestion[] = [
   {
     kind: 'Ударение',
     prompt: 'Куда без знака ударения падает ударение в слове hablan?',
-    options: ['На предпоследний слог', 'На последний слог', 'На первый слог всегда'],
+    options: [
+      'На предпоследний слог',
+      'На последний слог',
+      'На первый слог всегда',
+    ],
     answer: 'На предпоследний слог',
     tip: 'Окончание на n подчиняется модели предпоследнего слога.',
   },
   {
     kind: 'Ударение',
     prompt: 'Почему в слове canción нужен знак ударения?',
-    options: ['Ударение на последнем слоге при окончании -n', 'Так отмечают женский род', 'Знак делает c мягкой'],
+    options: [
+      'Ударение на последнем слоге при окончании -n',
+      'Так отмечают женский род',
+      'Знак делает c мягкой',
+    ],
     answer: 'Ударение на последнем слоге при окончании -n',
     tip: 'Без знака слово на -n имело бы ударение на предпоследнем слоге.',
   },
@@ -744,7 +757,11 @@ const unidadOneQuestions: QuizQuestion[] = [
   {
     kind: 'Региональная норма',
     prompt: 'Как корректно описать чтение z в слове zapato?',
-    options: ['[θ] в большей части Испании, [s] в Латинской Америке', 'Всегда [z]', 'Буква не читается'],
+    options: [
+      '[θ] в большей части Испании, [s] в Латинской Америке',
+      'Всегда [z]',
+      'Буква не читается',
+    ],
     answer: '[θ] в большей части Испании, [s] в Латинской Америке',
     tip: 'Обе нормы естественны и зависят от региона.',
   },

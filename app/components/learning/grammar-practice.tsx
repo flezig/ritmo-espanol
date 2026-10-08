@@ -20,11 +20,19 @@ import {
 } from '../../lib/assignment-tracking';
 import { ReportExerciseButton } from '../report-exercise-button';
 import { playFeedbackSound } from './shared';
+import { analyzeAnswer } from '../../lib/learning-core';
+import {
+  grammarTaskFor,
+  grammarTaskKind,
+  grammarOrderTokens,
+  type GrammarTaskKind,
+} from '../../lib/grammar-task';
 
 const storageKey = 'ritmo-grammar-practice';
 type Session = {
   ids: string[];
   options: string[][];
+  formats?: GrammarTaskKind[];
   index: number;
   choice: string;
   score: number;
@@ -67,6 +75,8 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
   const [progress, setProgress] = useState<ModeProgress>(empty);
   const [ready, setReady] = useState(false);
   const [theory, setTheory] = useState(true);
+  const [draft, setDraft] = useState('');
+  const [ordered, setOrdered] = useState<number[]>([]);
   const lock = useRef(false),
     advanceLock = useRef(false),
     startedAt = useRef(Date.now()),
@@ -76,7 +86,22 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
     const valid = stored.session?.ids.every((id) =>
       grammarExercises[mode].some((q) => q.id === id),
     );
-    const value = valid ? stored : { ...stored, session: undefined };
+    const value =
+      valid && stored.session
+        ? {
+            ...stored,
+            session: {
+              ...stored.session,
+              formats:
+                stored.session.formats ||
+                stored.session.ids.map((_, index) =>
+                  index === stored.session!.index && stored.session!.choice
+                    ? ('choice' as const)
+                    : grammarTaskKind(index),
+                ),
+            },
+          }
+        : { ...stored, session: undefined };
     setProgress(value);
     setReady(true);
     if (value.session && !value.session.finished)
@@ -91,6 +116,29 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
   const question: GrammarExercise | undefined =
     session &&
     grammarExercises[mode].find((q) => q.id === session.ids[session.index]);
+  const task =
+    question && session
+      ? grammarTaskFor(
+          question,
+          session.formats?.[session.index] || grammarTaskKind(session.index),
+        )
+      : undefined;
+  const tokens =
+    task?.kind === 'order' && session && question
+      ? grammarOrderTokens(task.answer, `${session.sessionId}:${question.id}`)
+      : [];
+  const submittedCorrect =
+    !!session?.choice &&
+    !!task &&
+    analyzeAnswer(session.choice, task.answer).correct;
+  useEffect(() => {
+    setDraft('');
+    setOrdered([]);
+    lock.current = false;
+    advanceLock.current = false;
+    startedAt.current = Date.now();
+    hints.current = 0;
+  }, [mode, session?.sessionId, session?.index]);
   const update = (value: ModeProgress) => {
     save(mode, value);
     setProgress(value);
@@ -107,6 +155,9 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
       session: {
         ids: round.map((q) => q.id),
         options: round.map((q) => q.options),
+        formats: round.map((_, index) =>
+          grammarTaskKind(index, progress.sessions),
+        ),
         index: 0,
         choice: '',
         score: 0,
@@ -120,6 +171,8 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
     if (
       !session ||
       !question ||
+      !task ||
+      !value.trim() ||
       session.choice ||
       session.finished ||
       lock.current
@@ -127,7 +180,7 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
       return;
     lock.current = true;
     advanceLock.current = false;
-    const correct = value === question.answer;
+    const correct = analyzeAnswer(value, task.answer).correct;
     update({
       ...progress,
       seen: [...new Set([...progress.seen, question.id])],
@@ -146,9 +199,9 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
       type: 'practice',
       contentId: `grammar:${mode}`,
       itemKey: question.id,
-      prompt: `${question.instruction} ${question.prompt}`,
+      prompt: `${task.instruction} ${task.prompt}`,
       studentAnswer: value,
-      correctAnswer: question.answer,
+      correctAnswer: task.answer,
       correct,
       score: correct ? 5 : 1,
     });
@@ -254,8 +307,9 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
       {!session ? (
         <div className="grammar-start">
           <p>
-            10 заданий вперемешку за сессию. За верный ответ — 5 XP, за попытку
-            — 1 XP. Можно выйти и продолжить с этого места.
+            10 заданий за сессию: ввод без вариантов, исправление ошибок, сборка
+            предложений и выбор ответа. За верный ответ — 5 XP, за попытку — 1
+            XP. Можно выйти и продолжить с этого места.
           </p>
           <button className="primary-btn" onClick={start}>
             Начать тренировку
@@ -275,58 +329,145 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
           </button>
         </div>
       ) : (
-        question && (
+        question &&
+        task && (
           <article className="article-question">
             <header className="article-practice-head">
               <b>
                 {session.index + 1} / {session.ids.length}
               </b>
-              <small>{question.rule}</small>
+              <small>
+                {question.rule} · {task.label}
+              </small>
             </header>
             <ReportExerciseButton
               id={question.id}
               section={`Грамматика: ${info.title}`}
-              prompt={question.prompt}
-              answer={question.answer}
-              options={session.options[session.index]}
+              prompt={`${task.instruction} ${task.prompt}`}
+              answer={task.answer}
+              options={
+                task.kind === 'choice'
+                  ? session.options[session.index]
+                  : undefined
+              }
               learningContext={{
                 type: 'practice',
                 contentId: `grammar:${mode}`,
               }}
             />
-            <p>{question.instruction}</p>
-            <h2 lang="es">{question.prompt}</h2>
-            <div className="article-options">
-              {session.options[session.index].map((option) => (
+            <p>{task.instruction}</p>
+            <h2 lang="es">{task.prompt}</h2>
+            {task.kind === 'choice' ? (
+              <div className="article-options">
+                {session.options[session.index].map((option) => (
+                  <button
+                    key={option}
+                    disabled={!!session.choice}
+                    className={
+                      session.choice
+                        ? option === question.answer
+                          ? 'correct'
+                          : option === session.choice
+                            ? 'wrong'
+                            : ''
+                        : ''
+                    }
+                    onClick={() => choose(option)}
+                    lang="es"
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            ) : task.kind === 'order' ? (
+              <div>
+                <p lang="es" aria-live="polite">
+                  {ordered.length
+                    ? ordered
+                        .map(
+                          (id) => tokens.find((token) => token.id === id)!.word,
+                        )
+                        .join(' ')
+                    : 'Нажимайте на слова в нужном порядке.'}
+                </p>
+                <div className="article-options">
+                  {tokens.map((token) => (
+                    <button
+                      key={token.id}
+                      lang="es"
+                      disabled={!!session.choice || ordered.includes(token.id)}
+                      onClick={() =>
+                        setOrdered((value) => [...value, token.id])
+                      }
+                    >
+                      {token.word}
+                    </button>
+                  ))}
+                </div>
                 <button
-                  key={option}
-                  disabled={!!session.choice}
-                  className={
-                    session.choice
-                      ? option === question.answer
-                        ? 'correct'
-                        : option === session.choice
-                          ? 'wrong'
-                          : ''
-                      : ''
-                  }
-                  onClick={() => choose(option)}
-                  lang="es"
+                  className="secondary-btn"
+                  disabled={!!session.choice || !ordered.length}
+                  onClick={() => setOrdered((value) => value.slice(0, -1))}
                 >
-                  {option}
+                  Убрать последнее слово
                 </button>
-              ))}
-            </div>
-            {session.choice && (
-              <footer
-                className={
-                  session.choice === question.answer ? 'correct' : 'wrong'
-                }
+                <button
+                  className="primary-btn"
+                  disabled={
+                    !!session.choice || ordered.length !== tokens.length
+                  }
+                  onClick={() =>
+                    choose(
+                      ordered
+                        .map(
+                          (id) => tokens.find((token) => token.id === id)!.word,
+                        )
+                        .join(' '),
+                    )
+                  }
+                >
+                  Проверить
+                </button>
+              </div>
+            ) : (
+              <form
+                className="grammar-answer-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  choose(draft.trim());
+                }}
               >
+                <label htmlFor="grammar-answer">
+                  {task.kind === 'correction'
+                    ? 'Исправленная форма глагола'
+                    : 'Пропущенная форма глагола'}
+                </label>
+                <input
+                  id="grammar-answer"
+                  lang="es"
+                  value={draft}
+                  disabled={!!session.choice}
+                  onChange={(event) => setDraft(event.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder="Напишите по-испански"
+                />
+                <button
+                  className="primary-btn"
+                  type="submit"
+                  disabled={!!session.choice || !draft.trim()}
+                >
+                  Проверить
+                </button>
+              </form>
+            )}
+            {session.choice && (
+              <footer className={submittedCorrect ? 'correct' : 'wrong'}>
                 <b>
-                  {session.choice === question.answer
+                  {submittedCorrect
                     ? 'Верно! +5 XP'
-                    : `Правильный ответ: ${question.answer} · +1 XP`}
+                    : `Правильный ответ: ${task.answer} · +1 XP`}
                 </b>
                 <p>{question.explanation}</p>
                 <button onClick={next}>

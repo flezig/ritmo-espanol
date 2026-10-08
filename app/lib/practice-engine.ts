@@ -9,7 +9,7 @@ import type { WordSessionRecord, WordSessionProgress } from './word-sessions';
 import { vocabularyBrowseTopics, vocabularyTopics } from '../vocabulary';
 import { courseLessons } from '../lessons';
 import { makeSingleWordCorrection } from './practice-content';
-import { STANDARD_RECOGNITION_DISTRIBUTION } from './practice-distribution';
+import { STANDARD_RECOGNITION_DISTRIBUTION, limitChoiceFormat } from './practice-distribution';
 import { inferWordPartOfSpeech } from './word-part-of-speech';
 import type { StudyCard, PracticeProgressBaseline, WordHistoryRecord, SessionMode, SkillType, ResponseKind, PracticeLevel, PracticeCollection } from '../types/learning';
 import { wordIsLearned } from './study-deck';
@@ -387,7 +387,7 @@ export const controlledDictationSentence = (
   );
 };
 
-export const responseKindFor = (
+const preferredResponseKindFor = (
   card: StudyCard,
   index: number,
   record?: SRSRecord,
@@ -489,6 +489,15 @@ export const responseKindFor = (
     return 'choice';
   return pick(['type', 'phrase', 'correction', 'self']);
 };
+
+export const responseKindFor = (
+  card: StudyCard,
+  index: number,
+  record?: SRSRecord,
+  sentenceReady = false,
+): ResponseKind => limitChoiceFormat(
+  preferredResponseKindFor(card, index, record, sentenceReady), index, card.skill,
+);
 
 export const practiceFormatReason = (
   card: StudyCard,

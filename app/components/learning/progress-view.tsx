@@ -43,11 +43,15 @@ function MemoryDashboard() {
       ...learnedWordDictationCards(learnedWordDb),
     ],
     recognition = deck.filter((card) => card.skill === 'recognition'),
-    wordsByBase = new Map(recognition.map((card) => [baseCardKey(card.key), card])),
+    wordsByBase = new Map(
+      recognition.map((card) => [baseCardKey(card.key), card]),
+    ),
     wordBases = [...wordsByBase.keys()],
     learnedWords = [...wordsByBase.entries()]
-      .filter(([base]) =>
-        derivedWordStatus(base, records, wordProgress[base] || 'new') === 'learned',
+      .filter(
+        ([base]) =>
+          derivedWordStatus(base, records, wordProgress[base] || 'new') ===
+          'learned',
       )
       .map(([, card]) => card)
       .sort((a, b) => a.es.localeCompare(b.es, 'es')),
@@ -143,7 +147,32 @@ function MemoryDashboard() {
     }).reduce((sum, value) => sum + value, 0);
   return (
     <div className="memory-dashboard">
-      <section className="progress-history"><header><h3>Практика грамматики</h3></header><div>{grammarModes.map(mode => { const total = stats.practiceTotalByMode[`grammar:${mode}`] || 0, correct = stats.practiceCorrectByMode[`grammar:${mode}`] || 0; return <article key={mode.id}><b>{mode.icon} {mode.title}</b><span>{total} ответов · {correct} верно · {total ? Math.round(correct / total * 100) : 0}%</span><small>{stats.practiceModeSessions[`grammar:${mode}`] || 0} завершённых сессий</small></article>; })}</div></section>
+      <section className="progress-history grammar-progress">
+        <header>
+          <h3>Практика грамматики</h3>
+        </header>
+        <div>
+          {grammarModes.map((mode) => {
+            const total = stats.practiceTotalByMode[`grammar:${mode.id}`] || 0,
+              correct = stats.practiceCorrectByMode[`grammar:${mode.id}`] || 0;
+            return (
+              <article key={mode.id}>
+                <b>
+                  {mode.icon} {mode.title}
+                </b>
+                <span>
+                  {total} ответов · {correct} верно ·{' '}
+                  {total ? Math.round((correct / total) * 100) : 0}%
+                </span>
+                <small>
+                  {stats.practiceModeSessions[`grammar:${mode.id}`] || 0}{' '}
+                  завершённых сессий
+                </small>
+              </article>
+            );
+          })}
+        </div>
+      </section>
       <section className="memory-numbers">
         <article>
           <span>🧠</span>
@@ -173,7 +202,9 @@ function MemoryDashboard() {
       </section>
       <details className="learned-words-disclosure">
         <summary>
-          <span>Выученные слова <small>{known}</small></span>
+          <span>
+            Выученные слова <small>{known}</small>
+          </span>
           <span className="learned-words-toggle">
             <span className="learned-words-show">Раскрыть список</span>
             <span className="learned-words-hide">Свернуть список</span>
@@ -186,7 +217,9 @@ function MemoryDashboard() {
               <li key={baseCardKey(card.key)}>
                 <b lang="es">{card.es}</b>
                 <span>{card.ru}</span>
-                <small>{card.topic} · {card.level}</small>
+                <small>
+                  {card.topic} · {card.level}
+                </small>
               </li>
             ))}
           </ul>
@@ -546,9 +579,7 @@ export function ProgressView({ go }: { go: (s: Section) => void }) {
           {completed === lessonTotal && (
             <div className="cats-together">
               <CatMascot state="love" />
-              <p>
-                Все уроки завершены — оба котика сидят рядом в новом доме.
-              </p>
+              <p>Все уроки завершены — оба котика сидят рядом в новом доме.</p>
             </div>
           )}
         </section>

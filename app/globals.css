@@ -14062,3 +14062,84 @@ body {
   .app .kespa-voice-picker { flex:1; min-width:100px; }
   .app .kespa-voice-picker select { width:100%; min-width:0; }
 }
+
+.grammar-answer-form { display: grid; gap: 12px; margin: 20px 0; }
+.grammar-answer-form label { font-weight: 600; }
+.grammar-answer-form input { width: 100%; min-width: 0; min-height: 48px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); font: inherit; }
+.grammar-answer-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grammar-answer-form .primary-btn { justify-self: start; }
+
+/* DELE B2 study guide */
+.dele-b2 { max-width: 1080px; margin: 0 auto; }
+.dele-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 24px 0; }
+.dele-summary article, .dele-card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
+.dele-summary strong, .dele-summary span { display: block; }
+.dele-summary strong { color: var(--purple); margin-bottom: 8px; font-size: 1.15rem; }
+.dele-summary span, .dele-note, .dele-format { color: var(--muted); line-height: 1.65; }
+.dele-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; }
+.dele-tabs button { padding: 12px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: inherit; cursor: pointer; }
+.dele-tabs button[aria-pressed='true'] { background: var(--purple); color: white; }
+.dele-card { margin: 18px 0; line-height: 1.75; }
+.dele-card h2 { margin: 0 0 8px; font-size: 1.4rem; }
+.dele-card h3 { margin: 22px 0 8px; font-size: 1.05rem; }
+.dele-card p { margin: 8px 0 14px; }
+.dele-card a, .dele-note a { color: var(--purple); text-decoration: underline; text-underline-offset: 3px; }
+.dele-card a svg { display: inline; vertical-align: middle; }
+.dele-official { padding: 16px 20px; background: color-mix(in srgb, var(--purple) 7%, var(--panel)); border-radius: 14px; }
+.dele-official h3 { margin-top: 0; }
+.dele-card ol, .dele-card ul { padding-left: 24px; }
+.dele-card li { margin: 8px 0; }
+.dele-card details { border: 1px solid var(--line); padding: 14px 18px; border-radius: 12px; margin: 12px 0; }
+.dele-card summary { cursor: pointer; font-weight: 600; }
+.dele-card pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 16px 0 0; }
+.dele-draft { margin-top: 24px; }
+.dele-draft > label { font-weight: 600; }
+.dele-draft textarea { display: block; width: 100%; min-height: 220px; padding: 16px; margin-top: 10px; background: var(--panel); color: inherit; border: 1px solid var(--line); border-radius: 12px; font: inherit; resize: vertical; }
+.dele-draft > p { font-size: .85rem; color: var(--muted); }
+.dele-checklist { display: grid; gap: 10px; }
+.dele-checklist label { display: flex; align-items: baseline; gap: 10px; cursor: pointer; }
+.dele-checklist input { accent-color: var(--purple); }
+@media (max-width: 700px) { .dele-summary { grid-template-columns: 1fr; } .dele-card { padding: 18px; } .dele-tabs button { flex: 1 1 40%; } }
+
+/* Grammar progress uses text headings rather than the numeric history layout. */
+.grammar-progress > div {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grammar-progress article {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+.grammar-progress article b {
+  white-space: normal;
+  overflow-wrap: normal;
+  font: 750 18px/1.4 var(--font-manrope);
+}
+.grammar-progress article span,
+.grammar-progress article small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+@media (max-width: 700px) {
+  .grammar-progress > div { grid-template-columns: minmax(0, 1fr); }
+}
+
+.dele-full-text { padding: 8px 18px; margin: 16px 0; background: var(--soft); border-radius: 12px; }
+.dele-full-text p { white-space: pre-line; overflow-wrap: break-word; }
+.dele-examples { margin: 24px 0; border-top: 1px solid var(--line); }
+.dele-examples h4 { margin: 12px 0 6px; }
+.dele-online-list, .dele-constructions { display: grid; gap: 12px; }
+.dele-online-list > article, .dele-constructions > article { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.dele-online-list p, .dele-constructions p { margin-bottom: 0; }
+.dele-topic-search { display: grid; gap: 8px; font-weight: 600; }
+.dele-topic-search input { width: 100%; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; font: inherit; color: var(--text); background: var(--panel); }
+.dele-topic-words { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 20px; }
+.dele-topic-words > div { padding: 10px 12px; background: var(--soft); border-radius: 10px; min-width: 0; }
+.dele-topic-words dt { font-weight: 700; }
+.dele-topic-words dd { margin: 4px 0 0; color: var(--muted); }
+@media (max-width: 600px) { .dele-topic-words { grid-template-columns: minmax(0, 1fr); } .dele-full-text { padding: 8px 12px; } }
