@@ -55,7 +55,7 @@ const order = (
   answer: string,
   explanation: string,
 ): LessonExercise => ({
-  kind: 'Порядок слов',
+  kind: 'Перевод из слов',
   mode: 'order',
   prompt,
   options: answer.split(/\s+/),
@@ -191,25 +191,25 @@ const lesson1Original: LessonExercise[] = [
     ),
   ),
   order(
-    'Соберите: зовут / Меня / Тимур',
+    'Переведите на испанский: «Меня зовут Тимур.»',
     ['Me llamo Timur.', 'Llamo me Timur.', 'Timur me llama.'],
     'Me llamo Timur.',
     'В испанском используется возвратная конструкция me llamo.',
   ),
   order(
-    'Соберите: из / Я / России',
+    'Переведите на испанский: «Я из России.»',
     ['Soy de Rusia.', 'De Rusia soy de.', 'Yo Rusia es.'],
     'Soy de Rusia.',
     'Происхождение выражается ser + de.',
   ),
   order(
-    'Соберите: программист / Она',
+    'Переведите на испанский: «Она программист.»',
     ['Ella es programadora.', 'Es ella programador.', 'Ella programadora soy.'],
     'Ella es programadora.',
     'Базовый порядок: подлежащее + ser + характеристика.',
   ),
   order(
-    'Соберите: кот / мой / спокойный',
+    'Переведите на испанский: «Мой кот спокойный.»',
     [
       'Mi gato es tranquilo.',
       'Gato mi tranquilo es.',
@@ -219,7 +219,7 @@ const lesson1Original: LessonExercise[] = [
     'Притяжательное слово ставится перед существительным.',
   ),
   order(
-    'Соберите вопрос: ты / откуда?',
+    'Переведите на испанский: «Откуда ты?»',
     ['¿De dónde eres?', '¿Dónde de eres?', '¿Eres dónde de?'],
     '¿De dónde eres?',
     'Вопросительное сочетание de dónde ставится в начале.',
@@ -314,7 +314,7 @@ const lesson1Original: LessonExercise[] = [
     'Названия национальностей и языков пишутся со строчной буквы: ruso, española.',
   ),
   order(
-    'Соберите: новая / я / студентка',
+    'Переведите на испанский: «Я новая студентка.»',
     [
       'Soy una estudiante nueva.',
       'Soy un estudiante nuevo.',
@@ -712,7 +712,7 @@ const lesson2Original: LessonExercise[] = [
     'Меняется только число: amable → amables.',
   ),
   order(
-    'Соберите: сестра / моя / весёлая',
+    'Переведите на испанский: «Моя сестра весёлая.»',
     [
       'Mi hermana es divertida.',
       'Mi es hermana divertido.',
@@ -722,13 +722,13 @@ const lesson2Original: LessonExercise[] = [
     'Все элементы должны согласоваться с hermana.',
   ),
   order(
-    'Соберите: у / голубые / него / глаза',
+    'Переведите на испанский: «У него голубые глаза.»',
     ['Él tiene los ojos azules.', 'Él es ojos azul.', 'Tiene él azul ojos.'],
     'Él tiene los ojos azules.',
     'Внешность часто описывают tener + часть тела.',
   ),
   order(
-    'Соберите: коты / наши / любопытные',
+    'Переведите на испанский: «Наши коты любопытные.»',
     [
       'Nuestros gatos son curiosos.',
       'Nuestro gatos es curioso.',
@@ -951,7 +951,7 @@ const lesson2: LessonExercise[] = [
     ),
   ),
   order(
-    'Соберите описание внешности',
+    'Переведите на испанский: «У моего отца короткие волосы.»',
     ['Mi padre tiene el pelo corto.'],
     'Mi padre tiene el pelo corto.',
     'Части тела и внешность часто описывают через tener.',
@@ -1091,7 +1091,7 @@ const lesson3: LessonExercise[] = [
     'trabajar → trabajas.',
   ),
   order(
-    'Соберите предложение: мы / живём / в Мадриде.',
+    'Переведите на испанский: «Мы живём в Мадриде.»',
     ['Vivimos en Madrid.', 'Viven en Madrid.', 'Vivimos Madrid en.'],
     'Vivimos en Madrid.',
     'Для nosotros: vivir → vivimos.',
@@ -1146,7 +1146,7 @@ const lesson3: LessonExercise[] = [
     ['Ellos comen el pan.'],
   ),
   order(
-    'Соберите предложение: ты / изучаешь / испанский.',
+    'Переведите на испанский: «Ты изучаешь испанский.»',
     ['Estudias español.', 'Estudia español.', 'Español estudias tú.'],
     'Estudias español.',
     'Для tú у -ar окончание -as.',
@@ -1188,7 +1188,7 @@ const lesson3: LessonExercise[] = [
     ['Nosotros hablamos español.', 'Nosotras hablamos español.'],
   ),
   order(
-    'Соберите предложение: она / пишет / книгу.',
+    'Переведите на испанский: «Она пишет книгу.»',
     ['Escribe un libro.', 'Escriben un libro.', 'Un escribe libro.'],
     'Escribe un libro.',
     'Для ella: escribir → escribe. Libro пишется с артиклем.',
@@ -1222,7 +1222,7 @@ const lesson3: LessonExercise[] = [
     'В nosotros и vosotros корень обычно не чередуется.',
   ),
   order(
-    'Соберите предложение: они / спят / в доме.',
+    'Переведите на испанский: «Они спят в доме.»',
     ['Duermen en la casa.', 'Dormimos en la casa.', 'Duermen la en casa.'],
     'Duermen en la casa.',
     'dormir: o → ue; casa пишется с артиклем.',
@@ -1280,7 +1280,7 @@ const lesson3: LessonExercise[] = [
     ['Ellos vuelven a la casa.', 'Ellas vuelven a la casa.'],
   ),
   order(
-    'Соберите предложение: я / понимаю / урок.',
+    'Переведите на испанский: «Я понимаю урок.»',
     ['Entiendo la lección.', 'Entendemos la lección.', 'Entiendo lección la.'],
     'Entiendo la lección.',
     'entender: e → ie; lección пишется с артиклем.',
@@ -1329,7 +1329,7 @@ const lesson3: LessonExercise[] = [
     'poner → pongo.',
   ),
   order(
-    'Соберите предложение: я / выхожу / из дома.',
+    'Переведите на испанский: «Я выхожу из дома.»',
     ['Salgo de la casa.', 'Salo de la casa.', 'Salgo la de casa.'],
     'Salgo de la casa.',
     'salir → salgo; casa пишется с артиклем.',
@@ -1363,7 +1363,7 @@ const lesson3: LessonExercise[] = [
     'decir → digo.',
   ),
   order(
-    'Соберите предложение: я / смотрю / фильм.',
+    'Переведите на испанский: «Я смотрю фильм.»',
     ['Veo la película.', 'Vo la película.', 'Veo película la.'],
     'Veo la película.',
     'Особая форма ver для yo — veo. Película пишется с артиклем la.',
@@ -1386,7 +1386,7 @@ const lesson3: LessonExercise[] = [
     ['Yo vengo hoy.'],
   ),
   order(
-    'Соберите предложение: я / вожу / машину.',
+    'Переведите на испанский: «Я вожу машину.»',
     ['Conduzco el coche.', 'Conduco el coche.', 'Conduzco coche el.'],
     'Conduzco el coche.',
     'conducir → conduzco; существительное пишите с артиклем.',
@@ -2024,61 +2024,61 @@ const lesson5: LessonExercise[] = [
     'Напитки в общем значении можно назвать без артикля.',
   ),
   order(
-    'Соберите: мне / нравится / шоколад',
+    'Переведите на испанский: «Мне нравится шоколад.»',
     ['Me gusta el chocolate.'],
     'Me gusta el chocolate.',
     'С gustar предмет является грамматическим подлежащим.',
   ),
   order(
-    'Соберите: нам / нравятся / тапас',
+    'Переведите на испанский: «Нам нравятся тапас.»',
     ['Nos gustan las tapas.'],
     'Nos gustan las tapas.',
     'Tapas во множественном числе требует gustan.',
   ),
   order(
-    'Соберите заказ: я / хочу / кофе',
+    'Переведите на испанский: «Я хочу кофе, пожалуйста.»',
     ['Quiero un café, por favor.'],
     'Quiero un café, por favor.',
     'Un café означает одну чашку или порцию кофе.',
   ),
   order(
-    'Соберите: Ана / предпочитает / воду',
+    'Переведите на испанский: «Ана предпочитает воду.»',
     ['Ana prefiere el agua.'],
     'Ana prefiere el agua.',
     'Preferir имеет чередование e → ie.',
   ),
   order(
-    'Соберите вопрос: что / будете / пить?',
+    'Переведите на испанский: «Что Вы хотите пить?»',
     ['¿Qué quiere beber?'],
     '¿Qué quiere beber?',
     'Вежливое usted использует форму quiere.',
   ),
   order(
-    'Соберите: хлеба / достаточно',
+    'Переведите на испанский: «Хлеба достаточно.»',
     ['Hay bastante pan.'],
     'Hay bastante pan.',
     'Bastante не меняется перед неисчисляемым pan.',
   ),
   order(
-    'Соберите: мало / овощей',
+    'Переведите на испанский: «Овощей мало.»',
     ['Hay pocas verduras.'],
     'Hay pocas verduras.',
     'Poco согласуется с verduras: pocas.',
   ),
   order(
-    'Соберите: мы / едим / дома',
+    'Переведите на испанский: «Мы едим дома.»',
     ['Comemos en casa.'],
     'Comemos en casa.',
     'Comer для nosotros → comemos.',
   ),
   order(
-    'Соберите: она / пьёт / чай',
+    'Переведите на испанский: «Она пьёт чай.»',
     ['Ella toma té.'],
     'Ella toma té.',
     'Tomar часто означает пить напиток.',
   ),
   order(
-    'Соберите: сколько / стоят / яблоки?',
+    'Переведите на испанский: «Сколько стоят яблоки?»',
     ['¿Cuánto cuestan las manzanas?'],
     '¿Cuánto cuestan las manzanas?',
     'Множественное число требует cuestan.',

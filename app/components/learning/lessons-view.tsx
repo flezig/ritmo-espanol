@@ -175,7 +175,7 @@ export function LessonsView() {
     setLessonHintVisible(false);
   }, [exerciseId, mode]);
   const record = (value: string) => {
-    if (answer || answerLock.current) return;
+    if (answer || answerLock.current || (exercise.mode === 'order' && selectedWords.length !== displayedOptions.length)) return;
     answerLock.current = true;
     const correct = lessonAnswerIsCorrect(value),
       storedErrors = lessonState.errors || [],
@@ -665,6 +665,9 @@ export function LessonsView() {
                         </button>
                       ))}
                     </div>
+                    <p aria-live="polite">
+                      Соберите полное предложение: выбрано {selectedWords.length} из {displayedOptions.length} слов.
+                    </p>
                     <button
                       className="check-order"
                       onClick={() => record(orderedAnswer)}

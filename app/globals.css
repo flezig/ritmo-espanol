@@ -14143,3 +14143,78 @@ body {
 .dele-topic-words dt { font-weight: 700; }
 .dele-topic-words dd { margin: 4px 0 0; color: var(--muted); }
 @media (max-width: 600px) { .dele-topic-words { grid-template-columns: minmax(0, 1fr); } .dele-full-text { padding: 8px 12px; } }
+
+/* Mobile practice occupies the visible viewport, including above the keyboard. */
+@media (max-width: 680px) {
+  body:has(.srs-view.active-exercise) { overflow: hidden; }
+  .app:has(.srs-view.active-exercise) .mobile-nav,
+  .main:has(.srs-view.active-exercise) .topbar { display: none; }
+  .srs-view.active-exercise {
+    position: fixed;
+    z-index: 50;
+    top: var(--practice-top, 0px);
+    left: 0;
+    right: 0;
+    height: var(--practice-height, 100dvh);
+    box-sizing: border-box;
+    padding: max(6px, env(safe-area-inset-top)) 6px max(6px, env(safe-area-inset-bottom));
+    margin: 0;
+    gap: 0;
+    background: var(--bg, var(--panel));
+  }
+  .srs-view.active-exercise > :not(.srs-card):not(.word-introduction) { display: none; }
+  .srs-view.active-exercise .srs-card,
+  .srs-view.active-exercise .word-introduction {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+  }
+  .srs-view.active-exercise .srs-card > section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+  }
+  .srs-view.active-exercise .recall-input input { font-size: 16px; }
+  .srs-view.active-exercise .practice-order-builder { gap: 5px; }
+  .srs-view.active-exercise .practice-order-builder > p { margin: 0; font-size: 12px; }
+  .srs-view.active-exercise .practice-word-bank button:disabled { display: none; }
+  .srs-view.active-exercise .practice-word-bank:has(button:not(:disabled)) { min-height: 44px; }
+  .srs-view.active-exercise .practice-word-bank:not(:has(button:not(:disabled))) { display: none; }
+  .srs-view.active-exercise .srs-card > section.answered .recall-result {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    gap: 6px;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .grade-grid {
+    flex: none;
+    order: 2;
+    margin: auto 0 0;
+    padding-top: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .srs-view.active-exercise .grade-grid button { min-height: 48px; padding: 6px; }
+  .srs-view.active-exercise .adaptive-grade-note { display: none; }
+  .srs-view.active-exercise .srs-card > section.answered .answer-examples {
+    order: 1;
+    margin: 0;
+  }
+  .srs-view.active-exercise .srs-card > section.answered .answer-examples > div { padding: 4px 7px; }
+}
+@media (max-width: 680px) and (max-height: 500px) {
+  .srs-view.active-exercise .srs-card > header { min-height: 40px; padding-block: 2px; }
+  .srs-view.active-exercise .srs-card > section > small,
+  .srs-view.active-exercise .practice-article-reminder,
+  .srs-view.active-exercise .accent-keys,
+  .srs-view.active-exercise .answer-examples { display: none; }
+  .srs-view.active-exercise .srs-card > section > h2 { margin: 0; font-size: 16px; }
+  .srs-view.active-exercise .srs-card > section:not(.answered) { justify-content: flex-start; }
+  .srs-view.active-exercise .recall-input input,
+  .srs-view.active-exercise .recall-input button { height: 44px; }
+  .srs-view.active-exercise .srs-card > section.answered .grade-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .srs-view.active-exercise .grade-grid button span { display: none; }
+}

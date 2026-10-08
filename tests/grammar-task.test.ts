@@ -34,6 +34,9 @@ test('every grammar question supports input, correction and ordering without bro
         assert.equal(task.kind, kind, question.id);
         assert.ok(task.instruction.includes(question.instruction));
         if (kind === 'order') {
+          assert.match(task.prompt, /[А-Яа-яЁё]/);
+          assert.doesNotMatch(task.prompt, /[a-zA-Z_]/);
+          assert.notEqual(task.prompt, question.prompt);
           assert.equal(
             task.answer,
             question.prompt.replace('___', question.answer),

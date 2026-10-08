@@ -1,3 +1,4 @@
+import { grammarTranslation } from './grammar-translation.ts';
 import type { GrammarExercise } from '../data/grammar-practice.ts';
 
 export type GrammarTaskKind = 'type' | 'correction' | 'order' | 'choice';
@@ -36,9 +37,9 @@ export const grammarTaskFor = (
   if (kind === 'order')
     return {
       kind,
-      label: 'Сборка предложения',
-      instruction: `${question.instruction} Соберите полное предложение из слов.`,
-      prompt: question.prompt,
+      label: 'Перевод из слов',
+      instruction: `${question.instruction} Переведите с русского на испанский, используя все слова.`,
+      prompt: grammarTranslation(question.id),
       answer: sentence,
     };
   return {

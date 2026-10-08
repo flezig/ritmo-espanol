@@ -173,6 +173,7 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
       !question ||
       !task ||
       !value.trim() ||
+      (task.kind === 'order' && ordered.length !== tokens.length) ||
       session.choice ||
       session.finished ||
       lock.current
@@ -404,6 +405,9 @@ export function GrammarPractice({ mode }: { mode: GrammarMode }) {
                     </button>
                   ))}
                 </div>
+                <p aria-live="polite">
+                  Соберите полное предложение: выбрано {ordered.length} из {tokens.length} слов.
+                </p>
                 <button
                   className="secondary-btn"
                   disabled={!!session.choice || !ordered.length}

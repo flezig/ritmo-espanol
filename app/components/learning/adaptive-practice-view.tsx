@@ -86,6 +86,23 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
   const { sessions: wordSessions, record: recordWordSessionProgress } = useWordSessions();
   const { leaving, move } = useTaskMotion(),
     { preferences } = useSitePreferences();
+  const practiceViewportRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const updateViewport = () => {
+      practiceViewportRef.current?.style.setProperty('--practice-height', `${viewport?.height || window.innerHeight}px`);
+      practiceViewportRef.current?.style.setProperty('--practice-top', `${viewport?.offsetTop || 0}px`);
+    };
+    updateViewport();
+    viewport?.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('scroll', updateViewport);
+    window.addEventListener('resize', updateViewport);
+    return () => {
+      viewport?.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+    };
+  }, []);
   const [deck, setDeck] = useState<StudyCard[]>([]),
     [mode, setMode] = useState<SessionMode>('five'),
     [level, setLevel] = useState<PracticeLevel>('A1–A2'),
@@ -112,6 +129,11 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
     [scopeOpen, setScopeOpen] = useState(false),
     [awaitingStart, setAwaitingStart] = useState(true),
     [sessionBaseline, setSessionBaseline] = useState<PracticeProgressBaseline | null>(null);
+  useEffect(() => {
+    if (revealed && document.activeElement instanceof HTMLInputElement && practiceViewportRef.current?.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+  }, [revealed]);
   const [sessionId, setSessionId] = useState(newPracticeSessionId);
   const assignedStarted = useRef(false);
   const answerLock = useRef(false),
@@ -304,6 +326,8 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
         ? ''
         : responseKind === 'letters'
           ? displayedHeadword.split(' / ')[0]
+          : responseKind === 'order'
+            ? card.example
           : responseKind === 'phrase'
             ? card.answer
             : responseKind === 'correction'
@@ -318,6 +342,8 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
         ? ''
         : responseKind === 'letters'
           ? `Восстановите слово целиком вместе с артиклем: ${maskedSpanishWord(displayedHeadword, `${card.key}-${index}`)}`
+          : responseKind === 'order'
+            ? `Переведите на испанский: «${card.exampleRu}»`
           : responseKind === 'phrase'
             ? card.skill === 'recognition'
               ? `Как переводится «${card.es}» в этом предложении: ${card.example}`
@@ -334,7 +360,7 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
     orderTokens =
       card && responseKind === 'order'
         ? shuffledOptions(
-            card.answer
+            expectedAnswer
               .trim()
               .split(/\s+/)
               .map((word, wordIndex) => `${wordIndex}::${word}`),
@@ -493,7 +519,7 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
       speakText(card.es.split(' / ')[0], 1);
   }, [cardBase, isIntroduction, voiceIndex, voices.length, preferences.autoSpeak]);
   const check = (value: string) => {
-    if (!value.trim() || !card || revealed || answerLock.current) return;
+    if (!value.trim() || !card || revealed || answerLock.current || (responseKind === 'order' && orderedWords.length !== orderTokens.length)) return;
     answerLock.current = true;
     answerDuration.current = Date.now() - cardShownAt.current;
     const result = analyzeAnswer(value, expectedAnswer),
@@ -530,7 +556,7 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
     setRevealed(true);
   };
   const dontKnow = () => {
-    if (!card || revealed || answerLock.current) return;
+    if (!card || revealed || answerLock.current || (responseKind === 'order' && orderedWords.length !== orderTokens.length)) return;
     answerLock.current = true;
     answerDuration.current = Date.now() - cardShownAt.current;
     recordAssignedActivity({
@@ -705,6 +731,7 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
   };
   return (
     <div
+      ref={practiceViewportRef}
       className={`view-stack srs-view ${card && !finished ? 'active-exercise' : ''}`}
     >
       <ViewHead
@@ -1270,6 +1297,9 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
                     </button>
                   ))}
                 </div>
+                <p aria-live="polite">
+                  Соберите полное предложение: выбрано {orderedWords.length} из {orderTokens.length} слов.
+                </p>
                 <button
                   className="primary-btn order-check"
                   disabled={
@@ -1338,7 +1368,7 @@ export function AdaptivePracticeView({ showModes, assignedMode, assignedTopic }:
             <button
               className="dont-know"
               onClick={dontKnow}
-              disabled={revealed}
+              disabled={revealed || (responseKind === 'order' && orderedWords.length !== orderTokens.length)}
             >
               Не знаю — показать ответ
             </button>
